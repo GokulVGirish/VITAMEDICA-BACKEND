@@ -1,0 +1,243 @@
+import { IDoctorInteractor } from "../entities/iuse_cases/iDoctorInteractor";
+import { IDoctorRepository } from "../entities/irepositories/idoctorRepository";
+import { OtpDoctor } from "../entities/rules/doctor";
+import { IMailer } from "../entities/services/mailer";
+import { IJwtService } from "../entities/services/jwtServices";
+import MongoDepartment from "../entities/rules/departments";
+import bcrypt from "bcryptjs";
+import { MulterFile } from "../entities/rules/multerFile";
+import { S3Client ,PutObjectCommand,GetObjectCommand} from "@aws-sdk/client-s3";
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
+import s3Config from "../entities/services/awsS3";
+
+const s3 = new S3Client({
+  region: s3Config.BUCKET_REGION,
+  credentials: {
+    accessKeyId: s3Config.ACCESS_KEY,
+    secretAccessKey: s3Config.SECRET_KEY,
+  },
+});
+
+class DoctorInteractor implements IDoctorInteractor {
+  constructor(
+    private readonly Repository: IDoctorRepository,
+    private readonly Mailer: IMailer,
+    private readonly JWTServices: IJwtService
+  ) {}
+  async otpSignup(doctor: OtpDoctor): Promise<{
+    status: true | false;
+    message?: string;
+    token?: string;
+    errorCode?: string;
+  }> {
+    try {
+      const exists = await this.Repository.doctorExists(doctor.email);
+      if (!exists) {
+        const mailResponse = await this.Mailer.sendMail(doctor.email);
+        if (mailResponse.success) {
+          doctor.otp = mailResponse.otp;
+          doctor.password = await bcrypt.hash(doctor.password, 10);
+          const response = await this.Repository.tempOtpDoctor(doctor);
+          const tempToken = this.JWTServices.generateToken(
+            { emailId: doctor.email, role: "doctor", verified: false },
+            { expiresIn: "10m" }
+          );
+          return {
+            status: true,
+            message: "otp sucessfully sent",
+            token: tempToken,
+          };
+        } else {
+          return {
+            status: false,
+            message: "error sending email",
+            errorCode: "EMAIL_SEND_FAILURE",
+          };
+        }
+      } else {
+        return {
+          status: false,
+          message: "doctor already exist",
+          errorCode: "DOCTOR_EXISTS",
+        };
+      }
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+  async verifyOtpSignup(
+    otp: string
+  ): Promise<{
+    status: true | false;
+    message?: string;
+    accessToken?: string;
+    refreshToken?: string;
+    doctor?:string,
+    docstatus?:string
+
+  }> {
+    try {
+      const response = await this.Repository.createDoctorOtp(otp);
+      if (response.status && response.doctor) {
+        const accessToken = this.JWTServices.generateToken(
+          { emailId: response.doctor.email, role: "doctor", verified: true },
+          { expiresIn: "1h" }
+        );
+        const refreshToken = this.JWTServices.generateRefreshToken(
+          { emailId: response.doctor.email, role: "doctor", verified: true },
+          { expiresIn: "1d" }
+        );
+        return {
+          status: true,
+          message: "signed Up Sucessfully",
+          accessToken,
+          refreshToken,
+          doctor:response.doctor?.name,docstatus:response.doctor?.status
+        };
+      } else {
+        return { status: false, message: response.message };
+      }
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+  async login(
+    email: string,
+    password: string
+  ): Promise<{
+    status: true | false;
+    message?: string;
+    accessToken?: string;
+    refreshToken?: string;
+    errorCode?: string;
+    doctor?: string;
+    doctorStatus?: string;
+  }> {
+    try {
+      const doctor = await this.Repository.getDoctor(email);
+      if (!doctor) {
+        return {
+          status: false,
+          message: "invalid doctor",
+          errorCode: "INVALID_DOCTOR",
+        };
+      }
+       if (doctor.isBlocked)
+         return { status: false, message: "Sorry User Blocked" };
+      const hashedPassword = doctor.password;
+      const match = await bcrypt.compare(password, hashedPassword);
+      if (!match) {
+        return {
+          status: false,
+          message: "invalid password",
+          errorCode: "INVALID_Password",
+        };
+      }
+      const accessToken = this.JWTServices.generateToken(
+        { emailId: doctor.email, role: "doctor", verified: true },
+        { expiresIn: "1h" }
+      );
+      const refreshToken = this.JWTServices.generateRefreshToken(
+        { emailId: doctor.email, role: "doctor", verified: true },
+        { expiresIn: "1d" }
+      );
+
+      return {
+        status: true,
+        message: "logged in sucessfully",
+        accessToken,
+        refreshToken,
+        doctor: doctor.name,
+        doctorStatus: doctor.status,
+      };
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+  async getDepartments(): Promise<{
+    status: boolean;
+    departments?: MongoDepartment[];
+  }> {
+    try {
+      const response = await this.Repository.getDepartments();
+      if (response.status) {
+        return { status: true, departments: response.departments };
+      } else {
+        return { status: false };
+      }
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+
+
+
+  async documentsUpload(docId:string,file1: MulterFile, file2: MulterFile, file3: MulterFile, file4: MulterFile): Promise<{ status: boolean; }> {
+      try{
+        const bucketName=s3Config.BUCKET_NAME
+
+        const folderName = `doctorDocs/${docId}-doc`;
+        const certificateImageKey = `${folderName}/certificateImage-${docId}.${
+          file1.mimetype.split("/")[1]
+        }`;
+        const qualificationImageKey = `${folderName}/qualificationImage-${docId}.${
+          file2.mimetype.split("/")[1]
+        }`;
+        const aadharFrontKey = `${folderName}/aadharFront-${docId}.${
+          file3.mimetype.split("/")[1]
+        }`;
+        const aadharBackKey = `${folderName}/aadharBack-${docId}.${
+          file4.mimetype.split("/")[1]
+        }`;
+         await this.uploadFileToS3(bucketName, certificateImageKey, file1);
+         await this.uploadFileToS3(bucketName, qualificationImageKey, file2);
+         await this.uploadFileToS3(bucketName, aadharFrontKey, file3);
+         await this.uploadFileToS3(bucketName, aadharBackKey, file4);
+         await this.Repository.documentsUpdate(docId,certificateImageKey,qualificationImageKey,aadharFrontKey,aadharBackKey)
+         await this.Repository.docStatusChange(docId,"Submitted")
+         return {status:true}
+        
+
+      }
+      catch(error){
+        console.log(error)
+        throw error
+      }
+  }
+      async uploadFileToS3(bucketName: string, key: string, file: MulterFile): Promise<void> {
+  const command = new PutObjectCommand({
+    Bucket: bucketName,
+    Key: key,
+    Body: file.buffer,
+    ContentType: file.mimetype,
+  });
+
+     await s3.send(command);
+   }
+   async resendOtp(email: string): Promise<{ status: boolean; message?: string; errorCode?: string; }> {
+       try{
+         const mailResponse = await this.Mailer.sendMail(email);
+         if (!mailResponse.success) {
+           return { status: false, message: "error sending email" };
+         }
+         const otp = mailResponse.otp;
+         const response = await this.Repository.resendOtp(otp, email);
+         if (response) {
+           return { status: true, message: "otp sucessfully sent" };
+         } else {
+           return { status: false, message: "retry signup" };
+         }
+
+       }
+       catch(error){
+        throw error
+
+       }
+   }
+
+}
+export default DoctorInteractor;

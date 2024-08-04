@@ -8,7 +8,7 @@ const adminInteractor_1 = __importDefault(require("../../../use_cases/adminInter
 const adminRepository_1 = __importDefault(require("../../../interface_adapters/repositories/adminRepository"));
 const admin_controller_1 = __importDefault(require("../../../interface_adapters/controllers/admin-controller"));
 const jwt_generate_1 = __importDefault(require("../../services/jwt-generate"));
-const jwt_verify_1 = __importDefault(require("../../services/jwt-verify"));
+const jwt_verify_1 = __importDefault(require("../middlewares/jwt-verify"));
 const role_Authenticate_1 = __importDefault(require("../middlewares/role-Authenticate"));
 const jwtservices = new jwt_generate_1.default(process.env.ACCESS_TOCKEN_SECRET, process.env.REFRESH_TOCKEN_SECRET);
 const repository = new adminRepository_1.default();
@@ -27,4 +27,5 @@ adminRouter.get("/doctorDocument/:id", jwt_verify_1.default, (0, role_Authentica
 adminRouter.put("/verifyDoctor/:id", jwt_verify_1.default, (0, role_Authenticate_1.default)("admin"), controller.verifyDoctor.bind(controller));
 adminRouter.get("/doctorManagement", jwt_verify_1.default, (0, role_Authenticate_1.default)("admin"), controller.getDoctors.bind(controller));
 adminRouter.put("/doctorBlockUnblock/:id/:status", jwt_verify_1.default, (0, role_Authenticate_1.default)("admin"), controller.doctorBlockUnblock.bind(controller));
+adminRouter.delete("/rejectDoctor/:id", jwt_verify_1.default, (0, role_Authenticate_1.default)("admin"), controller.rejectDoctor.bind(controller));
 exports.default = adminRouter;

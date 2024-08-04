@@ -35,12 +35,20 @@ const verifyRefreshToken=(token:string)=>{
 }
 const authMiddleware=(req:Request,res:Response,next:NextFunction)=>{
    const authHeader=req.headers.authorization
+   console.log("authheader",authHeader)
    if(!authHeader) return res.status(401).json({message:"No token provided"})
     const [type,token]=authHeader.split(" ")
   if(type!=="Bearer") return res.status(401).json({ message: 'Invalid token type' })
     const decodedToken=verifyAccessToken(token)
+  console.log(
+    "gf",
+    process.env.ACCESS_TOCKEN_SECRET,
+    "rwfr",
+    process.env.REFRESH_TOCKEN_SECRET
+  );
+  console.log("ref",req.cookies.refreshToken)
    if(decodedToken){
-    (req as CustomRequest).user = decodedToken;
+   (req as CustomRequest).user = decodedToken;
     return next()
    }
    const refreshToken=req.cookies.refreshToken
@@ -52,9 +60,6 @@ const authMiddleware=(req:Request,res:Response,next:NextFunction)=>{
     const newAccessToken=jwt.sign({emailId,role,verified},process.env.ACCESS_TOCKEN_SECRET as string,{expiresIn:"1h"});
     (req as CustomRequest).user=decodedRefreshToken
     res.cookie("accessToken", newAccessToken, {
-      httpOnly: true, // Helps prevent XSS attacks
-
-      maxAge: 86400000,
       path: "/"
     });
     return next()

@@ -2,6 +2,9 @@ import { Request, Response, NextFunction } from "express";
 import { IDoctorInteractor } from "../../entities/iuse_cases/iDoctorInteractor";
 import { doctorDataRequest } from "../../frameworks/express/middlewares/doctor";
 import { CustomRequestType } from "../../frameworks/express/middlewares/role-Authenticate";
+import { MulterFile } from "../../entities/rules/multerFile";
+import { ObjectId } from "mongoose";
+import { url } from "inspector";
 
 class DoctorController {
   constructor(private readonly interactor: IDoctorInteractor) {}
@@ -87,6 +90,14 @@ class DoctorController {
           case "INVALID_Password":
             res.status(400).json({ success: false, message: response.message });
             break;
+          case "VERIFICATION_FAILED" :
+            res
+              .status(403)
+              .json({
+                success: false,
+                message: `Verification failed ${response.message}`,
+              });
+              break
           default:
             res.status(400).json({ success: false, message: response.message });
             break;
@@ -116,6 +127,11 @@ class DoctorController {
     try{
 
         (req as doctorDataRequest).doctorData.password="**********"
+        const response=await this.interactor.getProfile(
+          ((req as doctorDataRequest).doctorData.image as string)
+        );
+     (req as doctorDataRequest).doctorData.image=response.url
+        
 
          
         res
@@ -181,6 +197,46 @@ class DoctorController {
       next(error)
     }
 
+  }
+  async UpdateProfileImage(req:Request,res:Response,next:NextFunction){
+    try{
+      console.log("here",req.file)
+        const emailId = (req as doctorDataRequest).doctorData._id
+      const response=await this.interactor.updateProfileImage(emailId,req.file as MulterFile)
+      console.log("sraae",response.status)
+      if(response.status){
+         res.status(200).json({ success: true,imageData:response.imageData });
+
+      }else{
+        res.status(500).json({ success: false })
+      }
+     
+
+    }
+    catch(error){
+      console.log(error)
+      next(error)
+    }
+
+  }
+  async DoctorProfileUpdate(req:Request,res:Response,next:NextFunction){
+    try{
+            const docId = (req as doctorDataRequest).doctorData._id;
+             const emailId = (req as doctorDataRequest).doctorData.email
+      const response=await this.interactor.profileUpdate(req.body,docId,emailId)
+      if(response.status){
+        res.status(200).json({success:true,data:response.data,message:response.message})
+      }else{
+            res.status(500).json({success:false,message:response.message})
+
+      }
+
+
+    }
+    catch(error){
+      console.log(error)
+      throw error
+    }
   }
 }
 export default DoctorController;

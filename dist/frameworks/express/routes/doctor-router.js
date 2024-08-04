@@ -9,16 +9,10 @@ const doctorInteractor_1 = __importDefault(require("../../../use_cases/doctorInt
 const doctorRepository_1 = __importDefault(require("../../../interface_adapters/repositories/doctorRepository"));
 const mailer_1 = __importDefault(require("../../services/mailer"));
 const jwt_generate_1 = __importDefault(require("../../services/jwt-generate"));
-const jwt_verify_1 = __importDefault(require("../../services/jwt-verify"));
+const jwt_verify_1 = __importDefault(require("../middlewares/jwt-verify"));
 const role_Authenticate_1 = __importDefault(require("../middlewares/role-Authenticate"));
 const doctor_1 = require("../middlewares/doctor");
 const multer_1 = __importDefault(require("../../services/multer"));
-const fields = [
-    { name: "file1", maxCount: 1 },
-    { name: "file2", maxCount: 1 },
-    { name: "file3", maxCount: 1 },
-    { name: "file4", maxCount: 1 },
-];
 const mailer = new mailer_1.default();
 const jwtService = new jwt_generate_1.default(process.env.ACCESS_TOCKEN_SECRET, process.env.REFRESH_TOCKEN_SECRET);
 const repository = new doctorRepository_1.default();
@@ -33,4 +27,6 @@ doctorRouter.post("/login", controller.login.bind(controller));
 doctorRouter.get("/profile", jwt_verify_1.default, doctor_1.getDoctor, controller.getProfile.bind(controller));
 doctorRouter.post("/docUpload", jwt_verify_1.default, (0, role_Authenticate_1.default)("doctor"), doctor_1.getDoctor, multer_1.default.array("images"), controller.uploadDocuments.bind(controller));
 doctorRouter.post("/resendOtp", jwt_verify_1.default, controller.resendOtp.bind(controller));
+doctorRouter.post("/profilePicUpdate", jwt_verify_1.default, (0, role_Authenticate_1.default)("doctor"), doctor_1.getDoctor, multer_1.default.single("image"), controller.UpdateProfileImage.bind(controller));
+doctorRouter.put("/profileUpdate", jwt_verify_1.default, doctor_1.getDoctor, (0, role_Authenticate_1.default)("doctor"), controller.DoctorProfileUpdate.bind(controller));
 exports.default = doctorRouter;

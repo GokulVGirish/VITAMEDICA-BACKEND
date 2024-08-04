@@ -82,6 +82,9 @@ class DoctorInteractor {
     }
     async login(email, password) {
         try {
+            const rejectDoctor = await this.Repository.getRejectedDoctor(email);
+            if (rejectDoctor)
+                return { status: false, message: rejectDoctor.reason, errorCode: "VERIFICATION_FAILED" };
             const doctor = await this.Repository.getDoctor(email);
             if (!doctor) {
                 return {
@@ -175,6 +178,71 @@ class DoctorInteractor {
             }
             else {
                 return { status: false, message: "retry signup" };
+            }
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getProfile(image) {
+        try {
+            if (image) {
+                const command = new client_s3_1.GetObjectCommand({
+                    Bucket: awsS3_1.default.BUCKET_NAME,
+                    Key: image
+                });
+                const url = await getSignedUrl(s3, command, {
+                    expiresIn: 3600,
+                });
+                return { url: url };
+            }
+            else {
+                return { url: null };
+            }
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async updateProfileImage(id, image) {
+        try {
+            const folderPath = "doctors";
+            const fileExtension = image.originalname.split(".").pop();
+            const uniqueFileName = `profile-${id}.${fileExtension}`;
+            const key = `${folderPath}/${uniqueFileName}`;
+            const command = new client_s3_1.PutObjectCommand({
+                Bucket: awsS3_1.default.BUCKET_NAME,
+                Key: key,
+                Body: image.buffer,
+                ContentType: image.mimetype
+            });
+            await s3.send(command);
+            const response = await this.Repository.updateProfileImage(id, key);
+            const command2 = new client_s3_1.GetObjectCommand({
+                Bucket: awsS3_1.default.BUCKET_NAME,
+                Key: key
+            });
+            const url = await getSignedUrl(s3, command2, {
+                expiresIn: 3600,
+            });
+            return { status: true, imageData: url };
+        }
+        catch (error) {
+            console.log(error);
+            throw error;
+        }
+    }
+    async profileUpdate(data, userId, email) {
+        try {
+            const response = await this.Repository.profileUpdate(userId, { name: data.name, phone: data.phone });
+            if (!response)
+                return { status: false, message: "internal server error" };
+            const result = await this.Repository.getDoctor(email);
+            if (result) {
+                return { status: true, data: result, message: "Profile sucessfully Updated" };
+            }
+            else {
+                return { status: false, message: "internal server error" };
             }
         }
         catch (error) {

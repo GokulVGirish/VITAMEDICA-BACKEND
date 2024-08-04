@@ -12,6 +12,7 @@ export const getDoctor:RequestHandler=async(req,res,next)=>{
     try{
         const {emailId}=(req as CustomRequestType).user
         const doctor=await doctorModel.findOne({email:emailId})
+        console.log("doctor",emailId)
        if (!doctor)
          return res.status(401).json({ message: "Un authorized access" });
           if (doctor.isBlocked)

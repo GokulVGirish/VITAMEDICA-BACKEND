@@ -4,17 +4,10 @@ import DoctorInteractor from "../../../use_cases/doctorInteractor";
 import DoctorRepository from "../../../interface_adapters/repositories/doctorRepository";
 import Mailer from "../../services/mailer";
 import JwtService from "../../services/jwt-generate";
-import authMiddleware from "../../services/jwt-verify";
+import authMiddleware from "../middlewares/jwt-verify";
 import verifyRole from "../middlewares/role-Authenticate";
 import { getDoctor } from "../middlewares/doctor";
 import upload from "../../services/multer";
-
-const fields = [
-  { name: "file1", maxCount: 1 },
-  { name: "file2", maxCount: 1 },
-  { name: "file3", maxCount: 1 },
-  { name: "file4", maxCount: 1 },
-];
 
 const mailer = new Mailer();
 const jwtService = new JwtService(
@@ -33,5 +26,7 @@ doctorRouter.post("/login",controller.login.bind(controller))
 doctorRouter.get("/profile",authMiddleware,getDoctor,controller.getProfile.bind(controller));
 doctorRouter.post("/docUpload",authMiddleware,verifyRole("doctor"),getDoctor,upload.array("images"),controller.uploadDocuments.bind(controller));
 doctorRouter.post("/resendOtp",authMiddleware,controller.resendOtp.bind(controller));
+doctorRouter.post("/profilePicUpdate",authMiddleware,verifyRole("doctor"),getDoctor,upload.single("image"),controller.UpdateProfileImage.bind(controller));
+doctorRouter.put("/profileUpdate",authMiddleware,getDoctor,verifyRole("doctor"),controller.DoctorProfileUpdate.bind(controller))
 
 export default doctorRouter;

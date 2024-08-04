@@ -22,6 +22,7 @@ const verifyRefreshToken = (token) => {
 };
 const authMiddleware = (req, res, next) => {
     const authHeader = req.headers.authorization;
+    console.log("authheader", authHeader);
     if (!authHeader)
         return res.status(401).json({ message: "No token provided" });
     const [type, token] = authHeader.split(" ");
@@ -43,8 +44,6 @@ const authMiddleware = (req, res, next) => {
         const newAccessToken = jsonwebtoken_1.default.sign({ emailId, role, verified }, process.env.ACCESS_TOCKEN_SECRET, { expiresIn: "1h" });
         req.user = decodedRefreshToken;
         res.cookie("accessToken", newAccessToken, {
-            httpOnly: true,
-            maxAge: 86400000,
             path: "/"
         });
         return next();

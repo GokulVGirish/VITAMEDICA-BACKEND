@@ -1,3 +1,4 @@
+import { Types } from "mongoose";
 import MongoDepartment from "../rules/departments"
 import { MongoDoctor } from "../rules/doctor";
 import { MongoUser } from "../rules/user"
@@ -38,4 +39,6 @@ export interface IAdminInteractor {
     id: string,
     status: string
   ): Promise<{ status: boolean; message: string }>;
+  rejectDoctor(id: string,reason:string): Promise<{ success: boolean; message: string }>;
+  deleteImageFromS3(key:string):Promise<boolean>
 }

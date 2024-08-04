@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const TempDoctor_1 = __importDefault(require("../../frameworks/mongoose/models/TempDoctor"));
 const departmentSchema_1 = __importDefault(require("../../frameworks/mongoose/models/departmentSchema"));
 const DoctorSchema_1 = __importDefault(require("../../frameworks/mongoose/models/DoctorSchema"));
+const RejectedDoctor_1 = __importDefault(require("../../frameworks/mongoose/models/RejectedDoctor"));
 class DoctorRepository {
     async doctorExists(email) {
         try {
@@ -132,6 +133,36 @@ class DoctorRepository {
         }
         catch (error) {
             console.log(error);
+            throw error;
+        }
+    }
+    async updateProfileImage(id, imagePath) {
+        try {
+            const result = await DoctorSchema_1.default.updateOne({ _id: id }, { $set: { image: imagePath } });
+            return result.modifiedCount > 0;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async profileUpdate(id, data) {
+        try {
+            const result = await DoctorSchema_1.default.updateOne({ _id: id }, { $set: { name: data.name, phone: data.phone } });
+            if (result.modifiedCount > 0)
+                return true;
+            else
+                return false;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getRejectedDoctor(email) {
+        try {
+            const result = await RejectedDoctor_1.default.findOne({ email: email });
+            return result;
+        }
+        catch (error) {
             throw error;
         }
     }

@@ -3,7 +3,7 @@ import AdminInteractor from "../../../use_cases/adminInteractor"
 import AdminRepository from "../../../interface_adapters/repositories/adminRepository"
 import AdminController from "../../../interface_adapters/controllers/admin-controller"
 import JwtService from "../../services/jwt-generate"
-import authMiddleware from "../../services/jwt-verify"
+import authMiddleware from "../middlewares/jwt-verify"
 import verifyRole from "../middlewares/role-Authenticate"
 
 
@@ -25,4 +25,5 @@ adminRouter.get("/doctorDocument/:id", authMiddleware,verifyRole("admin"),contro
 adminRouter.put("/verifyDoctor/:id",authMiddleware,verifyRole("admin"),controller.verifyDoctor.bind(controller))
 adminRouter.get("/doctorManagement",authMiddleware,verifyRole("admin"),controller.getDoctors.bind(controller));
 adminRouter.put("/doctorBlockUnblock/:id/:status",authMiddleware,verifyRole("admin"),controller.doctorBlockUnblock.bind(controller));
+adminRouter.delete("/rejectDoctor/:id", authMiddleware,verifyRole("admin"),controller.rejectDoctor.bind(controller));
  export default adminRouter

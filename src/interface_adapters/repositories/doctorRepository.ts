@@ -4,6 +4,9 @@ import doctorOtpModel from "../../frameworks/mongoose/models/TempDoctor";
 import MongoDepartment from "../../entities/rules/departments";
 import departmentModel from "../../frameworks/mongoose/models/departmentSchema";
 import doctorModel from "../../frameworks/mongoose/models/DoctorSchema";
+import { Types } from "mongoose";
+import { RejectedDoctor } from "../../entities/rules/rejectedDoctor";
+import rejectedDoctorModel from "../../frameworks/mongoose/models/RejectedDoctor";
 
 class DoctorRepository implements IDoctorRepository {
   async doctorExists(email: string): Promise<null | MongoDoctor> {
@@ -141,6 +144,37 @@ class DoctorRepository implements IDoctorRepository {
       console.log(error);
       throw error;
     }
+  }
+  async updateProfileImage(id: Types.ObjectId, imagePath: string): Promise<boolean> {
+      try{
+        const result=await doctorModel.updateOne({_id:id},{$set:{image:imagePath}})
+        return result.modifiedCount>0
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async profileUpdate(id: Types.ObjectId, data: { name: string; phone: string; }): Promise<boolean> {
+      try{
+        const result=await doctorModel.updateOne({_id:id},{$set:{name:data.name,phone:data.phone}})
+        if(result.modifiedCount>0)return true
+        else return false
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async getRejectedDoctor(email: string): Promise<RejectedDoctor | null> {
+      try{
+        const result=await rejectedDoctorModel.findOne({email:email})
+        return result
+
+      }
+      catch(error){
+        throw error
+      }
   }
 }
 export default DoctorRepository

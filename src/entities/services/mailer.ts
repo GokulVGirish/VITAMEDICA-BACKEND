@@ -4,7 +4,7 @@ dotenv.config()
 export interface IMailer{
 
     sendMail(email:string): Promise<{ otp: string, success: boolean }>;
-    sendPasswordResetLink(email: string): Promise<{success:boolean}>;
+    sendPasswordResetLink(email: string,link:string): Promise<{success:boolean}>;
 
 }
 

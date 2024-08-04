@@ -18,6 +18,7 @@ app.use((0, cors_1.default)({
     origin: "http://localhost:5173",
     methods: "GET,POST,PUT,DELETE,OPTIONS,PATCH",
     allowedHeaders: "Content-Type,Authorization",
+    credentials: true,
 }));
 (0, routes_1.default)(app);
 app.use(error_handler_1.default);

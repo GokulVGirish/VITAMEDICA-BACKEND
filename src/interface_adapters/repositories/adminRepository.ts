@@ -1,3 +1,4 @@
+import { nextTick } from "process"
 import IAdminRepository from "../../entities/irepositories/iAdminRepository"
 import { MongoAdmin } from "../../entities/rules/admin"
 import MongoDepartment from "../../entities/rules/departments"
@@ -7,6 +8,7 @@ import adminModel from "../../frameworks/mongoose/models/AdminSchema"
 import departmentModel from "../../frameworks/mongoose/models/departmentSchema"
 import doctorModel from "../../frameworks/mongoose/models/DoctorSchema"
 import userModel from "../../frameworks/mongoose/models/UserSchema"
+import rejectedDoctorModel from "../../frameworks/mongoose/models/RejectedDoctor"
 
 class AdminRepository implements IAdminRepository{
    
@@ -182,6 +184,30 @@ class AdminRepository implements IAdminRepository{
        }
        catch(error){
          throw error
+       }
+   }
+   async deleteDoctor(id: string): Promise<boolean> {
+       try{
+        const result=await doctorModel.deleteOne({_id:id})
+        return result.deletedCount===1
+
+       }
+       catch(error){
+        throw error
+       }
+   }
+   async createRejectedDoctor(email: string, reason: string): Promise<boolean> {
+       try{
+        const result=await rejectedDoctorModel.create({
+          email:email,
+          reason:reason
+        })
+        return result?true:false
+
+
+       }
+       catch(error){
+        throw error
        }
    }
 }

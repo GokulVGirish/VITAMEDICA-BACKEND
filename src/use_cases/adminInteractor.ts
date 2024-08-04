@@ -6,9 +6,10 @@ import MongoDepartment from "../entities/rules/departments";
 import { MongoUser } from "../entities/rules/user";
 import { MongoDoctor } from "../entities/rules/doctor";
 
-import { S3Client ,PutObjectCommand,GetObjectCommand, S3} from "@aws-sdk/client-s3";
+import { S3Client ,PutObjectCommand,GetObjectCommand, S3,DeleteObjectCommand} from "@aws-sdk/client-s3";
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 import s3Config from "../entities/services/awsS3";
+import { Types } from "mongoose";
 const s3=new S3Client({
     region:s3Config.BUCKET_REGION,
     credentials:{
@@ -242,7 +243,7 @@ class AdminInteractor implements IAdminInteractor {
           Key: imageKey,
         });
         const url = await getSignedUrl(s3, command, {
-          expiresIn: 3600, // URL expiration time in seconds
+          expiresIn: 3600, 
         });
         return url;
       } else {
@@ -302,5 +303,48 @@ class AdminInteractor implements IAdminInteractor {
         throw error
       }
   }
+  async deleteImageFromS3(imageKey: string): Promise<boolean> {
+  try {
+    if (imageKey) {
+      const command = new DeleteObjectCommand({
+        Bucket: s3Config.BUCKET_NAME,
+        Key: imageKey,
+      });
+      await s3.send(command);
+      return true;
+    } else {
+      return false;
+    }
+  } catch (error) {
+    console.error('Error deleting image from S3:', error);
+    throw error;
+  }
+}
+  
+  async rejectDoctor(id: string,reason:string): Promise<{ success: boolean; message: string; }> {
+      try{
+        const result=await this.repository.getDoctor(id)
+        if(!result.status)return {success:false,message:"Doctor Not Found"}
+        const doctor=result.doctor
+        await this.deleteImageFromS3(doctor?.documents?.certificateImage as string)
+        await this.deleteImageFromS3(doctor?.documents?.qualificationImage as string)
+        await this.deleteImageFromS3(doctor?.documents?.aadarFrontImage as string)
+        await this.deleteImageFromS3(doctor?.documents?.aadarBackImage as string)
+        await this.repository.deleteDoctor(id)
+        const response=await this.repository.createRejectedDoctor(doctor?.email as string,reason)
+        if(!response)return {success:false,message:"Internal server error"}
+        return {success:true,message:"Rejected Sucessfully"}
+
+
+
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+
+ 
+
 }
 export default AdminInteractor

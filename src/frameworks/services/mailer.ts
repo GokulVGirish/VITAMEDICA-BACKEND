@@ -12,8 +12,7 @@ class Mailer implements IMailer{
       
         
     }
-    async sendPasswordResetLink(email: string): Promise<{ success: boolean; }> {
-         const link = `http://localhost:5173/reset-password/`;
+    async sendPasswordResetLink(email: string,link:string): Promise<{ success: boolean; }> {
          const response= await sendMail(email,link,"link")
          return {success:response.success}
         

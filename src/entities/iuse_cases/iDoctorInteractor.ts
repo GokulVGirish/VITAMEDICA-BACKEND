@@ -1,6 +1,8 @@
-import { OtpDoctor } from "../rules/doctor";
+import { MongoDoctor, OtpDoctor } from "../rules/doctor";
 import MongoDepartment from "../rules/departments";
 import { MulterFile } from "../rules/multerFile";
+import { promises } from "dns";
+import { ObjectId, Types } from "mongoose";
 export interface IDoctorInteractor {
   otpSignup(doctor: OtpDoctor): Promise<{
     status: true | false;
@@ -45,5 +47,13 @@ export interface IDoctorInteractor {
     file4: MulterFile
   ): Promise<{ status: boolean }>;
    resendOtp(email:string):Promise<{status:boolean,message?:string,errorCode?:string}>
+   getProfile(image:string):Promise<{url:string|null}>
+     profileUpdate(
+    data: any,
+    userId:Types.ObjectId,
+    email:string
+  ): Promise<{ status: boolean; message: string; errorCode?: string,data?:MongoDoctor }>;
+   updateProfileImage(id:Types.ObjectId,image:MulterFile):Promise<{status:boolean;imageData?:string}>
+
  
 }

@@ -1,6 +1,6 @@
 import { IDoctorInteractor } from "../entities/iuse_cases/iDoctorInteractor";
 import { IDoctorRepository } from "../entities/irepositories/idoctorRepository";
-import { OtpDoctor } from "../entities/rules/doctor";
+import { MongoDoctor, OtpDoctor } from "../entities/rules/doctor";
 import { IMailer } from "../entities/services/mailer";
 import { IJwtService } from "../entities/services/jwtServices";
 import MongoDepartment from "../entities/rules/departments";
@@ -9,6 +9,7 @@ import { MulterFile } from "../entities/rules/multerFile";
 import { S3Client ,PutObjectCommand,GetObjectCommand} from "@aws-sdk/client-s3";
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 import s3Config from "../entities/services/awsS3";
+import { ObjectId, Types } from "mongoose";
 
 const s3 = new S3Client({
   region: s3Config.BUCKET_REGION,
@@ -116,6 +117,8 @@ class DoctorInteractor implements IDoctorInteractor {
     doctorStatus?: string;
   }> {
     try {
+      const rejectDoctor=await this.Repository.getRejectedDoctor(email)
+      if(rejectDoctor)return {status:false,message:rejectDoctor.reason,errorCode:"VERIFICATION_FAILED"}
       const doctor = await this.Repository.getDoctor(email);
       if (!doctor) {
         return {
@@ -231,6 +234,77 @@ class DoctorInteractor implements IDoctorInteractor {
          } else {
            return { status: false, message: "retry signup" };
          }
+
+       }
+       catch(error){
+        throw error
+
+       }
+   }
+   async getProfile(image: string): Promise<{ url: string | null; }> {
+       try{
+        if(image){
+          const command=new GetObjectCommand({
+            Bucket:s3Config.BUCKET_NAME,
+            Key:image
+          })
+          const url = await getSignedUrl(s3, command, {
+            expiresIn: 3600,
+          });
+          return {url:url}
+
+        }else{
+          return {url:null}
+        }
+
+
+       }
+       catch(error){
+        throw error
+       }
+   }
+   async updateProfileImage(id: Types.ObjectId, image: MulterFile): Promise<{ status: boolean; imageData?: string; }> {
+       try{
+          const folderPath = "doctors";
+          const fileExtension = image.originalname.split(".").pop();
+          const uniqueFileName = `profile-${id}.${fileExtension}`;
+          const key = `${folderPath}/${uniqueFileName}`;
+        const command = new PutObjectCommand({
+         Bucket:s3Config.BUCKET_NAME,
+         Key:key,
+         Body:image.buffer,
+         ContentType:image.mimetype
+
+        });
+        await s3.send(command)
+        const response=await this.Repository.updateProfileImage(id,key)
+       
+        const command2=new GetObjectCommand({
+          Bucket:s3Config.BUCKET_NAME,
+          Key:key
+        })
+         const url = await getSignedUrl(s3, command2, {
+           expiresIn: 3600,
+         });
+         return {status:true,imageData:url}
+
+    }
+       catch(error){
+        console.log(error)
+        throw error
+       }
+   }
+   async profileUpdate(data: any, userId: Types.ObjectId, email: string): Promise<{ status: boolean; message: string; errorCode?: string; data?: MongoDoctor; }> {
+       try{
+        const response=await this.Repository.profileUpdate(userId,{name:data.name,phone:data.phone})
+        if(!response)return {status:false,message:"internal server error"}
+        const result=await this.Repository.getDoctor(email)
+      if(result){
+          return { status: true, data: result,message:"Profile sucessfully Updated" };
+      }else{
+        return { status: false, message: "internal server error" };
+
+      }
 
        }
        catch(error){

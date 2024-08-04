@@ -12,8 +12,7 @@ class Mailer {
         console.log("otp is", otp);
         return { otp: otp, success: response.success };
     }
-    async sendPasswordResetLink(email) {
-        const link = `http://localhost:5173/reset-password/`;
+    async sendPasswordResetLink(email, link) {
         const response = await (0, sendEmail_1.default)(email, link, "link");
         return { success: response.success };
     }

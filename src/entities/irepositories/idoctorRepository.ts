@@ -1,5 +1,7 @@
 import { MongoDoctor, OtpDoctor } from "../rules/doctor"
 import MongoDepartment from "../rules/departments";
+import { ObjectId, Types } from "mongoose";
+import { RejectedDoctor } from "../rules/rejectedDoctor";
 
 export interface IDoctorRepository {
   getDepartments(): Promise<{
@@ -13,6 +15,10 @@ export interface IDoctorRepository {
   ): Promise<{ status: boolean; message: string; doctor?: MongoDoctor }>;
   getDoctor(email: string): Promise<MongoDoctor | null>;
   docStatusChange(id:string,status: string): Promise<void>;
+
   documentsUpdate(docId:string,key1:string,key2:string,key3:string,key4:string):Promise<void>
     resendOtp(otp:string,email:string):Promise<boolean>
+    updateProfileImage(id:Types.ObjectId,imagePath:string):Promise<boolean>
+     profileUpdate(id:Types.ObjectId,data:{name:string,phone:string}):Promise<boolean>
+     getRejectedDoctor(email:string):Promise<RejectedDoctor|null>
 }

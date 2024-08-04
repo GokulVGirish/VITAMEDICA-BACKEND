@@ -9,6 +9,7 @@ const getDoctor = async (req, res, next) => {
     try {
         const { emailId } = req.user;
         const doctor = await DoctorSchema_1.default.findOne({ email: emailId });
+        console.log("doctor", emailId);
         if (!doctor)
             return res.status(401).json({ message: "Un authorized access" });
         if (doctor.isBlocked)

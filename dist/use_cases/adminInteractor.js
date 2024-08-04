@@ -200,7 +200,7 @@ class AdminInteractor {
                     Key: imageKey,
                 });
                 const url = await getSignedUrl(s3, command, {
-                    expiresIn: 3600, // URL expiration time in seconds
+                    expiresIn: 3600,
                 });
                 return url;
             }
@@ -254,6 +254,45 @@ class AdminInteractor {
                 status: true,
                 message: `user has been sucessfully ${changedStatus ? "Blocked" : "Unblocked"}`,
             };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async deleteImageFromS3(imageKey) {
+        try {
+            if (imageKey) {
+                const command = new client_s3_1.DeleteObjectCommand({
+                    Bucket: awsS3_1.default.BUCKET_NAME,
+                    Key: imageKey,
+                });
+                await s3.send(command);
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        catch (error) {
+            console.error('Error deleting image from S3:', error);
+            throw error;
+        }
+    }
+    async rejectDoctor(id, reason) {
+        try {
+            const result = await this.repository.getDoctor(id);
+            if (!result.status)
+                return { success: false, message: "Doctor Not Found" };
+            const doctor = result.doctor;
+            await this.deleteImageFromS3(doctor?.documents?.certificateImage);
+            await this.deleteImageFromS3(doctor?.documents?.qualificationImage);
+            await this.deleteImageFromS3(doctor?.documents?.aadarFrontImage);
+            await this.deleteImageFromS3(doctor?.documents?.aadarBackImage);
+            await this.repository.deleteDoctor(id);
+            const response = await this.repository.createRejectedDoctor(doctor?.email, reason);
+            if (!response)
+                return { success: false, message: "Internal server error" };
+            return { success: true, message: "Rejected Sucessfully" };
         }
         catch (error) {
             throw error;

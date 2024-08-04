@@ -4,13 +4,16 @@ import { MongoUser, User } from "../entities/rules/user";
 import { IMailer } from "../entities/services/mailer";
 import { IJwtService } from "../entities/services/jwtServices";
 import bcrypt from "bcryptjs"
+import jwt from "jsonwebtoken";
 
 import { S3Client ,PutObjectCommand,GetObjectCommand} from "@aws-sdk/client-s3";
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 import s3Config from "../entities/services/awsS3";
 
 import { MulterFile } from "../entities/rules/multerFile";
-import MongoDepartment from "../entities/rules/departments";
+import { Types } from "mongoose";
+import { link } from "fs";
+import { ResetPasswordToken } from "../entities/rules/resetPassword";
 
 const s3=new S3Client({
     region:s3Config.BUCKET_REGION,
@@ -293,45 +296,21 @@ class UserInteractor implements IUserInteractor {
   }
   async profileUpdate(
     data: any,
-    file:MulterFile,
-    userId:string
+    userId:Types.ObjectId,
+    email:string
   ): Promise<{ status: boolean; message: string; errorCode?: string,data?:MongoUser }> {
     try {
-         const folderPath = 'users';
-    const fileExtension = file.originalname.split('.').pop();
-    const uniqueFileName = `profile-${userId}.${fileExtension}`;
-    const key = `${folderPath}/${uniqueFileName}`;
-
-        const command = new PutObjectCommand({
-          Bucket: s3Config.BUCKET_NAME,
-          Key: key,
-          Body: file.buffer,
-          ContentType: file.mimetype,
-        });
-        await s3.send(command)
-        data.image=key
-        data._id=userId
-        if (data.address) {
-          if (data.address.postalCode) {
-            console.log("posrcode", data.address.postalCode);
-            data.address.postalCode = Number(data.address.postalCode);
-          }
-        }
-        const respose=await this.Repository.updateProfile(data)
-        const user=await this.Repository.getUser(data.email)
-     
-        if(user){
-               const command2 = new GetObjectCommand({
-                 Bucket: s3Config.BUCKET_NAME,
-                 Key: key ,
-               });
-               const url = await getSignedUrl(s3, command2, {
-                 expiresIn: 3600,
-               });
-            user.password="********"
-            user.image=url
-        }
+      console.log("data here",data)
+         
+        const respose=await this.Repository.updateProfile(userId as Types.ObjectId,data)
+        const user=await this.Repository.getUser(email)
       
+     
+      if(user){
+        user.password="****************"
+      }
+      console.log("user",user)
+      console.log("response 2",respose)
       
         if(respose.success){
             return {
@@ -352,6 +331,83 @@ class UserInteractor implements IUserInteractor {
       throw error;
     }
     
+  }
+  async updateProfileImage(id: Types.ObjectId, image: MulterFile): Promise<{ status: boolean; imageData?: string; }> {
+      try{
+         try {
+           const folderPath = "users";
+           const fileExtension = image.originalname.split(".").pop();
+           const uniqueFileName = `profile-${id}.${fileExtension}`;
+           const key = `${folderPath}/${uniqueFileName}`;
+           const command = new PutObjectCommand({
+             Bucket: s3Config.BUCKET_NAME,
+             Key: key,
+             Body: image.buffer,
+             ContentType: image.mimetype,
+           });
+           await s3.send(command);
+           const response = await this.Repository.updateProfileImage(id, key);
+
+           const command2 = new GetObjectCommand({
+             Bucket: s3Config.BUCKET_NAME,
+             Key: key,
+           });
+           const url = await getSignedUrl(s3, command2, {
+             expiresIn: 3600,
+           });
+           return { status: true, imageData: url };
+         } catch (error) {
+           console.log(error);
+           throw error;
+         }
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async passwordResetLink(email: string): Promise<{ status: boolean; message: string; link?: string; }> {
+      try{
+           
+        const user=await this.Repository.getUser(email)
+        if(!user)return {status:false,message:"User Not Found"}
+        const resetTokenExpiry = Date.now() + 600000;
+          const payload = { email,resetTokenExpiry };
+          const hashedToken = jwt.sign(payload,process.env.Password_RESET_SECRET as string);
+          const resetLink=`http://localhost:5173/reset-password?token=${hashedToken}`
+          const result=await this.Mailer.sendPasswordResetLink(email,resetLink)
+          if(!result.success)return {status:false,message:"Internal Server Error"}
+
+          return {status:true,message:"Link Sucessfully Sent"}
+
+
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async resetPassword(token: string, password: string): Promise<{ status: boolean; message: string; }> {
+      try{
+        const decodedToken = jwt.verify(
+          token,
+          process.env.Password_RESET_SECRET as string
+        );
+        const { email, resetTokenExpiry } = decodedToken as ResetPasswordToken;
+        const userExist =await this.Repository.getUser(email)
+        if(!userExist)return {status:false,message:"Invalid User"}
+        if (Date.now() > new Date(resetTokenExpiry).getTime())
+          return { status: false, message: "Expired Link" };
+        const hashedPassword=await bcrypt.hash(password,10)
+        const response=await this.Repository.resetPassword(email,hashedPassword)
+        if(!response)return {status:false,message:"Internal server error"}
+        return {status:true,message:"Password Changed Sucessfully"}
+
+
+      }
+      catch(error){
+        throw error
+      }
   }
  
 }

@@ -235,5 +235,24 @@ class AdminController{
         }
 
     }
+    async rejectDoctor(req:Request,res:Response,next:NextFunction){
+        try{
+            const {id}=req.params
+            const {reason}=req.query
+            const response=await this.interactor.rejectDoctor(id,reason as string)
+            if(response.success){
+                res.status(200).json({success:true,message:response.message});
+            }else{
+                res.status(500).json({success:false,message:response.message})
+            }
+
+
+        }
+        catch(error){
+            console.log(error)
+            next(error)
+        }
+
+    }
 }
 export default AdminController

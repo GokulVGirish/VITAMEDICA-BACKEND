@@ -7,6 +7,7 @@ const AdminSchema_1 = __importDefault(require("../../frameworks/mongoose/models/
 const departmentSchema_1 = __importDefault(require("../../frameworks/mongoose/models/departmentSchema"));
 const DoctorSchema_1 = __importDefault(require("../../frameworks/mongoose/models/DoctorSchema"));
 const UserSchema_1 = __importDefault(require("../../frameworks/mongoose/models/UserSchema"));
+const RejectedDoctor_1 = __importDefault(require("../../frameworks/mongoose/models/RejectedDoctor"));
 class AdminRepository {
     async getAdmin(email) {
         const admin = await AdminSchema_1.default.findOne({ email: email });
@@ -160,6 +161,27 @@ class AdminRepository {
         try {
             const result = await DoctorSchema_1.default.updateOne({ _id: id }, { $set: { isBlocked: status } });
             return result.modifiedCount > 0;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async deleteDoctor(id) {
+        try {
+            const result = await DoctorSchema_1.default.deleteOne({ _id: id });
+            return result.deletedCount === 1;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async createRejectedDoctor(email, reason) {
+        try {
+            const result = await RejectedDoctor_1.default.create({
+                email: email,
+                reason: reason
+            });
+            return result ? true : false;
         }
         catch (error) {
             throw error;

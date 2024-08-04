@@ -38,7 +38,7 @@ class UserRepository {
                         password: otpUser.password,
                         gender: otpUser.gender,
                         bloodGroup: otpUser.bloodGroup,
-                        dob: otpUser.dob
+                        dob: otpUser.dob,
                     });
                     return { status: true, user };
                 }
@@ -71,18 +71,18 @@ class UserRepository {
                 name: name,
                 email: email,
                 password: password,
-                register: "Google"
+                register: "Google",
             });
             if (user) {
                 return {
                     status: true,
-                    message: "Signed Up Sucessfully"
+                    message: "Signed Up Sucessfully",
                 };
             }
             else {
                 return {
                     status: false,
-                    message: "error signing up"
+                    message: "error signing up",
                 };
             }
         }
@@ -91,9 +91,9 @@ class UserRepository {
             throw error;
         }
     }
-    async updateProfile(data) {
+    async updateProfile(userId, data) {
         try {
-            const response = await UserSchema_1.default.updateOne({ _id: data._id }, {
+            const response = await UserSchema_1.default.updateOne({ _id: userId }, {
                 name: data.name,
                 phone: data.phone,
                 dob: data.dob,
@@ -104,10 +104,10 @@ class UserRepository {
                     city: data.address?.city,
                     state: data.address?.state,
                     postalCode: data.address?.postalCode,
-                },
-                image: data.image
+                }
             });
-            if (response) {
+            console.log("response", response);
+            if (response.modifiedCount > 0) {
                 return { success: true };
             }
             else {
@@ -134,6 +134,24 @@ class UserRepository {
         }
         catch (error) {
             console.log(error);
+            throw error;
+        }
+    }
+    async updateProfileImage(id, imagePath) {
+        try {
+            const result = await UserSchema_1.default.updateOne({ _id: id }, { $set: { image: imagePath } });
+            return result.modifiedCount > 0;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async resetPassword(email, password) {
+        try {
+            const result = await UserSchema_1.default.updateOne({ email: email }, { $set: { password: password } });
+            return result.modifiedCount > 0;
+        }
+        catch (error) {
             throw error;
         }
     }

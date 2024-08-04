@@ -9,9 +9,7 @@ class UserController {
             const body = req.body;
             const response = await this.interactor.otpSignup(body);
             if (response.status) {
-                res
-                    .status(200)
-                    .json({
+                res.status(200).json({
                     success: true,
                     message: response.message,
                     token: response.token,
@@ -31,9 +29,7 @@ class UserController {
             const { otp } = req.body;
             const response = await this.interactor.verifyOtpSignup(otp);
             if (response.status) {
-                res
-                    .status(200)
-                    .json({
+                res.status(200).json({
                     success: true,
                     message: "signed Up Sucessfully",
                     accessToken: response.accessToken,
@@ -65,9 +61,7 @@ class UserController {
             const { email, password } = req.body;
             const response = await this.interactor.login(email, password);
             if (response.status) {
-                res
-                    .status(200)
-                    .json({
+                res.status(200).json({
                     success: true,
                     message: "logged in Sucessfully",
                     accessToken: response.accessToken,
@@ -130,7 +124,9 @@ class UserController {
             else {
                 switch (response.errorCode) {
                     case "NO_USER":
-                        return res.status(404).json({ success: false, message: response.message });
+                        return res
+                            .status(404)
+                            .json({ success: false, message: response.message });
                     case "INCORRECT_PASSWORD":
                         return res
                             .status(401)
@@ -173,7 +169,9 @@ class UserController {
             const response = await this.interactor.getProfile(req.userData.image);
             req.userData.password = "*******";
             req.userData.image = response.url;
-            res.status(200).json({ success: true, userData: req.userData });
+            res
+                .status(200)
+                .json({ success: true, userData: req.userData });
         }
         catch (error) {
             console.log(error);
@@ -182,18 +180,13 @@ class UserController {
     }
     async profileUpdate(req, res, next) {
         try {
-            console.log("body", req.body);
-            console.log("files", req.file);
             const userId = req.userData._id;
-            const email = req.user.emailId;
+            const email = req.userData.email;
             const user = {
                 name: req.body.name,
-                email: email,
                 phone: req.body.phone,
                 dob: req.body.dob,
-                image: req.body.image,
                 gender: req.body.gender,
-                password: req.body.password,
                 address: {
                     street: req.body.street,
                     city: req.body.city,
@@ -202,22 +195,78 @@ class UserController {
                 },
                 bloodGroup: req.body.bloodGroup,
             };
-            const response = await this.interactor.profileUpdate(user, req.file, userId);
+            console.log("userdata", user);
+            const response = await this.interactor.profileUpdate(user, userId, email);
             if (response.status) {
-                res.status(200).json({ success: true, message: response.message, data: response.data });
-            }
-            else {
                 res
-                    .status(500)
+                    .status(200)
                     .json({
                     success: true,
-                    message: response.message
+                    message: response.message,
+                    data: response.data,
+                });
+            }
+            else {
+                res.status(500).json({
+                    success: true,
+                    message: response.message,
                 });
             }
         }
         catch (error) {
             console.log(error);
             next(error);
+        }
+    }
+    async ProfilePictureUpdate(req, res, next) {
+        try {
+            const userId = req.userData._id;
+            const response = await this.interactor.updateProfileImage(userId, req.file);
+            if (response.status) {
+                res
+                    .status(200)
+                    .json({ success: true, imageData: response.imageData });
+            }
+            else {
+                res.status(500).json({ success: false });
+            }
+        }
+        catch (error) {
+            console.log(error);
+            next(error);
+        }
+    }
+    async passwordResetLink(req, res, next) {
+        try {
+            const email = req.body.email;
+            const response = await this.interactor.passwordResetLink(email);
+            if (response.status) {
+                res.status(200).json({ success: true, message: response.message });
+            }
+            else {
+                res.status(500).json({ success: false, message: response.message });
+            }
+        }
+        catch (error) {
+            console.log(error);
+            next(error);
+        }
+    }
+    async resetPassword(req, res, next) {
+        try {
+            const token = req.params.token;
+            const password = req.body.password;
+            const response = await this.interactor.resetPassword(token, password);
+            if (response.status) {
+                res.status(200).json({ success: true, message: response.message });
+            }
+            else {
+                res.status(500).json({ success: false, message: response.message });
+            }
+        }
+        catch (error) {
+            console.log(error);
+            throw error;
         }
     }
 }

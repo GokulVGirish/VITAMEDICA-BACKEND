@@ -3,6 +3,7 @@ import MongoDepartment from "../rules/departments";
 import { MulterFile } from "../rules/multerFile";
 import { promises } from "dns";
 import { ObjectId, Types } from "mongoose";
+import { DoctorSlots } from "../rules/slotsType";
 export interface IDoctorInteractor {
   otpSignup(doctor: OtpDoctor): Promise<{
     status: true | false;
@@ -54,6 +55,6 @@ export interface IDoctorInteractor {
     email:string
   ): Promise<{ status: boolean; message: string; errorCode?: string,data?:MongoDoctor }>;
    updateProfileImage(id:Types.ObjectId,image:MulterFile):Promise<{status:boolean;imageData?:string}>
+   addSlots(id:Types.ObjectId,data:DoctorSlots):Promise<{status:boolean,message:string,errorCode?:string}>
 
- 
 }

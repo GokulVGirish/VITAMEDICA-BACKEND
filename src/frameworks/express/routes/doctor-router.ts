@@ -28,5 +28,6 @@ doctorRouter.post("/docUpload",authMiddleware,verifyRole("doctor"),getDoctor,upl
 doctorRouter.post("/resendOtp",authMiddleware,controller.resendOtp.bind(controller));
 doctorRouter.post("/profilePicUpdate",authMiddleware,verifyRole("doctor"),getDoctor,upload.single("image"),controller.UpdateProfileImage.bind(controller));
 doctorRouter.put("/profileUpdate",authMiddleware,getDoctor,verifyRole("doctor"),controller.DoctorProfileUpdate.bind(controller))
+doctorRouter.post("/add-slot",authMiddleware,getDoctor,verifyRole("doctor"),controller.addSlots.bind(controller));
 
 export default doctorRouter;

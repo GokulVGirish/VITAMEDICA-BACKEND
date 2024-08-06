@@ -23,6 +23,7 @@ export interface Doctor {
   department: ObjectId;
   image:string|null
   password: string;
+  description:string|null
   documentsUploaded: boolean;
   documents: {
     certificateImage: string | null;
@@ -33,6 +34,9 @@ export interface Doctor {
   } | null;
   isBlocked: boolean;
   status:"Pending"|"Submitted"|"Verified"
+  degree:null|string
+  fees:null|string;
+  complete:boolean
 }
 
 export interface MongoDoctor extends Doctor, Document {

@@ -10,6 +10,7 @@ import { S3Client ,PutObjectCommand,GetObjectCommand} from "@aws-sdk/client-s3";
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 import s3Config from "../entities/services/awsS3";
 import { ObjectId, Types } from "mongoose";
+import { DoctorSlots } from "../entities/rules/slotsType";
 
 const s3 = new S3Client({
   region: s3Config.BUCKET_REGION,
@@ -296,7 +297,7 @@ class DoctorInteractor implements IDoctorInteractor {
    }
    async profileUpdate(data: any, userId: Types.ObjectId, email: string): Promise<{ status: boolean; message: string; errorCode?: string; data?: MongoDoctor; }> {
        try{
-        const response=await this.Repository.profileUpdate(userId,{name:data.name,phone:data.phone})
+        const response=await this.Repository.profileUpdate(userId,{name:data.name,phone:data.phone,description:data.description,fees:data.fees,degree:data.degree})
         if(!response)return {status:false,message:"internal server error"}
         const result=await this.Repository.getDoctor(email)
       if(result){
@@ -311,6 +312,21 @@ class DoctorInteractor implements IDoctorInteractor {
         throw error
 
        }
+   }
+   async addSlots(id: Types.ObjectId, data: DoctorSlots): Promise<{ status: boolean; message: string; errorCode?: string; }> {
+       
+    try{
+      const exist=await this.Repository.getSlot(data.date)
+      if(exist)return {status:false,message:"Slot For this Day Already exist"}
+      const response=await this.Repository.createSlot(id,data)
+      if(!response)return {status:false,message:"Something Went Wrong"}
+       return {status:true,message:"Slot Added Sucessfully"}
+      
+
+    }
+    catch(error){
+      throw error
+    }
    }
 
 }

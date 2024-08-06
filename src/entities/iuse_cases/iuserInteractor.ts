@@ -1,6 +1,8 @@
 import { MongoUser, User } from "../rules/user"
 import { MulterFile } from "../rules/multerFile";
 import { Types } from "mongoose";
+import { MongoDoctor } from "../rules/doctor";
+import { DoctorSlots } from "../rules/slotsType";
 
 export interface IUserInteractor {
   //   signup(user:User):Promise<{user:User|null}>;
@@ -50,5 +52,9 @@ export interface IUserInteractor {
   updateProfileImage(id:Types.ObjectId,image:MulterFile):Promise<{status:boolean;imageData?:string}>
   passwordResetLink(email:string):Promise<{status:boolean;message:string,link?:string}>
   resetPassword(token:string,password:string):Promise<{status:boolean;message:string}>
+     getDoctorsList():Promise<{status:boolean,message:string,errorCode?:string,doctors?:MongoDoctor[]}>
+     getDoctorPage(id:string):Promise<{status:boolean,message:string,doctor?:MongoDoctor}>
+     getAvailableDate(id:string):Promise<{status:boolean,message:string;dates?:string[]}>
+     getTimeSlots(id:string,date:string):Promise<{status:boolean,message:string,slots?:DoctorSlots}>
  
 }

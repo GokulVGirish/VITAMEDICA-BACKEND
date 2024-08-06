@@ -3,6 +3,11 @@ import otpModel from "../../frameworks/mongoose/models/OtpSchema";
 import { MongoUser, User } from "../../entities/rules/user";
 import userModel from "../../frameworks/mongoose/models/UserSchema";
 import { Types } from "mongoose";
+import { MongoDoctor } from "../../entities/rules/doctor";
+import doctorModel from "../../frameworks/mongoose/models/DoctorSchema";
+import { DoctorSlots } from "../../entities/rules/slotsType";
+import doctorSlotsModel from "../../frameworks/mongoose/models/DoctorSlotsSchema";
+const moment = require("moment");
 
 
 class UserRepository implements IUserRepository {
@@ -154,6 +159,57 @@ class UserRepository implements IUserRepository {
       try{
         const result=await userModel.updateOne({email:email},{$set:{password:password}})
         return result.modifiedCount>0
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async getDoctors(): Promise<MongoDoctor[] | null> {
+      try{
+        const result=await doctorModel.find({status:"Verified",complete:true}).lean().populate({path:"department",select:"name"}).select("_id name department image degree fees")
+        return result
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async getDoctor(id: string): Promise<MongoDoctor | null> {
+      try{
+        const result = await doctorModel
+          .findOne({ _id: id })
+          .lean()
+          .populate({ path: "department", select: "name" })
+          .select("_id name department image degree fees description");
+          return result
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async getSlots(id: string): Promise<DoctorSlots[] | null> {
+      try{
+        const result = await doctorSlotsModel.find({ doctorId:id,active:true });
+        return result
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async getTimeSlots(id: string, date: string): Promise<DoctorSlots | null> {
+      try{
+        console.log("id",id,"date",date)
+          const startOfDay = moment(date).startOf("day").toDate();
+          const endOfDay = moment(date).endOf("day").toDate();
+        const result = await doctorSlotsModel.findOne({
+          doctorId: id,
+          date: { $gte: startOfDay, $lte: endOfDay },
+        });
+        console.log("second result",result)
+        return result
 
       }
       catch(error){

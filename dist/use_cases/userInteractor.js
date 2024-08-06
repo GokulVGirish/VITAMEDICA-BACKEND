@@ -327,5 +327,80 @@ class UserInteractor {
             throw error;
         }
     }
+    async getDoctorsList() {
+        try {
+            const result = await this.Repository.getDoctors();
+            if (result) {
+                for (const doctor of result) {
+                    if (doctor.image) {
+                        const command2 = new client_s3_1.GetObjectCommand({
+                            Bucket: awsS3_1.default.BUCKET_NAME,
+                            Key: doctor.image,
+                        });
+                        const url = await getSignedUrl(s3, command2, {
+                            expiresIn: 3600,
+                        });
+                        doctor.image = url;
+                    }
+                }
+                return {
+                    status: true,
+                    message: "Successfully fetched",
+                    doctors: result,
+                };
+            }
+            return { status: false, message: "Something Went Wrong" };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getDoctorPage(id) {
+        try {
+            const response = await this.Repository.getDoctor(id);
+            if (!response)
+                return { status: false, message: "something went wrong" };
+            if (response.image) {
+                const command = new client_s3_1.GetObjectCommand({
+                    Bucket: awsS3_1.default.BUCKET_NAME,
+                    Key: response.image,
+                });
+                const url = await getSignedUrl(s3, command, {
+                    expiresIn: 3600,
+                });
+                response.image = url;
+            }
+            return { status: true, message: "Sucessful", doctor: response };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getAvailableDate(id) {
+        try {
+            const result = await this.Repository.getSlots(id);
+            if (!result)
+                return { status: false, message: "no available slots" };
+            const dates = [
+                ...new Set(result.map((slot) => slot.date.toISOString().split("T")[0])),
+            ];
+            return { status: true, message: "Success", dates: dates };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getTimeSlots(id, date) {
+        try {
+            const result = await this.Repository.getTimeSlots(id, date);
+            console.log("result", result);
+            if (!result)
+                return { status: false, message: "Something went wrong" };
+            return { status: true, message: "Success", slots: result };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
 }
 exports.default = UserInteractor;

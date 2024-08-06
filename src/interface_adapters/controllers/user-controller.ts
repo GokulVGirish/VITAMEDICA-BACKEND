@@ -279,5 +279,74 @@ class UserController {
       throw error
     }
   }
+  async getDoctorList(req:Request,res:Response,next:NextFunction){
+    try{
+         const response=await this.interactor.getDoctorsList()
+         if(response.status)return res.status(200).json({ success: true,message:response.message,doctors:response.doctors });
+         else res.status(500).json({success:false,message:response.message})
+    }
+    catch(error){
+      console.log(error)
+      next(error)
+    }
+
+  }
+  async getDoctorPage(req:Request,res:Response,next:NextFunction){
+    try{
+      const {id}=req.params
+      const response=await this.interactor.getDoctorPage(id)
+      if(response.status){
+        res.status(200).json({success:true,message:response.message,doctor:response.doctor})
+      }else{
+        res.status(500).json({success:false,message:response.message})
+      }
+
+    }
+    catch(error){
+      console.log(error)
+    }
+
+  }
+  async getAvailableDate(req:Request,res:Response,next:NextFunction){
+    try{
+      const {id}=req.params
+      const response=await this.interactor.getAvailableDate(id)
+      if(response.status){
+        res.status(200).json({success:true,message:response.message,dates:response.dates})
+      }else{
+         res
+           .status(404)
+           .json({
+             success: false,
+             message: response.message,
+           });
+
+      }
+
+
+
+    }
+    catch(error){
+      console.log(error)
+    }
+  }
+  async getTimeSlots(req:Request,res:Response,next:NextFunction){
+    try{
+      const date=req.query.date
+      const id=req.params.id
+      const response=await this.interactor.getTimeSlots(id,date as string)
+      if(response.status){
+        res.status(200).json({success:true,message:response.message,slots:response.slots})
+      }else{
+        res.status(500).json({success:false,message:response.message})
+      }
+
+
+    }
+    catch(error){
+      console.log(error)
+      next(error)
+    }
+  }
 }
 export default UserController;

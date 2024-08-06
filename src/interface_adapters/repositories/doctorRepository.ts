@@ -7,6 +7,8 @@ import doctorModel from "../../frameworks/mongoose/models/DoctorSchema";
 import { Types } from "mongoose";
 import { RejectedDoctor } from "../../entities/rules/rejectedDoctor";
 import rejectedDoctorModel from "../../frameworks/mongoose/models/RejectedDoctor";
+import { DoctorSlots } from "../../entities/rules/slotsType";
+import doctorSlotsModel from "../../frameworks/mongoose/models/DoctorSlotsSchema";
 
 class DoctorRepository implements IDoctorRepository {
   async doctorExists(email: string): Promise<null | MongoDoctor> {
@@ -155,9 +157,9 @@ class DoctorRepository implements IDoctorRepository {
         throw error
       }
   }
-  async profileUpdate(id: Types.ObjectId, data: { name: string; phone: string; }): Promise<boolean> {
+  async profileUpdate(id: Types.ObjectId, data: { name: string; phone: string;description:string ;fees:string;degree:string}): Promise<boolean> {
       try{
-        const result=await doctorModel.updateOne({_id:id},{$set:{name:data.name,phone:data.phone}})
+        const result=await doctorModel.updateOne({_id:id},{$set:{name:data.name,phone:data.phone,description:data.description,fees:data.fees,degree:data.degree,complete:true}})
         if(result.modifiedCount>0)return true
         else return false
 
@@ -170,6 +172,32 @@ class DoctorRepository implements IDoctorRepository {
       try{
         const result=await rejectedDoctorModel.findOne({email:email})
         return result
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async getSlot(date: Date): Promise<DoctorSlots|null> {
+      try{
+        const result=await doctorSlotsModel.findOne({date:date})
+        return result
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async createSlot(id: Types.ObjectId, data: DoctorSlots): Promise<boolean> {
+      try{
+        const slot=await doctorSlotsModel.create({
+          doctorId:id,
+          date:data.date,
+          slots:data.slots.map((slot)=>({start:slot.start,end:slot.end}))
+
+        })
+       if(slot) return true
+       else return false
 
       }
       catch(error){

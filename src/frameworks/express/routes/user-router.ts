@@ -33,6 +33,11 @@ userRouter.post("/profileUpdate",authMiddleware,getUser,controller.profileUpdate
 userRouter.put("/profilePicUpdate",authMiddleware,getUser,upload.single("image"),controller.ProfilePictureUpdate.bind(controller));
 userRouter.post("/request-password-reset",controller.passwordResetLink.bind(controller));
 userRouter.post("/reset-password/:token",controller.resetPassword.bind(controller));
+userRouter.get("/doctor-list",authMiddleware,getUser,controller.getDoctorList.bind(controller));
+userRouter.get("/doctors/:id/profile",authMiddleware,verifyRole("user"),getUser,controller.getDoctorPage.bind(controller))
+userRouter.get("/getAvailableDate/:id",authMiddleware,verifyRole("user"),getUser,controller.getAvailableDate.bind(controller));
+userRouter.get("/doctor/:id/slots",authMiddleware,verifyRole("user"),getUser,controller.getTimeSlots.bind(controller));
+
 
 
 

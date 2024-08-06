@@ -5,6 +5,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const OtpSchema_1 = __importDefault(require("../../frameworks/mongoose/models/OtpSchema"));
 const UserSchema_1 = __importDefault(require("../../frameworks/mongoose/models/UserSchema"));
+const DoctorSchema_1 = __importDefault(require("../../frameworks/mongoose/models/DoctorSchema"));
+const DoctorSlotsSchema_1 = __importDefault(require("../../frameworks/mongoose/models/DoctorSlotsSchema"));
+const moment = require("moment");
 class UserRepository {
     async tempOtpUser(data) {
         try {
@@ -150,6 +153,53 @@ class UserRepository {
         try {
             const result = await UserSchema_1.default.updateOne({ email: email }, { $set: { password: password } });
             return result.modifiedCount > 0;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getDoctors() {
+        try {
+            const result = await DoctorSchema_1.default.find({ status: "Verified", complete: true }).lean().populate({ path: "department", select: "name" }).select("_id name department image degree fees");
+            return result;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getDoctor(id) {
+        try {
+            const result = await DoctorSchema_1.default
+                .findOne({ _id: id })
+                .lean()
+                .populate({ path: "department", select: "name" })
+                .select("_id name department image degree fees description");
+            return result;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getSlots(id) {
+        try {
+            const result = await DoctorSlotsSchema_1.default.find({ doctorId: id, active: true });
+            return result;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getTimeSlots(id, date) {
+        try {
+            console.log("id", id, "date", date);
+            const startOfDay = moment(date).startOf("day").toDate();
+            const endOfDay = moment(date).endOf("day").toDate();
+            const result = await DoctorSlotsSchema_1.default.findOne({
+                doctorId: id,
+                date: { $gte: startOfDay, $lte: endOfDay },
+            });
+            console.log("second result", result);
+            return result;
         }
         catch (error) {
             throw error;

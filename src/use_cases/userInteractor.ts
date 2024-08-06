@@ -14,6 +14,8 @@ import { MulterFile } from "../entities/rules/multerFile";
 import { Types } from "mongoose";
 import { link } from "fs";
 import { ResetPasswordToken } from "../entities/rules/resetPassword";
+import { MongoDoctor } from "../entities/rules/doctor";
+import { DoctorSlots } from "../entities/rules/slotsType";
 
 const s3=new S3Client({
     region:s3Config.BUCKET_REGION,
@@ -403,6 +405,88 @@ class UserInteractor implements IUserInteractor {
         if(!response)return {status:false,message:"Internal server error"}
         return {status:true,message:"Password Changed Sucessfully"}
 
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async getDoctorsList(): Promise<{ status: boolean; message: string; errorCode?: string; doctors?: MongoDoctor[]; }> {
+      try{
+        const result=await this.Repository.getDoctors()
+
+            if (result) {
+              for (const doctor of result) {
+                if (doctor.image) {
+                  const command2 = new GetObjectCommand({
+                    Bucket: s3Config.BUCKET_NAME,
+                    Key: doctor.image,
+                  });
+                  const url = await getSignedUrl(s3, command2, {
+                    expiresIn: 3600,
+                  });
+                  doctor.image = url;
+                }
+              }
+
+              return {
+                status: true,
+                message: "Successfully fetched",
+                doctors: result,
+              };
+            }
+
+        return {status:false,message:"Something Went Wrong"}
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async getDoctorPage(id: string): Promise<{ status: boolean; message: string; doctor?: MongoDoctor; }> {
+      try{
+        const response=await this.Repository.getDoctor(id)
+        if(!response) return {status:false,message:"something went wrong"}
+       if(response.image){
+         const command = new GetObjectCommand({
+           Bucket: s3Config.BUCKET_NAME,
+           Key: response.image as string,
+         });
+         const url = await getSignedUrl(s3, command, {
+           expiresIn: 3600,
+         });
+         response.image = url;
+       }
+        return {status:true,message:"Sucessful",doctor:response}
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async getAvailableDate(id: string): Promise<{ status: boolean; message: string; dates?: string[]; }> {
+      try{
+        const result=await this.Repository.getSlots(id)
+        if(!result) return {status:false,message:"no available slots"}
+        const dates = [
+          ...new Set(
+            result.map((slot) => slot.date.toISOString().split("T")[0])
+          ),
+        ];
+        return {status:true,message:"Success",dates:dates}
+
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async getTimeSlots(id: string, date: string): Promise<{ status: boolean; message: string; slots?: DoctorSlots; }> {
+      try{
+        const result=await this.Repository.getTimeSlots(id,date)
+        console.log("result",result)
+        if(!result) return {status:false,message:"Something went wrong"}
+        return {status:true,message:"Success",slots:result}
 
       }
       catch(error){

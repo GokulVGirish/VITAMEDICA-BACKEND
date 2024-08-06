@@ -64,6 +64,28 @@ const doctorSchema = new Schema<MongoDoctor>({
     type: documentSubSchema,
     default: null,
   },
+  degree:{
+
+    type:String,
+    default:null
+
+  },
+  fees:{
+    type:String,
+    default: null
+
+  },
+  complete:{
+    type:Boolean,
+    default:false
+
+  },
+
+
+  description:{
+    type:String,
+    default:null
+  },
   status: {
     type: String,
     enum: ["Submitted", "Pending", "Verified"],

@@ -234,7 +234,7 @@ class DoctorInteractor {
     }
     async profileUpdate(data, userId, email) {
         try {
-            const response = await this.Repository.profileUpdate(userId, { name: data.name, phone: data.phone });
+            const response = await this.Repository.profileUpdate(userId, { name: data.name, phone: data.phone, description: data.description, fees: data.fees, degree: data.degree });
             if (!response)
                 return { status: false, message: "internal server error" };
             const result = await this.Repository.getDoctor(email);
@@ -244,6 +244,20 @@ class DoctorInteractor {
             else {
                 return { status: false, message: "internal server error" };
             }
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async addSlots(id, data) {
+        try {
+            const exist = await this.Repository.getSlot(data.date);
+            if (exist)
+                return { status: false, message: "Slot For this Day Already exist" };
+            const response = await this.Repository.createSlot(id, data);
+            if (!response)
+                return { status: false, message: "Something Went Wrong" };
+            return { status: true, message: "Slot Added Sucessfully" };
         }
         catch (error) {
             throw error;

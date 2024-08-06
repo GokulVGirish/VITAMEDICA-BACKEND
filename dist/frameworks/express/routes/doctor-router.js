@@ -29,4 +29,5 @@ doctorRouter.post("/docUpload", jwt_verify_1.default, (0, role_Authenticate_1.de
 doctorRouter.post("/resendOtp", jwt_verify_1.default, controller.resendOtp.bind(controller));
 doctorRouter.post("/profilePicUpdate", jwt_verify_1.default, (0, role_Authenticate_1.default)("doctor"), doctor_1.getDoctor, multer_1.default.single("image"), controller.UpdateProfileImage.bind(controller));
 doctorRouter.put("/profileUpdate", jwt_verify_1.default, doctor_1.getDoctor, (0, role_Authenticate_1.default)("doctor"), controller.DoctorProfileUpdate.bind(controller));
+doctorRouter.post("/add-slot", jwt_verify_1.default, doctor_1.getDoctor, (0, role_Authenticate_1.default)("doctor"), controller.addSlots.bind(controller));
 exports.default = doctorRouter;

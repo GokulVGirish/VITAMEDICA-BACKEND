@@ -7,6 +7,7 @@ const TempDoctor_1 = __importDefault(require("../../frameworks/mongoose/models/T
 const departmentSchema_1 = __importDefault(require("../../frameworks/mongoose/models/departmentSchema"));
 const DoctorSchema_1 = __importDefault(require("../../frameworks/mongoose/models/DoctorSchema"));
 const RejectedDoctor_1 = __importDefault(require("../../frameworks/mongoose/models/RejectedDoctor"));
+const DoctorSlotsSchema_1 = __importDefault(require("../../frameworks/mongoose/models/DoctorSlotsSchema"));
 class DoctorRepository {
     async doctorExists(email) {
         try {
@@ -147,7 +148,7 @@ class DoctorRepository {
     }
     async profileUpdate(id, data) {
         try {
-            const result = await DoctorSchema_1.default.updateOne({ _id: id }, { $set: { name: data.name, phone: data.phone } });
+            const result = await DoctorSchema_1.default.updateOne({ _id: id }, { $set: { name: data.name, phone: data.phone, description: data.description, fees: data.fees, degree: data.degree, complete: true } });
             if (result.modifiedCount > 0)
                 return true;
             else
@@ -161,6 +162,31 @@ class DoctorRepository {
         try {
             const result = await RejectedDoctor_1.default.findOne({ email: email });
             return result;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getSlot(date) {
+        try {
+            const result = await DoctorSlotsSchema_1.default.findOne({ date: date });
+            return result;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async createSlot(id, data) {
+        try {
+            const slot = await DoctorSlotsSchema_1.default.create({
+                doctorId: id,
+                date: data.date,
+                slots: data.slots.map((slot) => ({ start: slot.start, end: slot.end }))
+            });
+            if (slot)
+                return true;
+            else
+                return false;
         }
         catch (error) {
             throw error;

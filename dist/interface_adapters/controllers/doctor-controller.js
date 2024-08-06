@@ -223,5 +223,21 @@ class DoctorController {
             throw error;
         }
     }
+    async addSlots(req, res, next) {
+        try {
+            const { _id } = req.doctorData;
+            const response = await this.interactor.addSlots(_id, req.body);
+            if (response.status) {
+                res.status(200).json({ success: true, message: response.message });
+            }
+            else {
+                res.status(500).json({ success: false, message: response.message });
+            }
+        }
+        catch (error) {
+            console.log(error);
+            throw error;
+        }
+    }
 }
 exports.default = DoctorController;

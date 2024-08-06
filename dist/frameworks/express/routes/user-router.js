@@ -31,4 +31,8 @@ userRouter.post("/profileUpdate", jwt_verify_1.default, user_1.getUser, controll
 userRouter.put("/profilePicUpdate", jwt_verify_1.default, user_1.getUser, multer_1.default.single("image"), controller.ProfilePictureUpdate.bind(controller));
 userRouter.post("/request-password-reset", controller.passwordResetLink.bind(controller));
 userRouter.post("/reset-password/:token", controller.resetPassword.bind(controller));
+userRouter.get("/doctor-list", jwt_verify_1.default, user_1.getUser, controller.getDoctorList.bind(controller));
+userRouter.get("/doctors/:id/profile", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.getDoctorPage.bind(controller));
+userRouter.get("/getAvailableDate/:id", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.getAvailableDate.bind(controller));
+userRouter.get("/doctor/:id/slots", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.getTimeSlots.bind(controller));
 exports.default = userRouter;

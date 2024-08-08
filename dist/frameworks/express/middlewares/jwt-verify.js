@@ -22,15 +22,12 @@ const verifyRefreshToken = (token) => {
 };
 const authMiddleware = (req, res, next) => {
     const authHeader = req.headers.authorization;
-    console.log("authheader", authHeader);
     if (!authHeader)
         return res.status(401).json({ message: "No token provided" });
     const [type, token] = authHeader.split(" ");
     if (type !== "Bearer")
         return res.status(401).json({ message: 'Invalid token type' });
     const decodedToken = verifyAccessToken(token);
-    console.log("gf", process.env.ACCESS_TOCKEN_SECRET, "rwfr", process.env.REFRESH_TOCKEN_SECRET);
-    console.log("ref", req.cookies.refreshToken);
     if (decodedToken) {
         req.user = decodedToken;
         return next();

@@ -178,9 +178,9 @@ class DoctorRepository implements IDoctorRepository {
         throw error
       }
   }
-  async getSlot(date: Date): Promise<DoctorSlots|null> {
+  async getSlot(date: Date,id:Types.ObjectId): Promise<DoctorSlots|null> {
       try{
-        const result=await doctorSlotsModel.findOne({date:date})
+        const result=await doctorSlotsModel.findOne({date:date,doctorId:id})
         return result
 
       }

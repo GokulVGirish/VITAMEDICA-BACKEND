@@ -22,5 +22,8 @@ interface IUserRepository {
   getDoctor(id:string):Promise<MongoDoctor|null>
   getSlots(id:string):Promise<DoctorSlots[]|null>
     getTimeSlots(id:string,date:string):Promise<DoctorSlots|null>
+    lockSlot(userId:Types.ObjectId,docId:Types.ObjectId,date:string,slotId:Types.ObjectId,lockExpiration:Date):Promise<boolean>
+    bookSlot(doctorId:Types.ObjectId,userId:Types.ObjectId,slotId:Types.ObjectId,date:string):Promise<boolean>
+    createAppointment(userId:Types.ObjectId,docId:Types.ObjectId,date:string,start:string,end:string,fees:string,paymentId:string):Promise<boolean>
 }
 export default IUserRepository

@@ -4,7 +4,7 @@ import userDataRequest from "../../frameworks/express/middlewares/user";
 import { MulterFile } from "../../entities/rules/multerFile";
 import { User } from "../../entities/rules/user";
 import { CustomRequestType } from "../../frameworks/express/middlewares/role-Authenticate";
-import { Types } from "mongoose";
+import { ObjectId, Types } from "mongoose";
 
 class UserController {
   constructor(private readonly interactor: IUserInteractor) {}
@@ -346,6 +346,55 @@ class UserController {
     catch(error){
       console.log(error)
       next(error)
+    }
+  }
+  async razorPayOrder(req:Request,res:Response,next:NextFunction){
+    try{
+      console.log("inside")
+      const body=req.body
+      const response=await this.interactor.razorPayOrderGenerate(body.amount,body.currency,body.receipt)
+      if(response.status){
+        res.status(200).json({success:true,message:response.message,order:response.order})
+      }else{
+        res.status(500).json({success:false,message:response.message})
+      }
+
+
+    }
+    catch(error){
+      next(error)
+    }
+
+  }
+  async razorPayValidate(req:Request,res:Response,next:NextFunction){
+    try{
+      const { razorpay_order_id,razorpay_payment_id, razorpay_signature,docId,slotDetails,fees } = req.body;
+      const userId=(req as userDataRequest).userData._id
+      const response=await this.interactor.razorPayValidateBook(razorpay_order_id,razorpay_payment_id,razorpay_signature,docId,slotDetails,userId as Types.ObjectId,fees)
+      console.log("response",response)
+
+    }
+    catch(error){
+      throw error
+    }
+  }
+  async lockSlot(req:Request,res:Response,next:NextFunction){
+    try{
+      const {doctorId,date,slotId}=req.body
+      console.log("docId",doctorId,"date",date,"slotId",slotId)
+      const usertId=(req as userDataRequest).userData._id
+      const response=await this.interactor.lockSlot(usertId as Types.ObjectId,doctorId,date,slotId)
+      if(response.status){
+        res.status(200).json({success:true,message:response.message})
+      }else{
+        res.status(400).json({success:false,message:response.message})
+      }
+
+
+    }
+    catch(error){
+      next(error)
+      throw error
     }
   }
 }

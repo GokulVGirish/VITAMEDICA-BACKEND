@@ -334,5 +334,50 @@ class UserController {
             next(error);
         }
     }
+    async razorPayOrder(req, res, next) {
+        try {
+            console.log("inside");
+            const body = req.body;
+            const response = await this.interactor.razorPayOrderGenerate(body.amount, body.currency, body.receipt);
+            if (response.status) {
+                res.status(200).json({ success: true, message: response.message, order: response.order });
+            }
+            else {
+                res.status(500).json({ success: false, message: response.message });
+            }
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    async razorPayValidate(req, res, next) {
+        try {
+            const { razorpay_order_id, razorpay_payment_id, razorpay_signature, docId, slotDetails, fees } = req.body;
+            const userId = req.userData._id;
+            const response = await this.interactor.razorPayValidateBook(razorpay_order_id, razorpay_payment_id, razorpay_signature, docId, slotDetails, userId, fees);
+            console.log("response", response);
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async lockSlot(req, res, next) {
+        try {
+            const { doctorId, date, slotId } = req.body;
+            console.log("docId", doctorId, "date", date, "slotId", slotId);
+            const usertId = req.userData._id;
+            const response = await this.interactor.lockSlot(usertId, doctorId, date, slotId);
+            if (response.status) {
+                res.status(200).json({ success: true, message: response.message });
+            }
+            else {
+                res.status(400).json({ success: false, message: response.message });
+            }
+        }
+        catch (error) {
+            next(error);
+            throw error;
+        }
+    }
 }
 exports.default = UserController;

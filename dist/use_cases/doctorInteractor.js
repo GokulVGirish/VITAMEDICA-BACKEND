@@ -251,7 +251,7 @@ class DoctorInteractor {
     }
     async addSlots(id, data) {
         try {
-            const exist = await this.Repository.getSlot(data.date);
+            const exist = await this.Repository.getSlot(data.date, id);
             if (exist)
                 return { status: false, message: "Slot For this Day Already exist" };
             const response = await this.Repository.createSlot(id, data);

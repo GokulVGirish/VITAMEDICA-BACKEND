@@ -5,17 +5,19 @@ import { IMailer } from "../entities/services/mailer";
 import { IJwtService } from "../entities/services/jwtServices";
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken";
+import crypto from "crypto"
 
 import { S3Client ,PutObjectCommand,GetObjectCommand} from "@aws-sdk/client-s3";
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 import s3Config from "../entities/services/awsS3";
 
 import { MulterFile } from "../entities/rules/multerFile";
-import { Types } from "mongoose";
+import { ObjectId, Types } from "mongoose";
 import { link } from "fs";
 import { ResetPasswordToken } from "../entities/rules/resetPassword";
 import { MongoDoctor } from "../entities/rules/doctor";
-import { DoctorSlots } from "../entities/rules/slotsType";
+import { DoctorSlots, Slot } from "../entities/rules/slotsType";
+import instance from "../frameworks/services/razorpayInstance";
 
 const s3=new S3Client({
     region:s3Config.BUCKET_REGION,
@@ -493,6 +495,57 @@ class UserInteractor implements IUserInteractor {
         throw error
       }
   }
+  async razorPayOrderGenerate(amount:string,currency:string,receipt:string): Promise<{ status: boolean; order?: any; message: string; }> {
+      try{
+        const order=await instance.orders.create({amount,currency,receipt})
+        if(!order)return {status:false,message:"Something Went Wrong"}
+        return {status:true,message:"Success",order:order}
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+async razorPayValidateBook(razorpay_order_id: string, razorpay_payment_id: string, razorpay_signature: string,docId:Types.ObjectId,slotDetails:any,userId:Types.ObjectId,fees:string): Promise<{status:boolean;message?:string}> {
+  try {
+
+    console.log("docId",docId,"slotDetails",slotDetails)
+    const razorPaySecret = process.env.RazorPaySecret;
+
+    const sha = crypto.createHmac("sha256", razorPaySecret as string);
+    sha.update(`${razorpay_order_id}|${razorpay_payment_id}`);
+    const digest = sha.digest("hex");
+
+    if (digest !== razorpay_signature) {
+      return {status:false,message:"Payment failure"}
+    }
+    const slotId=slotDetails.slotTime._id
+     const isoDate = new Date(slotDetails.date).toISOString(); 
+     const start = new Date(slotDetails.slotTime.start).toISOString(); 
+     const end = new Date(slotDetails.slotTime.end).toISOString(); 
+    const slotBooking=await this.Repository.bookSlot(docId ,userId,slotId,isoDate)
+    if(!slotBooking)return { status: false, message: "Slot is not locked by you or lock has expired." };
+    const result=await this.Repository.createAppointment(userId,docId,isoDate,start,end,fees,razorpay_payment_id)
+    if(!result) return {status:false,message:"Something Went Wrong"}
+    return {status:true,message:"Success"}
+  } catch (error) {
+    throw error;
+  }
+}
+async lockSlot(userId:Types.ObjectId,docId:Types.ObjectId,date:Date,slotId:Types.ObjectId): Promise<{ status: boolean; message?: string; errorCode?: string; }> {
+    try{
+      const lockExpiration = new Date(Date.now() + 5 * 60 * 1000);
+      const isoDate = new Date(date).toISOString(); 
+      const response=await this.Repository.lockSlot(userId,docId,isoDate,slotId,lockExpiration)
+      if(!response)return {status:false,message: "Slot is already locked or not available." }
+      return { status: true, message: "Slot locked successfully." };
+
+
+    }
+    catch(error){
+      throw error
+    }
+}
  
 }
 export default UserInteractor

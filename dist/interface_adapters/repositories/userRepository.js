@@ -7,6 +7,7 @@ const OtpSchema_1 = __importDefault(require("../../frameworks/mongoose/models/Ot
 const UserSchema_1 = __importDefault(require("../../frameworks/mongoose/models/UserSchema"));
 const DoctorSchema_1 = __importDefault(require("../../frameworks/mongoose/models/DoctorSchema"));
 const DoctorSlotsSchema_1 = __importDefault(require("../../frameworks/mongoose/models/DoctorSlotsSchema"));
+const AppointmentSchema_1 = __importDefault(require("../../frameworks/mongoose/models/AppointmentSchema"));
 const moment = require("moment");
 class UserRepository {
     async tempOtpUser(data) {
@@ -107,7 +108,7 @@ class UserRepository {
                     city: data.address?.city,
                     state: data.address?.state,
                     postalCode: data.address?.postalCode,
-                }
+                },
             });
             console.log("response", response);
             if (response.modifiedCount > 0) {
@@ -160,7 +161,11 @@ class UserRepository {
     }
     async getDoctors() {
         try {
-            const result = await DoctorSchema_1.default.find({ status: "Verified", complete: true }).lean().populate({ path: "department", select: "name" }).select("_id name department image degree fees");
+            const result = await DoctorSchema_1.default
+                .find({ status: "Verified", complete: true })
+                .lean()
+                .populate({ path: "department", select: "name" })
+                .select("_id name department image degree fees");
             return result;
         }
         catch (error) {
@@ -182,7 +187,10 @@ class UserRepository {
     }
     async getSlots(id) {
         try {
-            const result = await DoctorSlotsSchema_1.default.find({ doctorId: id, active: true });
+            const result = await DoctorSlotsSchema_1.default.find({
+                doctorId: id,
+                active: true,
+            });
             return result;
         }
         catch (error) {
@@ -200,6 +208,104 @@ class UserRepository {
             });
             console.log("second result", result);
             return result;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async lockSlot(userId, docId, date, slotId, lockExpiration) {
+        console.log("userId", userId, "slotId", slotId, "doctorId", docId, "date", date);
+        try {
+            const startOfDay = moment(date).startOf("day").toDate();
+            const endOfDay = moment(date).endOf("day").toDate();
+            const initialCheck = await DoctorSlotsSchema_1.default.findOne({
+                doctorId: docId,
+                date: { $gte: startOfDay, $lte: endOfDay },
+                "slots._id": slotId, // Specific to slotId
+                "slots.locked": true,
+            });
+            if (initialCheck) {
+                console.log("Slot already locked:", initialCheck);
+                return false;
+            }
+            const result = await DoctorSlotsSchema_1.default.findOneAndUpdate({
+                doctorId: docId,
+                date: { $gte: startOfDay, $lte: endOfDay },
+                "slots._id": slotId, // Specific to slotId
+                "slots.availability": true,
+                "slots.locked": false,
+            }, {
+                $set: {
+                    "slots.$[slot].locked": true,
+                    "slots.$[slot].lockedBy": userId,
+                    "slots.$[slot].lockExpiration": lockExpiration,
+                },
+            }, {
+                arrayFilters: [{ "slot._id": slotId }],
+                new: true,
+                runValidators: true,
+            });
+            if (!result) {
+                console.log("Slot locking failed: already locked or not available");
+                return false;
+            }
+            return true;
+        }
+        catch (error) {
+            console.error("Error locking slot:", error);
+            throw error;
+        }
+    }
+    async bookSlot(doctorId, userId, slotId, date) {
+        console.log("next", "...", "docId", doctorId, "userId", userId, "slotId", slotId, "date", date);
+        try {
+            const now = new Date();
+            const startOfDay = moment(date).startOf("day").toDate();
+            const endOfDay = moment(date).endOf("day").toDate();
+            const result = await DoctorSlotsSchema_1.default.findOneAndUpdate({
+                doctorId: doctorId,
+                date: { $gte: startOfDay, $lte: endOfDay },
+                "slots._id": slotId, // Specific to slotId
+                "slots.locked": true,
+                "slots.availability": true,
+                "slots.lockedBy": userId,
+                "slots.lockExpiration": { $gt: now },
+            }, {
+                $set: {
+                    "slots.$[slot].availability": false,
+                    "slots.$[slot].bookedBy": userId,
+                    "slots.$[slot].locked": false,
+                    "slots.$[slot].lockedBy": null,
+                    "slots.$[slot].lockExpiration": null,
+                },
+            }, {
+                arrayFilters: [{ "slot._id": slotId }],
+                new: true,
+                runValidators: true,
+            });
+            if (result)
+                return true;
+            return false;
+        }
+        catch (error) {
+            console.error("Error booking slot:", error);
+            throw error;
+        }
+    }
+    async createAppointment(userId, docId, date, start, end, fees, paymentId) {
+        try {
+            const result = await AppointmentSchema_1.default.create({
+                docId: docId,
+                userId: userId,
+                date: date,
+                start,
+                end,
+                fees,
+                paymentId,
+            });
+            if (result)
+                return true;
+            return false;
         }
         catch (error) {
             throw error;

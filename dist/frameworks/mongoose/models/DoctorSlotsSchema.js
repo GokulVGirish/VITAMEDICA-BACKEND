@@ -28,6 +28,19 @@ const DoctorSlotsSchema = new mongoose_1.default.Schema({
                 type: Boolean,
                 default: true,
             },
+            locked: {
+                type: Boolean,
+                default: false,
+            },
+            lockedBy: {
+                type: mongoose_1.default.Schema.Types.ObjectId,
+                ref: "User",
+                default: null,
+            },
+            lockExpiration: {
+                type: Date,
+                default: null,
+            },
             bookedBy: {
                 type: mongoose_1.default.Schema.Types.ObjectId,
                 ref: "User",

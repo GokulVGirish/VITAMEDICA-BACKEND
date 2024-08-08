@@ -37,6 +37,9 @@ userRouter.get("/doctor-list",authMiddleware,getUser,controller.getDoctorList.bi
 userRouter.get("/doctors/:id/profile",authMiddleware,verifyRole("user"),getUser,controller.getDoctorPage.bind(controller))
 userRouter.get("/getAvailableDate/:id",authMiddleware,verifyRole("user"),getUser,controller.getAvailableDate.bind(controller));
 userRouter.get("/doctor/:id/slots",authMiddleware,verifyRole("user"),getUser,controller.getTimeSlots.bind(controller));
+userRouter.post("/order",authMiddleware,verifyRole("user"),getUser,controller.razorPayOrder.bind(controller))
+userRouter.post("/order/validate",authMiddleware,verifyRole("user"),getUser,controller.razorPayValidate.bind(controller))
+userRouter.post("/lock-slot",authMiddleware,verifyRole("user"),getUser,controller.lockSlot.bind(controller))
 
 
 

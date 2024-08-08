@@ -167,9 +167,9 @@ class DoctorRepository {
             throw error;
         }
     }
-    async getSlot(date) {
+    async getSlot(date, id) {
         try {
-            const result = await DoctorSlotsSchema_1.default.findOne({ date: date });
+            const result = await DoctorSlotsSchema_1.default.findOne({ date: date, doctorId: id });
             return result;
         }
         catch (error) {

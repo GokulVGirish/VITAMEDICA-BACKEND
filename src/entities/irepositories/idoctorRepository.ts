@@ -23,5 +23,5 @@ export interface IDoctorRepository {
      profileUpdate(id:Types.ObjectId,data:{name:string,phone:string,description:string,fees:string,degree:string}):Promise<boolean>
      getRejectedDoctor(email:string):Promise<RejectedDoctor|null>
      createSlot(id:Types.ObjectId,data:DoctorSlots):Promise<boolean>
-     getSlot(date:Date):Promise<DoctorSlots|null>
+     getSlot(date:Date,id:Types.ObjectId):Promise<DoctorSlots|null>
 }

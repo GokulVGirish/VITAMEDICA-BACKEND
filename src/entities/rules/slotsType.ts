@@ -1,11 +1,14 @@
 import { Document, Schema, Types } from "mongoose";
 
 
-interface Slot {
+ interface Slot extends Document {
   start: Date;
   end: Date;
   availability: boolean;
   bookedBy?: Types.ObjectId | null;
+  locked:boolean;
+  lockedBy:Types.ObjectId|null;
+  lockExpiration:Date|null
 }
 
 

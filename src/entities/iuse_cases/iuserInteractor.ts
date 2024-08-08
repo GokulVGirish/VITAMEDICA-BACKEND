@@ -3,7 +3,7 @@ import { MulterFile } from "../rules/multerFile";
 import { Types } from "mongoose";
 import { MongoDoctor } from "../rules/doctor";
 import { DoctorSlots } from "../rules/slotsType";
-
+import { Slot } from "../rules/slotsType";
 export interface IUserInteractor {
   //   signup(user:User):Promise<{user:User|null}>;
   otpSignup(
@@ -56,5 +56,9 @@ export interface IUserInteractor {
      getDoctorPage(id:string):Promise<{status:boolean,message:string,doctor?:MongoDoctor}>
      getAvailableDate(id:string):Promise<{status:boolean,message:string;dates?:string[]}>
      getTimeSlots(id:string,date:string):Promise<{status:boolean,message:string,slots?:DoctorSlots}>
+     razorPayOrderGenerate(amount:string,currency:string,receipt:string):Promise<{status:boolean;order?:any,message:string}>
+     razorPayValidateBook(razorpay_payment_id:string,razorpay_order_id:string,razorpay_signature:string,docId:Types.ObjectId,slotDetails:any,userId:Types.ObjectId,fees:string):Promise<{status:boolean;message?:string}>
+     lockSlot(userId:Types.ObjectId,docId:Types.ObjectId,date:Date,slotId:Types.ObjectId):Promise<{status:boolean,message?:string,errorCode?:string}>
+     
  
 }

@@ -84,21 +84,26 @@ const doctorSchema = new mongoose_1.Schema({
         type: documentSubSchema,
         default: null,
     },
+    wallet: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: "DoctorWallet",
+        default: null,
+    },
     degree: {
         type: String,
-        default: null
+        default: null,
     },
     fees: {
         type: String,
-        default: null
+        default: null,
     },
     complete: {
         type: Boolean,
-        default: false
+        default: false,
     },
     description: {
         type: String,
-        default: null
+        default: null,
     },
     status: {
         type: String,

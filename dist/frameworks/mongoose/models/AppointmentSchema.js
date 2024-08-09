@@ -6,12 +6,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
 const AppointmentSchema = new mongoose_1.default.Schema({
     userId: {
-        type: mongoose_1.default.Types.ObjectId,
+        type: mongoose_1.default.Schema.Types.ObjectId,
         ref: "User",
         required: true,
     },
     docId: {
-        type: mongoose_1.default.Types.ObjectId,
+        type: mongoose_1.default.Schema.Types.ObjectId,
         ref: "Doctor",
         required: true,
     },
@@ -36,18 +36,19 @@ const AppointmentSchema = new mongoose_1.default.Schema({
         type: String,
         required: true,
     },
+    amount: {
+        type: String,
+        required: true
+    },
     paymentStatus: {
         type: String,
-        enum: ["pending", "paid", "failed", "refunded"],
-        default: "pending",
+        enum: ["pending", "captured", "failed", "refunded", "anonymous"],
+        default: "captured",
+        //anonymous captured failed refunded pending
     },
     paymentId: {
         type: String,
-    },
-    refundId: {
-        type: String,
-        default: null
-    },
+    }
 });
 const appointmentModel = mongoose_1.default.model("Appointment", AppointmentSchema);
 exports.default = appointmentModel;

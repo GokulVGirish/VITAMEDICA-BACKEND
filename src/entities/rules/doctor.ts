@@ -36,7 +36,8 @@ export interface Doctor {
   status:"Pending"|"Submitted"|"Verified"
   degree:null|string
   fees:null|string;
-  complete:boolean
+  complete:boolean;
+  wallet:null|Types.ObjectId
 }
 
 export interface MongoDoctor extends Doctor, Document {

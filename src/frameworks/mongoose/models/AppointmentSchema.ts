@@ -2,12 +2,12 @@ import mongoose from "mongoose";
 
 const AppointmentSchema = new mongoose.Schema({
   userId: {
-    type: mongoose.Types.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true,
   },
   docId: {
-    type: mongoose.Types.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: "Doctor",
     required: true,
   },
@@ -32,18 +32,21 @@ const AppointmentSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  amount:{
+    type:String,
+    required:true
+
+  },
+
   paymentStatus: {
     type: String,
-    enum: ["pending", "paid", "failed", "refunded"],
-    default: "pending",
+    enum: ["pending","captured","failed","refunded","anonymous"],
+    default: "captured",
+    //anonymous captured failed refunded pending
   },
   paymentId: {
     type: String, 
-  },
-  refundId: {
-    type: String, 
-    default:null
-  },
+  }
 });
 
 const appointmentModel = mongoose.model("Appointment", AppointmentSchema);

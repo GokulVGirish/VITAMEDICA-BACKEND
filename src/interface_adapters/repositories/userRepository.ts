@@ -9,6 +9,8 @@ import { DoctorSlots } from "../../entities/rules/slotsType";
 import doctorSlotsModel from "../../frameworks/mongoose/models/DoctorSlotsSchema";
 import mongoose from "mongoose";
 import appointmentModel from "../../frameworks/mongoose/models/AppointmentSchema";
+import IAppointment from "../../entities/rules/appointments";
+import doctorWalletModal from "../../frameworks/mongoose/models/DoctorWalletSchema";
 
 const moment = require("moment");
 
@@ -172,14 +174,15 @@ class UserRepository implements IUserRepository {
       throw error;
     }
   }
-  async getDoctors(): Promise<MongoDoctor[] | null> {
+  async getDoctors(skip: number, limit: number): Promise<{doctors?:MongoDoctor[],totalPages?:number}> {
     try {
       const result = await doctorModel
-        .find({ status: "Verified", complete: true })
+        .find({ status: "Verified", complete: true }).skip(skip).limit(limit)
         .lean()
         .populate({ path: "department", select: "name" })
         .select("_id name department image degree fees");
-      return result;
+        const totalDoctors = await doctorModel.countDocuments();
+      return { doctors: result, totalPages: Math.ceil(totalDoctors / limit) };
     } catch (error) {
       throw error;
     }
@@ -244,24 +247,25 @@ class UserRepository implements IUserRepository {
       const endOfDay = moment(date).endOf("day").toDate();
 
       const initialCheck = await doctorSlotsModel.findOne({
-        doctorId: docId,
-        date: { $gte: startOfDay, $lte: endOfDay },
-        "slots._id": slotId, // Specific to slotId
-        "slots.locked": true,
+        $and: [
+          { doctorId: docId },
+          { date: { $gte: startOfDay, $lte: endOfDay } },
+          {
+            slots: {
+              $elemMatch: { _id: slotId, locked: true },
+            },
+          },
+        ],
       });
-
-      if (initialCheck) {
-        console.log("Slot already locked:", initialCheck);
-        return false;
-      }
+      console.log("initialCHeck", initialCheck);
+      if (initialCheck) return false;
+      console.log("initialCHeck", initialCheck);
 
       const result = await doctorSlotsModel.findOneAndUpdate(
         {
           doctorId: docId,
           date: { $gte: startOfDay, $lte: endOfDay },
-          "slots._id": slotId, // Specific to slotId
-          "slots.availability": true,
-          "slots.locked": false,
+          $and: [{ "slots._id": slotId }, { "slots.locked": false }],
         },
         {
           $set: {
@@ -287,6 +291,7 @@ class UserRepository implements IUserRepository {
       throw error;
     }
   }
+
   async bookSlot(
     doctorId: Types.ObjectId,
     userId: Types.ObjectId,
@@ -314,7 +319,7 @@ class UserRepository implements IUserRepository {
         {
           doctorId: doctorId,
           date: { $gte: startOfDay, $lte: endOfDay },
-          "slots._id": slotId, // Specific to slotId
+          "slots._id": slotId,
           "slots.locked": true,
           "slots.availability": true,
           "slots.lockedBy": userId,
@@ -350,9 +355,10 @@ class UserRepository implements IUserRepository {
     date: string,
     start: string,
     end: string,
-    fees: string,
-    paymentId: string
-  ): Promise<boolean> {
+    amount: string,
+    paymentId: string,
+    fees: string
+  ): Promise<IAppointment> {
     try {
       const result = await appointmentModel.create({
         docId: docId,
@@ -360,11 +366,52 @@ class UserRepository implements IUserRepository {
         date: date,
         start,
         end,
+        amount,
         fees,
         paymentId,
       });
+      return result as IAppointment;
+    } catch (error) {
+      throw error;
+    }
+  }
+  async doctorWalletUpdate(
+    docId: Types.ObjectId,
+    appointmentId: Types.ObjectId,
+    amount: number,
+    type: string,
+    reason: string,
+    paymentMethod: string
+  ): Promise<boolean> {
+    try {
+      const result = await doctorWalletModal.findOneAndUpdate(
+        { doctorId: docId },
+        {
+          $inc: { balance: type === "credit" ? amount : -amount },
+          $push: {
+            transactions: {
+              appointment: appointmentId,
+              amount: amount,
+              type: "credit",
+              reason: reason,
+              paymentMethod,
+            },
+          },
+        },
+        {
+          new: true,
+          upsert: true,
+          setDefaultsOnInsert: true,
+        }
+      );
+      if (result.__v == 0) {
+        await doctorModel.updateOne(
+          { _id: docId },
+          { $set: { wallet: result._id } }
+        );
+      }
       if (result) return true;
-      return false;
+      else return false;
     } catch (error) {
       throw error;
     }

@@ -18,6 +18,7 @@ import { ResetPasswordToken } from "../entities/rules/resetPassword";
 import { MongoDoctor } from "../entities/rules/doctor";
 import { DoctorSlots, Slot } from "../entities/rules/slotsType";
 import instance from "../frameworks/services/razorpayInstance";
+import IAppointment from "../entities/rules/appointments";
 
 const s3=new S3Client({
     region:s3Config.BUCKET_REGION,
@@ -413,12 +414,12 @@ class UserInteractor implements IUserInteractor {
         throw error
       }
   }
-  async getDoctorsList(): Promise<{ status: boolean; message: string; errorCode?: string; doctors?: MongoDoctor[]; }> {
+  async getDoctorsList(skip:number,limit:number): Promise<{ status: boolean; message: string; errorCode?: string; doctors?: MongoDoctor[];totalPages?:number }> {
       try{
-        const result=await this.Repository.getDoctors()
+        const result=await this.Repository.getDoctors(skip,limit)
 
             if (result) {
-              for (const doctor of result) {
+              for (const doctor of result.doctors as MongoDoctor[]) {
                 if (doctor.image) {
                   const command2 = new GetObjectCommand({
                     Bucket: s3Config.BUCKET_NAME,
@@ -434,7 +435,8 @@ class UserInteractor implements IUserInteractor {
               return {
                 status: true,
                 message: "Successfully fetched",
-                doctors: result,
+                doctors: result.doctors,
+                totalPages:result.totalPages
               };
             }
 
@@ -506,7 +508,7 @@ class UserInteractor implements IUserInteractor {
         throw error
       }
   }
-async razorPayValidateBook(razorpay_order_id: string, razorpay_payment_id: string, razorpay_signature: string,docId:Types.ObjectId,slotDetails:any,userId:Types.ObjectId,fees:string): Promise<{status:boolean;message?:string}> {
+async razorPayValidateBook(razorpay_order_id: string, razorpay_payment_id: string, razorpay_signature: string,docId:Types.ObjectId,slotDetails:any,userId:Types.ObjectId,fees:string): Promise<{status:boolean;message?:string;appointment?:IAppointment}> {
   try {
 
     console.log("docId",docId,"slotDetails",slotDetails)
@@ -525,9 +527,12 @@ async razorPayValidateBook(razorpay_order_id: string, razorpay_payment_id: strin
      const end = new Date(slotDetails.slotTime.end).toISOString(); 
     const slotBooking=await this.Repository.bookSlot(docId ,userId,slotId,isoDate)
     if(!slotBooking)return { status: false, message: "Slot is not locked by you or lock has expired." };
-    const result=await this.Repository.createAppointment(userId,docId,isoDate,start,end,fees,razorpay_payment_id)
+     const totalFees = parseFloat(fees);
+     const appointmentFees = (totalFees * 0.8).toFixed(2);
+    const result=await this.Repository.createAppointment(userId,docId,isoDate,start,end,fees,razorpay_payment_id,appointmentFees.toString())
     if(!result) return {status:false,message:"Something Went Wrong"}
-    return {status:true,message:"Success"}
+    await this.Repository.doctorWalletUpdate(docId,result._id as Types.ObjectId,Number(appointmentFees),"credit","Appointment Booked","razorpay")
+    return {status:true,message:"Success",appointment:result}
   } catch (error) {
     throw error;
   }

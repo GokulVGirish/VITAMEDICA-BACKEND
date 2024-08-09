@@ -1,3 +1,4 @@
+import IAppointment from "../rules/appointments";
 import { MongoDoctor } from "../rules/doctor";
 import { DoctorSlots } from "../rules/slotsType";
 import { User } from "../rules/user"
@@ -18,12 +19,13 @@ interface IUserRepository {
   updateProfile(id: Types.ObjectId, data: User): Promise<{ success: boolean }>;
   updateProfileImage(id: Types.ObjectId, imagePath: string): Promise<boolean>;
   resetPassword(email:string,password:string):Promise<boolean>
-  getDoctors():Promise<MongoDoctor[]|null>
+  getDoctors(skip:number,limit:number):Promise<{doctors?:MongoDoctor[],totalPages?:number}>
   getDoctor(id:string):Promise<MongoDoctor|null>
   getSlots(id:string):Promise<DoctorSlots[]|null>
     getTimeSlots(id:string,date:string):Promise<DoctorSlots|null>
     lockSlot(userId:Types.ObjectId,docId:Types.ObjectId,date:string,slotId:Types.ObjectId,lockExpiration:Date):Promise<boolean>
     bookSlot(doctorId:Types.ObjectId,userId:Types.ObjectId,slotId:Types.ObjectId,date:string):Promise<boolean>
-    createAppointment(userId:Types.ObjectId,docId:Types.ObjectId,date:string,start:string,end:string,fees:string,paymentId:string):Promise<boolean>
+    createAppointment(userId:Types.ObjectId,docId:Types.ObjectId,date:string,start:string,end:string,amount:string,paymentId:string,fees:string):Promise<IAppointment>
+    doctorWalletUpdate(docId:Types.ObjectId,appointmentId:Types.ObjectId,amount:number,type:string,reason:string,paymentMethod:string):Promise<boolean>
 }
 export default IUserRepository

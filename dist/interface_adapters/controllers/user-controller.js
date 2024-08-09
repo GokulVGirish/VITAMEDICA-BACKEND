@@ -271,9 +271,12 @@ class UserController {
     }
     async getDoctorList(req, res, next) {
         try {
-            const response = await this.interactor.getDoctorsList();
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 6;
+            const skip = (page - 1) * limit;
+            const response = await this.interactor.getDoctorsList(skip, limit);
             if (response.status)
-                return res.status(200).json({ success: true, message: response.message, doctors: response.doctors });
+                return res.status(200).json({ success: true, message: response.message, doctors: response.doctors, totalPages: response.totalPages });
             else
                 res.status(500).json({ success: false, message: response.message });
         }
@@ -356,8 +359,15 @@ class UserController {
             const userId = req.userData._id;
             const response = await this.interactor.razorPayValidateBook(razorpay_order_id, razorpay_payment_id, razorpay_signature, docId, slotDetails, userId, fees);
             console.log("response", response);
+            if (response.status) {
+                res.status(200).json({ success: true, message: response.message, appointment: response.appointment });
+            }
+            else {
+                res.status(400).json({ success: false, message: response.message });
+            }
         }
         catch (error) {
+            next(error);
             throw error;
         }
     }

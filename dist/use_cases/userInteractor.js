@@ -329,11 +329,11 @@ class UserInteractor {
             throw error;
         }
     }
-    async getDoctorsList() {
+    async getDoctorsList(skip, limit) {
         try {
-            const result = await this.Repository.getDoctors();
+            const result = await this.Repository.getDoctors(skip, limit);
             if (result) {
-                for (const doctor of result) {
+                for (const doctor of result.doctors) {
                     if (doctor.image) {
                         const command2 = new client_s3_1.GetObjectCommand({
                             Bucket: awsS3_1.default.BUCKET_NAME,
@@ -348,7 +348,8 @@ class UserInteractor {
                 return {
                     status: true,
                     message: "Successfully fetched",
-                    doctors: result,
+                    doctors: result.doctors,
+                    totalPages: result.totalPages
                 };
             }
             return { status: false, message: "Something Went Wrong" };
@@ -432,10 +433,13 @@ class UserInteractor {
             const slotBooking = await this.Repository.bookSlot(docId, userId, slotId, isoDate);
             if (!slotBooking)
                 return { status: false, message: "Slot is not locked by you or lock has expired." };
-            const result = await this.Repository.createAppointment(userId, docId, isoDate, start, end, fees, razorpay_payment_id);
+            const totalFees = parseFloat(fees);
+            const appointmentFees = (totalFees * 0.8).toFixed(2);
+            const result = await this.Repository.createAppointment(userId, docId, isoDate, start, end, fees, razorpay_payment_id, appointmentFees.toString());
             if (!result)
                 return { status: false, message: "Something Went Wrong" };
-            return { status: true, message: "Success" };
+            await this.Repository.doctorWalletUpdate(docId, result._id, Number(appointmentFees), "credit", "Appointment Booked", "razorpay");
+            return { status: true, message: "Success", appointment: result };
         }
         catch (error) {
             throw error;

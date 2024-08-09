@@ -8,6 +8,7 @@ const UserSchema_1 = __importDefault(require("../../frameworks/mongoose/models/U
 const DoctorSchema_1 = __importDefault(require("../../frameworks/mongoose/models/DoctorSchema"));
 const DoctorSlotsSchema_1 = __importDefault(require("../../frameworks/mongoose/models/DoctorSlotsSchema"));
 const AppointmentSchema_1 = __importDefault(require("../../frameworks/mongoose/models/AppointmentSchema"));
+const DoctorWalletSchema_1 = __importDefault(require("../../frameworks/mongoose/models/DoctorWalletSchema"));
 const moment = require("moment");
 class UserRepository {
     async tempOtpUser(data) {
@@ -159,14 +160,15 @@ class UserRepository {
             throw error;
         }
     }
-    async getDoctors() {
+    async getDoctors(skip, limit) {
         try {
             const result = await DoctorSchema_1.default
-                .find({ status: "Verified", complete: true })
+                .find({ status: "Verified", complete: true }).skip(skip).limit(limit)
                 .lean()
                 .populate({ path: "department", select: "name" })
                 .select("_id name department image degree fees");
-            return result;
+            const totalDoctors = await DoctorSchema_1.default.countDocuments();
+            return { doctors: result, totalPages: Math.ceil(totalDoctors / limit) };
         }
         catch (error) {
             throw error;
@@ -219,21 +221,24 @@ class UserRepository {
             const startOfDay = moment(date).startOf("day").toDate();
             const endOfDay = moment(date).endOf("day").toDate();
             const initialCheck = await DoctorSlotsSchema_1.default.findOne({
-                doctorId: docId,
-                date: { $gte: startOfDay, $lte: endOfDay },
-                "slots._id": slotId, // Specific to slotId
-                "slots.locked": true,
+                $and: [
+                    { doctorId: docId },
+                    { date: { $gte: startOfDay, $lte: endOfDay } },
+                    {
+                        slots: {
+                            $elemMatch: { _id: slotId, locked: true },
+                        },
+                    },
+                ],
             });
-            if (initialCheck) {
-                console.log("Slot already locked:", initialCheck);
+            console.log("initialCHeck", initialCheck);
+            if (initialCheck)
                 return false;
-            }
+            console.log("initialCHeck", initialCheck);
             const result = await DoctorSlotsSchema_1.default.findOneAndUpdate({
                 doctorId: docId,
                 date: { $gte: startOfDay, $lte: endOfDay },
-                "slots._id": slotId, // Specific to slotId
-                "slots.availability": true,
-                "slots.locked": false,
+                $and: [{ "slots._id": slotId }, { "slots.locked": false }],
             }, {
                 $set: {
                     "slots.$[slot].locked": true,
@@ -265,7 +270,7 @@ class UserRepository {
             const result = await DoctorSlotsSchema_1.default.findOneAndUpdate({
                 doctorId: doctorId,
                 date: { $gte: startOfDay, $lte: endOfDay },
-                "slots._id": slotId, // Specific to slotId
+                "slots._id": slotId,
                 "slots.locked": true,
                 "slots.availability": true,
                 "slots.lockedBy": userId,
@@ -292,7 +297,7 @@ class UserRepository {
             throw error;
         }
     }
-    async createAppointment(userId, docId, date, start, end, fees, paymentId) {
+    async createAppointment(userId, docId, date, start, end, amount, paymentId, fees) {
         try {
             const result = await AppointmentSchema_1.default.create({
                 docId: docId,
@@ -300,12 +305,41 @@ class UserRepository {
                 date: date,
                 start,
                 end,
+                amount,
                 fees,
                 paymentId,
             });
+            return result;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async doctorWalletUpdate(docId, appointmentId, amount, type, reason, paymentMethod) {
+        try {
+            const result = await DoctorWalletSchema_1.default.findOneAndUpdate({ doctorId: docId }, {
+                $inc: { balance: type === "credit" ? amount : -amount },
+                $push: {
+                    transactions: {
+                        appointment: appointmentId,
+                        amount: amount,
+                        type: "credit",
+                        reason: reason,
+                        paymentMethod,
+                    },
+                },
+            }, {
+                new: true,
+                upsert: true,
+                setDefaultsOnInsert: true,
+            });
+            if (result.__v == 0) {
+                await DoctorSchema_1.default.updateOne({ _id: docId }, { $set: { wallet: result._id } });
+            }
             if (result)
                 return true;
-            return false;
+            else
+                return false;
         }
         catch (error) {
             throw error;

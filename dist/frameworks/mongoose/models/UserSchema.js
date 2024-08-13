@@ -15,50 +15,55 @@ const addressSchema = new mongoose_1.default.Schema({
 const userSchema = new mongoose_1.default.Schema({
     name: {
         type: String,
-        required: true
+        required: true,
     },
     email: {
         type: String,
-        required: true
+        required: true,
     },
     phone: {
         type: String,
-        default: null
+        default: null,
     },
     dob: {
         type: Date,
-        default: null
+        default: null,
     },
     image: {
         type: String,
-        default: null
+        default: null,
     },
     password: {
         type: String,
-        required: true
+        required: true,
     },
     gender: {
         type: String,
         enum: ["male", "female"],
-        default: null
+        default: null,
     },
     address: {
         type: addressSchema,
-        default: null
+        default: null,
     },
     bloodGroup: {
         type: String,
-        default: null
+        default: null,
     },
     register: {
         type: String,
         enum: ["Google", "Email"],
-        default: "Email"
+        default: "Email",
     },
     isBlocked: {
         type: Boolean,
-        default: false
-    }
+        default: false,
+    },
+    wallet: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: "UserWallet",
+        default: null,
+    },
 });
 const userModel = mongoose_1.default.model("User", userSchema);
 exports.default = userModel;

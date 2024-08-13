@@ -6,9 +6,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const crypto_1 = __importDefault(require("crypto"));
+const moment_1 = __importDefault(require("moment"));
 const client_s3_1 = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const awsS3_1 = __importDefault(require("../entities/services/awsS3"));
+const mongoose_1 = __importDefault(require("mongoose"));
 const razorpayInstance_1 = __importDefault(require("../frameworks/services/razorpayInstance"));
 const s3 = new client_s3_1.S3Client({
     region: awsS3_1.default.BUCKET_REGION,
@@ -453,6 +455,61 @@ class UserInteractor {
             if (!response)
                 return { status: false, message: "Slot is already locked or not available." };
             return { status: true, message: "Slot locked successfully." };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getAppointments(page, limit, userId) {
+        try {
+            const response = await this.Repository.getAppointments(page, limit, userId);
+            if (!response.status)
+                return { status: false, message: "No appointments" };
+            return { status: true, appointments: response.appointments, totalPages: response.totalPages, message: "success" };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getWalletInfo(page, limit, userId) {
+        try {
+            const response = await this.Repository.userWalletInfo(page, limit, userId);
+            if (!response.status)
+                return { status: false, message: "No wallet Found" };
+            return { status: true, message: "Sucessful", userWallet: response.userWallet, totalPages: response.totalPages };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async cancelAppointment(userId, appointmentId, date, startTime) {
+        try {
+            const appointment = await this.Repository.getAppointment(appointmentId);
+            if (!appointment)
+                return { status: false, message: "Something went wrong" };
+            const now = (0, moment_1.default)();
+            const appointmentCreationTime = (0, moment_1.default)(appointment.createdAt);
+            if (now.diff(appointmentCreationTime, "hours") > 4) {
+                return {
+                    status: false,
+                    message: "You can only cancel the appointment within 4 hours of making it.",
+                };
+            }
+            const refundAmount = Number(appointment.fees) * 0.8;
+            const appointmentCancel = await this.Repository.cancelAppointment(appointmentId);
+            if (!appointmentCancel.status)
+                return { status: false, message: "Something Went Wrong" };
+            const cancelSlot = await this.Repository.unbookSlot(appointmentCancel.docId, date, startTime);
+            if (!cancelSlot)
+                return { status: false, message: "Slot Cancellation Failed" };
+            const doctorWalletDeduction = await this.Repository.doctorWalletUpdate(appointmentCancel.docId, new mongoose_1.default.Types.ObjectId(appointmentId), refundAmount, "debit", "User Cancelled Appointment", "razorpay");
+            const cancellationAppointment = await this.Repository.createCancelledAppointment(appointmentCancel.docId, new mongoose_1.default.Types.ObjectId(appointmentId), refundAmount.toString(), "user");
+            if (!doctorWalletDeduction)
+                return { status: false, message: "failure doing refunds" };
+            const userWalletUpdate = await this.Repository.userWalletUpdate(userId, new mongoose_1.default.Types.ObjectId(appointmentId), refundAmount, "credit", "cancelled appointment refund", "razorpay");
+            if (!userWalletUpdate)
+                return { status: false, message: "something went wrong" };
+            return { status: true, message: "Sucessfully Cancelled" };
         }
         catch (error) {
             throw error;

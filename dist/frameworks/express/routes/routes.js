@@ -7,7 +7,7 @@ const user_router_1 = __importDefault(require("./user-router"));
 const admin_router_1 = __importDefault(require("./admin-router"));
 const doctor_router_1 = __importDefault(require("./doctor-router"));
 const routes = (app) => {
-    app.use("/", user_router_1.default);
+    app.use("/api/users", user_router_1.default);
     app.use("/admin", admin_router_1.default);
     app.use("/doctor", doctor_router_1.default);
 };

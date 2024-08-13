@@ -29,5 +29,13 @@ doctorRouter.post("/resendOtp",authMiddleware,controller.resendOtp.bind(controll
 doctorRouter.post("/profilePicUpdate",authMiddleware,verifyRole("doctor"),getDoctor,upload.single("image"),controller.UpdateProfileImage.bind(controller));
 doctorRouter.put("/profileUpdate",authMiddleware,getDoctor,verifyRole("doctor"),controller.DoctorProfileUpdate.bind(controller))
 doctorRouter.post("/add-slot",authMiddleware,getDoctor,verifyRole("doctor"),controller.addSlots.bind(controller));
+doctorRouter.get("/doctor-wallet",authMiddleware,verifyRole("doctor"),getDoctor,controller.getWalletDetails.bind(controller));
+doctorRouter.get('/todays-appointments',authMiddleware,verifyRole("doctor"),getDoctor,controller.todaysAppointments.bind(controller));
+doctorRouter.get("/upcomming-appointments",authMiddleware,verifyRole("doctor"),getDoctor,controller.getUpcommingAppointments.bind(controller))
+doctorRouter.get("/getAvailableDates",authMiddleware,verifyRole("doctor"),getDoctor,controller.getAvailableDates.bind(controller))
+doctorRouter.get("/slots",authMiddleware,verifyRole("doctor"),getDoctor,controller.getTimeSlots.bind(controller))
+doctorRouter.delete(`/cancelUnbookedSlots`,authMiddleware,verifyRole("doctor"),getDoctor,controller.deleteUnbookedTimeSlots.bind(controller));
+doctorRouter.delete(`/cancelBookedSlots`,authMiddleware,verifyRole("doctor"),getDoctor,controller.deleteBookedTimeSlots.bind(controller))
+
 
 export default doctorRouter;

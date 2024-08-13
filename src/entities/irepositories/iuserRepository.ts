@@ -4,6 +4,7 @@ import { DoctorSlots } from "../rules/slotsType";
 import { User } from "../rules/user"
 import { MongoUser } from "../rules/user"
 import { Types } from "mongoose"
+import IUserWallet from "../rules/userWalletType";
 
 interface IUserRepository {
   tempOtpUser(data: User): Promise<{ status: true | false }>;
@@ -27,5 +28,20 @@ interface IUserRepository {
     bookSlot(doctorId:Types.ObjectId,userId:Types.ObjectId,slotId:Types.ObjectId,date:string):Promise<boolean>
     createAppointment(userId:Types.ObjectId,docId:Types.ObjectId,date:string,start:string,end:string,amount:string,paymentId:string,fees:string):Promise<IAppointment>
     doctorWalletUpdate(docId:Types.ObjectId,appointmentId:Types.ObjectId,amount:number,type:string,reason:string,paymentMethod:string):Promise<boolean>
+    getAppointments(page:number,limit:number,userId:Types.ObjectId):Promise<{status:boolean;appointments?:IAppointment[],totalPages?:number}>
+    userWalletInfo(page:number,limit:number,userId:Types.ObjectId):Promise<{status: boolean;
+    userWallet?:IUserWallet ;
+    totalPages?: number;}>
+     cancelAppointment(appointmentId:string):Promise<{status: boolean; amount?: string;docId?:Types.ObjectId}>
+     unbookSlot(docId:Types.ObjectId,date:Date,startTime:Date):Promise<boolean>
+     userWalletUpdate(userId:Types.ObjectId,appointmentId:Types.ObjectId,amount:number,type:string,reason:string,paymentMethod:string):Promise<boolean>
+     createCancelledAppointment(
+    docId: Types.ObjectId,
+    appointmentId: Types.ObjectId,
+    amount: string,
+    cancelledBy: string
+  ): Promise<boolean>;
+  getAppointment(appoinmentId:string):Promise<IAppointment|null>
+  
 }
 export default IUserRepository

@@ -5,6 +5,7 @@ import { MongoDoctor } from "../rules/doctor";
 import { DoctorSlots } from "../rules/slotsType";
 import { Slot } from "../rules/slotsType";
 import IAppointment from "../rules/appointments";
+import IUserWallet from "../rules/userWalletType";
 export interface IUserInteractor {
   //   signup(user:User):Promise<{user:User|null}>;
   otpSignup(
@@ -60,6 +61,9 @@ export interface IUserInteractor {
      razorPayOrderGenerate(amount:string,currency:string,receipt:string):Promise<{status:boolean;order?:any,message:string}>
      razorPayValidateBook(razorpay_payment_id:string,razorpay_order_id:string,razorpay_signature:string,docId:Types.ObjectId,slotDetails:any,userId:Types.ObjectId,fees:string):Promise<{status:boolean;message?:string;appointment?:IAppointment}>
      lockSlot(userId:Types.ObjectId,docId:Types.ObjectId,date:Date,slotId:Types.ObjectId):Promise<{status:boolean,message?:string,errorCode?:string}>
+     getAppointments(page:number,limit:number,userId:Types.ObjectId):Promise<{status:boolean,message:string,appointments?:IAppointment[];totalPages?:number}>
+     getWalletInfo(page:number,limit:number,userId:Types.ObjectId):Promise<{status:boolean,userWallet?:IUserWallet,message:string;totalPages?:number}>
+     cancelAppointment(userId:Types.ObjectId,appointmentId:string,date:Date,startTime:Date):Promise<{status:boolean;message:string;}>
      
  
 }

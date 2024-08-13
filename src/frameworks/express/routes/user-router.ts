@@ -18,28 +18,32 @@ const interactor=new UserInteractor(repository,mailer,jwtservices)
 const controller=new UserController(interactor)
 const userRouter=expreress.Router()
 userRouter.post("/signup",controller.otpSignup.bind(controller))
-userRouter.post("/verifyOtpSignup",controller.verifyOtpSignup.bind(controller))
-userRouter.get("/verify-token",authMiddleware,verifyRole("user"),controller.verifyToken.bind(controller))
+userRouter.post("/signup/verify-otp",controller.verifyOtpSignup.bind(controller))
+userRouter.get("/token/verify",authMiddleware,verifyRole("user"),controller.verifyToken.bind(controller))
 userRouter.post("/login",controller.login.bind(controller))
-userRouter.post("/googleSignup",controller.googleSignup.bind(controller))
-userRouter.post("/googleLogin",controller.googleLogin.bind(controller))
+userRouter.post("/google/signup", controller.googleSignup.bind(controller));
+userRouter.post("/google/login", controller.googleLogin.bind(controller));
 userRouter.post(
-  "/resendOtp",
+  "/otp/resend",
   authMiddleware,
   controller.resendOtp.bind(controller)
 );
 userRouter.get("/profile",authMiddleware,getUser,controller.profile.bind(controller))
-userRouter.post("/profileUpdate",authMiddleware,getUser,controller.profileUpdate.bind(controller))
-userRouter.put("/profilePicUpdate",authMiddleware,getUser,upload.single("image"),controller.ProfilePictureUpdate.bind(controller));
-userRouter.post("/request-password-reset",controller.passwordResetLink.bind(controller));
-userRouter.post("/reset-password/:token",controller.resetPassword.bind(controller));
+userRouter.put("/profile",authMiddleware,getUser,controller.profileUpdate.bind(controller))
+userRouter.put("/profile/picture",authMiddleware,getUser,upload.single("image"),controller.ProfilePictureUpdate.bind(controller));
+userRouter.post("/password/reset-request",controller.passwordResetLink.bind(controller));
+userRouter.post("/password/reset/:token",controller.resetPassword.bind(controller));
 userRouter.get("/doctor-list",authMiddleware,getUser,controller.getDoctorList.bind(controller));
 userRouter.get("/doctors/:id/profile",authMiddleware,verifyRole("user"),getUser,controller.getDoctorPage.bind(controller))
-userRouter.get("/getAvailableDate/:id",authMiddleware,verifyRole("user"),getUser,controller.getAvailableDate.bind(controller));
-userRouter.get("/doctor/:id/slots",authMiddleware,verifyRole("user"),getUser,controller.getTimeSlots.bind(controller));
-userRouter.post("/order",authMiddleware,verifyRole("user"),getUser,controller.razorPayOrder.bind(controller))
-userRouter.post("/order/validate",authMiddleware,verifyRole("user"),getUser,controller.razorPayValidate.bind(controller))
-userRouter.post("/lock-slot",authMiddleware,verifyRole("user"),getUser,controller.lockSlot.bind(controller))
+userRouter.get("/doctors/:doctorId/availability",authMiddleware,verifyRole("user"),getUser,controller.getAvailableDate.bind(controller));
+userRouter.get("/doctors/:doctorId/slots",authMiddleware,verifyRole("user"),getUser,controller.getTimeSlots.bind(controller));
+userRouter.post("/appointments/order",authMiddleware,verifyRole("user"),getUser,controller.razorPayOrder.bind(controller))
+userRouter.post("/appointments/order/validate",authMiddleware,verifyRole("user"),getUser,controller.razorPayValidate.bind(controller))
+userRouter.post("/appointments/lock-slot",authMiddleware,verifyRole("user"),getUser,controller.lockSlot.bind(controller))
+userRouter.get("/appointments",authMiddleware,verifyRole("user"),getUser,controller.getAppointments.bind(controller))
+userRouter.put("/appointments/:appointmentId/cancel");
+userRouter.get("/wallet",authMiddleware,verifyRole("user"),getUser,controller.getWalletInfo.bind(controller))
+userRouter.put("/appointments/:appointmentId/cancel",authMiddleware,verifyRole("user"),getUser,controller.cancelAppointment.bind(controller));
 
 
 

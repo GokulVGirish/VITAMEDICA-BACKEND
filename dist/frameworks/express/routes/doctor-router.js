@@ -30,4 +30,11 @@ doctorRouter.post("/resendOtp", jwt_verify_1.default, controller.resendOtp.bind(
 doctorRouter.post("/profilePicUpdate", jwt_verify_1.default, (0, role_Authenticate_1.default)("doctor"), doctor_1.getDoctor, multer_1.default.single("image"), controller.UpdateProfileImage.bind(controller));
 doctorRouter.put("/profileUpdate", jwt_verify_1.default, doctor_1.getDoctor, (0, role_Authenticate_1.default)("doctor"), controller.DoctorProfileUpdate.bind(controller));
 doctorRouter.post("/add-slot", jwt_verify_1.default, doctor_1.getDoctor, (0, role_Authenticate_1.default)("doctor"), controller.addSlots.bind(controller));
+doctorRouter.get("/doctor-wallet", jwt_verify_1.default, (0, role_Authenticate_1.default)("doctor"), doctor_1.getDoctor, controller.getWalletDetails.bind(controller));
+doctorRouter.get('/todays-appointments', jwt_verify_1.default, (0, role_Authenticate_1.default)("doctor"), doctor_1.getDoctor, controller.todaysAppointments.bind(controller));
+doctorRouter.get("/upcomming-appointments", jwt_verify_1.default, (0, role_Authenticate_1.default)("doctor"), doctor_1.getDoctor, controller.getUpcommingAppointments.bind(controller));
+doctorRouter.get("/getAvailableDates", jwt_verify_1.default, (0, role_Authenticate_1.default)("doctor"), doctor_1.getDoctor, controller.getAvailableDates.bind(controller));
+doctorRouter.get("/slots", jwt_verify_1.default, (0, role_Authenticate_1.default)("doctor"), doctor_1.getDoctor, controller.getTimeSlots.bind(controller));
+doctorRouter.delete(`/cancelUnbookedSlots`, jwt_verify_1.default, (0, role_Authenticate_1.default)("doctor"), doctor_1.getDoctor, controller.deleteUnbookedTimeSlots.bind(controller));
+doctorRouter.delete(`/cancelBookedSlots`, jwt_verify_1.default, (0, role_Authenticate_1.default)("doctor"), doctor_1.getDoctor, controller.deleteBookedTimeSlots.bind(controller));
 exports.default = doctorRouter;

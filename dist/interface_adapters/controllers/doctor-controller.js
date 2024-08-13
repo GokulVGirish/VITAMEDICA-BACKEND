@@ -48,15 +48,13 @@ class DoctorController {
             const { otp } = req.body;
             const response = await this.interactor.verifyOtpSignup(otp);
             if (response.status) {
-                res
-                    .status(200)
-                    .json({
+                res.status(200).json({
                     success: true,
                     message: response.message,
                     accessToken: response.accessToken,
                     refreshToken: response.refreshToken,
                     doctor: response.doctor,
-                    status: response.docstatus
+                    status: response.docstatus,
                 });
             }
             else {
@@ -73,9 +71,7 @@ class DoctorController {
             const { email, password } = req.body;
             const response = await this.interactor.login(email, password);
             if (response.status) {
-                res
-                    .status(200)
-                    .json({
+                res.status(200).json({
                     success: true,
                     message: response.message,
                     accessToken: response.accessToken,
@@ -93,9 +89,7 @@ class DoctorController {
                         res.status(400).json({ success: false, message: response.message });
                         break;
                     case "VERIFICATION_FAILED":
-                        res
-                            .status(403)
-                            .json({
+                        res.status(403).json({
                             success: false,
                             message: `Verification failed ${response.message}`,
                         });
@@ -135,7 +129,10 @@ class DoctorController {
             req.doctorData.image = response.url;
             res
                 .status(200)
-                .json({ success: true, doctorData: req.doctorData });
+                .json({
+                success: true,
+                doctorData: req.doctorData,
+            });
         }
         catch (error) {
             console.log(error);
@@ -212,7 +209,13 @@ class DoctorController {
             const emailId = req.doctorData.email;
             const response = await this.interactor.profileUpdate(req.body, docId, emailId);
             if (response.status) {
-                res.status(200).json({ success: true, data: response.data, message: response.message });
+                res
+                    .status(200)
+                    .json({
+                    success: true,
+                    data: response.data,
+                    message: response.message,
+                });
             }
             else {
                 res.status(500).json({ success: false, message: response.message });
@@ -237,6 +240,143 @@ class DoctorController {
         catch (error) {
             console.log(error);
             throw error;
+        }
+    }
+    async getWalletDetails(req, res, next) {
+        try {
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 10;
+            const docId = req.doctorData._id;
+            const response = await this.interactor.getWalletDetails(page, limit, docId);
+            if (response.status) {
+                res.status(200).json({ success: true, message: response.message, walletDetail: response.doctorWallet, totalPages: response.totalPages });
+            }
+            else {
+                res.status(404).json({ success: false, message: response.message });
+            }
+        }
+        catch (error) {
+            console.log(error);
+        }
+    }
+    ;
+    async todaysAppointments(req, res, next) {
+        try {
+            const docId = req.doctorData._id;
+            const response = await this.interactor.getTodaysAppointments(docId);
+            if (response.status) {
+                res.status(200).json({ success: true, message: response.message, appointments: response.appointments });
+            }
+            else {
+                res.status(404).json({ status: false, message: response.message });
+            }
+        }
+        catch (error) {
+            console.log(error);
+            next(error);
+        }
+    }
+    async getUpcommingAppointments(req, res, next) {
+        try {
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 7;
+            const docId = req.doctorData._id;
+            const response = await this.interactor.getUpcommingAppointments(docId, page, limit);
+            if (response.status) {
+                res.status(200).json({ success: true, message: response.message, appointments: response.appointments, totalPages: response.totalPages });
+            }
+            else {
+                res.status(404).json({ success: false, message: response.message });
+            }
+        }
+        catch (error) {
+            console.log(error);
+            next(error);
+        }
+    }
+    async getAvailableDates(req, res, next) {
+        try {
+            const docId = req.doctorData._id;
+            const response = await this.interactor.getAvailableDate(docId);
+            if (response.status) {
+                res
+                    .status(200)
+                    .json({
+                    success: true,
+                    message: response.message,
+                    dates: response.dates,
+                });
+            }
+            else {
+                res.status(404).json({
+                    success: false,
+                    message: response.message,
+                });
+            }
+        }
+        catch (error) {
+            console.log(error);
+            next(error);
+        }
+    }
+    async getTimeSlots(req, res, next) {
+        try {
+            const docId = req.doctorData._id;
+            const date = req.query.date;
+            const response = await this.interactor.getTimeSlots(docId, date);
+            if (response.status) {
+                res
+                    .status(200)
+                    .json({
+                    success: true,
+                    message: response.message,
+                    slots: response.slots,
+                });
+            }
+            else {
+                res.status(500).json({ success: false, message: response.message });
+            }
+        }
+        catch (error) {
+            console.log(error);
+            throw error;
+        }
+    }
+    async deleteUnbookedTimeSlots(req, res, next) {
+        try {
+            const docId = req.doctorData._id;
+            const date = new Date(req.query.date);
+            const startTime = new Date(req.query.startTime);
+            const response = await this.interactor.deleteUnbookedSlots(docId, date, startTime);
+            if (response.status) {
+                res.status(200).json({ success: true, message: response.message });
+            }
+            else {
+                res.status(500).json({ success: false, message: response.message });
+            }
+        }
+        catch (error) {
+            console.log(error);
+            next(error);
+        }
+    }
+    async deleteBookedTimeSlots(req, res, next) {
+        try {
+            const docId = req.doctorData._id;
+            const date = new Date(req.query.date);
+            const startTime = new Date(req.query.startTime);
+            const response = await this.interactor.deleteBookedTimeSlots(docId, date, startTime);
+            if (response.status) {
+                res.status(200).json({ success: true, message: response.message });
+            }
+            else {
+                res.status(500).json({ success: false, message: response.message });
+            }
+        }
+        catch (error) {
+            console.log(error);
+            next(error);
+            console.log("manhhhh");
         }
     }
 }

@@ -302,8 +302,8 @@ class UserController {
     }
     async getAvailableDate(req, res, next) {
         try {
-            const { id } = req.params;
-            const response = await this.interactor.getAvailableDate(id);
+            const { doctorId } = req.params;
+            const response = await this.interactor.getAvailableDate(doctorId);
             if (response.status) {
                 res.status(200).json({ success: true, message: response.message, dates: response.dates });
             }
@@ -323,7 +323,7 @@ class UserController {
     async getTimeSlots(req, res, next) {
         try {
             const date = req.query.date;
-            const id = req.params.id;
+            const id = req.params.doctorId;
             const response = await this.interactor.getTimeSlots(id, date);
             if (response.status) {
                 res.status(200).json({ success: true, message: response.message, slots: response.slots });
@@ -387,6 +387,58 @@ class UserController {
         catch (error) {
             next(error);
             throw error;
+        }
+    }
+    async getAppointments(req, res, next) {
+        try {
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 10;
+            const userId = req.userData._id;
+            const response = await this.interactor.getAppointments(page, limit, userId);
+            if (response.status) {
+                res.status(200).json({ success: true, message: response.message, appointments: response.appointments, totalPage: response.totalPages });
+            }
+            else {
+                res.status(404).json({ success: false, message: response.message });
+            }
+        }
+        catch (error) {
+            console.log(error);
+            throw error;
+        }
+    }
+    async getWalletInfo(req, res, next) {
+        try {
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 10;
+            const userId = req.userData._id;
+            const response = await this.interactor.getWalletInfo(page, limit, userId);
+            if (response.status) {
+                res.status(200).json({ success: true, message: response.message, walletDetail: response.userWallet, totalPages: response.totalPages });
+            }
+            else {
+                res.status(404).json({ success: false, message: response.message });
+            }
+        }
+        catch (error) {
+        }
+    }
+    async cancelAppointment(req, res, next) {
+        try {
+            const userId = req.userData._id;
+            const appointmentId = req.params.appointmentId;
+            const date = new Date(req.query.date);
+            const startTime = new Date(req.query.startTime);
+            const response = await this.interactor.cancelAppointment(userId, appointmentId, date, startTime);
+            if (response.status) {
+                res.status(200).json({ success: true, message: response.message });
+            }
+            else {
+                res.status(500).json({ success: false, message: response.message });
+            }
+        }
+        catch (error) {
+            next(error);
         }
     }
 }

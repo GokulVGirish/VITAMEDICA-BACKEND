@@ -29,7 +29,7 @@ const AppointmentSchema = new mongoose_1.default.Schema({
     },
     status: {
         type: String,
-        enum: ["pending", "completed"],
+        enum: ["pending", "completed", "cancelled"],
         default: "pending",
     },
     fees: {
@@ -38,7 +38,7 @@ const AppointmentSchema = new mongoose_1.default.Schema({
     },
     amount: {
         type: String,
-        required: true
+        required: true,
     },
     paymentStatus: {
         type: String,
@@ -48,7 +48,7 @@ const AppointmentSchema = new mongoose_1.default.Schema({
     },
     paymentId: {
         type: String,
-    }
-});
+    },
+}, { timestamps: true });
 const appointmentModel = mongoose_1.default.model("Appointment", AppointmentSchema);
 exports.default = appointmentModel;

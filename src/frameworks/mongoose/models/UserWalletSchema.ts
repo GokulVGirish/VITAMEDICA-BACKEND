@@ -1,8 +1,9 @@
+
 import mongoose from "mongoose";
-const DoctorwalletSchema = new mongoose.Schema({
-  doctorId: {
+const UserwalletSchema = new mongoose.Schema({
+  userId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Doctor",
+    ref: "User",
     required: true,
     unique: true,
   },
@@ -10,18 +11,17 @@ const DoctorwalletSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
-  transactionCount:{
-    type:Number,
-    default:0
-  }
+  transactionCount: {
+    type: Number,
+    default: 0,
+  },
 
-  ,
   transactions: [
     {
       appointment: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Appointment",
-        required:true
+        required: true,
       },
       amount: {
         type: Number,
@@ -36,10 +36,9 @@ const DoctorwalletSchema = new mongoose.Schema({
         enum: ["credit", "debit"],
         required: true,
       },
-      reason:{
-        type:String,
-        required:true
-
+      reason: {
+        type: String,
+        required: true,
       },
       paymentMethod: {
         type: String,
@@ -49,5 +48,5 @@ const DoctorwalletSchema = new mongoose.Schema({
   ],
 });
 
-const  doctorWalletModal= mongoose.model("DoctorWallet", DoctorwalletSchema);
-export default doctorWalletModal
+const userWalletModal = mongoose.model("UserWallet", UserwalletSchema);
+export default userWalletModal;

@@ -4,10 +4,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
-const DoctorwalletSchema = new mongoose_1.default.Schema({
-    doctorId: {
+const UserwalletSchema = new mongoose_1.default.Schema({
+    userId: {
         type: mongoose_1.default.Schema.Types.ObjectId,
-        ref: "Doctor",
+        ref: "User",
         required: true,
         unique: true,
     },
@@ -17,14 +17,14 @@ const DoctorwalletSchema = new mongoose_1.default.Schema({
     },
     transactionCount: {
         type: Number,
-        default: 0
+        default: 0,
     },
     transactions: [
         {
             appointment: {
                 type: mongoose_1.default.Schema.Types.ObjectId,
                 ref: "Appointment",
-                required: true
+                required: true,
             },
             amount: {
                 type: Number,
@@ -41,7 +41,7 @@ const DoctorwalletSchema = new mongoose_1.default.Schema({
             },
             reason: {
                 type: String,
-                required: true
+                required: true,
             },
             paymentMethod: {
                 type: String,
@@ -50,5 +50,5 @@ const DoctorwalletSchema = new mongoose_1.default.Schema({
         },
     ],
 });
-const doctorWalletModal = mongoose_1.default.model("DoctorWallet", DoctorwalletSchema);
-exports.default = doctorWalletModal;
+const userWalletModal = mongoose_1.default.model("UserWallet", UserwalletSchema);
+exports.default = userWalletModal;

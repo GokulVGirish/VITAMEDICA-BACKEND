@@ -263,5 +263,98 @@ class DoctorInteractor {
             throw error;
         }
     }
+    async getWalletDetails(page, limit, docId) {
+        try {
+            const response = await this.Repository.getWalletDetails(page, limit, docId);
+            if (!response.status)
+                return { status: false, message: "No wallet Found" };
+            return { status: true, message: "Sucessful", doctorWallet: response.doctorWallet, totalPages: response.totalPages };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getTodaysAppointments(docId) {
+        try {
+            const response = await this.Repository.getTodaysAppointments(docId);
+            if (response) {
+                return { status: true, message: "Success", appointments: response };
+            }
+            return { status: false, message: "no appointments" };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getUpcommingAppointments(docId, page, limit) {
+        try {
+            const response = await this.Repository.getUpcommingAppointments(docId, page, limit);
+            if (!response.status)
+                return { status: false, message: "no appointments" };
+            return { status: true, message: "success", appointments: response.appointments, totalPages: response.totalPages };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getAvailableDate(id) {
+        try {
+            const response = await this.Repository.getAvailableDate(id);
+            if (!response)
+                return { status: false, message: "no available slots" };
+            const dates = [
+                ...new Set(response.map((slot) => slot.date.toISOString().split("T")[0])),
+            ];
+            return { status: true, message: "Success", dates: dates };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getTimeSlots(id, date) {
+        try {
+            const result = await this.Repository.getTimeSlots(id, date);
+            if (!result)
+                return { status: false, message: "Something went wrong" };
+            return { status: true, message: "Success", slots: result };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async deleteUnbookedSlots(id, date, startTime) {
+        try {
+            const response = await this.Repository.deleteSlots(id, date, startTime);
+            if (response)
+                return { status: true, message: "Sucessfully Cancelled" };
+            return { status: false, message: "Something Went wrong" };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async deleteBookedTimeSlots(id, date, startTime) {
+        try {
+            const result = await this.Repository.cancelAppointment(id, date, startTime);
+            if (!result.status)
+                return { status: false, message: "Something Went Wrong" };
+            const res = await this.Repository.createCancelledAppointment(id, result.id, result.amount, "doctor");
+            if (!res)
+                return { status: false, message: "Something Went Wrong" };
+            const response = await this.Repository.doctorWalletUpdate(id, result.id, result.amount, "debit", "appointment cancelled by Doc", "razorpay");
+            if (!response)
+                return { status: false, message: "Something Went Wrong" };
+            const userwaller = await this.Repository.userWalletUpdate(result.userId, result.id, result.amount, "credit", "Appointment cancelled by doctor", "razorpay");
+            if (!userwaller)
+                return { status: false, message: "Something Went Wrong" };
+            const deleteSlot = await this.Repository.deleteSlots(id, date, startTime);
+            if (!deleteSlot)
+                return { status: false, message: "Something Went Wrong" };
+            return { status: true, message: "sucessfully done" };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
 }
 exports.default = DoctorInteractor;

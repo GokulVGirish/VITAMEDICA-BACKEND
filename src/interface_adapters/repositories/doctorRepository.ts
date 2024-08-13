@@ -9,6 +9,15 @@ import { RejectedDoctor } from "../../entities/rules/rejectedDoctor";
 import rejectedDoctorModel from "../../frameworks/mongoose/models/RejectedDoctor";
 import { DoctorSlots } from "../../entities/rules/slotsType";
 import doctorSlotsModel from "../../frameworks/mongoose/models/DoctorSlotsSchema";
+import { IDoctorWallet } from "../../entities/rules/doctorWalletType";
+import doctorWalletModal from "../../frameworks/mongoose/models/DoctorWalletSchema";
+import IAppointment from "../../entities/rules/appointments";
+import moment from "moment";
+import appointmentModel from "../../frameworks/mongoose/models/AppointmentSchema";
+import { Type } from "@aws-sdk/client-s3";
+import cancelledAppointmentsModel from "../../frameworks/mongoose/models/cancelledAppointmentSchema";
+import userWalletModal from "../../frameworks/mongoose/models/UserWalletSchema";
+import userModel from "../../frameworks/mongoose/models/UserSchema";
 
 class DoctorRepository implements IDoctorRepository {
   async doctorExists(email: string): Promise<null | MongoDoctor> {
@@ -198,6 +207,298 @@ class DoctorRepository implements IDoctorRepository {
         })
        if(slot) return true
        else return false
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async getWalletDetails(page: number, limit: number, docId: Types.ObjectId): Promise<{ status: boolean; doctorWallet?: IDoctorWallet;totalPages?:number }> {
+      try{
+        const walletDetails = await doctorWalletModal.aggregate([
+          {
+            $match: { doctorId: docId },
+          },
+          {
+            $project: {
+              balance: 1,
+              transactionCount:1,
+              transactions: {
+                $slice: [
+                  {
+                    $reverseArray: "$transactions",
+                  },
+                  (page - 1) * limit,
+                  limit,
+                ],
+              },
+            },
+          },
+        ]);
+             console.log("walletDetails",walletDetails);
+        if (!walletDetails || walletDetails.length === 0) {
+          return {status:false}
+        }
+            const totalPages = Math.ceil(
+              walletDetails[0].transactionCount / limit
+            );
+        return {status:true,doctorWallet:walletDetails[0],totalPages:totalPages}
+
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async getTodaysAppointments(docId: Types.ObjectId): Promise<IAppointment[] | null> {
+      try{
+         const startOfDay = moment().startOf("day").toDate();
+         const endOfDay = moment().endOf("day").toDate();
+         const result = await appointmentModel.aggregate([
+           {
+             $match: {
+               docId: docId,
+               date: { $gte: startOfDay, $lte: endOfDay },
+             },
+           },
+           {
+             $lookup: {
+               from: "users",
+               localField: "userId",
+               foreignField: "_id",
+               as: "userInfo",
+             },
+           },
+           {
+             $unwind: "$userInfo",
+           },
+           {
+             $project: {
+               _id: 1,
+               date: 1,
+               start: 1,
+               end: 1,
+               userName: "$userInfo.name",
+               status: 1,
+               paymentStatus: 1,
+               amount: 1,
+             },
+           },
+         ]);
+         return result
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async getUpcommingAppointments(docId: Types.ObjectId,page:number,limit:number): Promise<{status:boolean;appointments?:IAppointment[];totalPages?:number }> {
+      try{
+        const currentdate=new Date()
+        const result = await appointmentModel.aggregate([
+          { $match: { docId: docId, date: { $gt: currentdate } } },
+          {
+            $lookup: {
+              from: "users",
+              localField: "userId",
+              foreignField: "_id",
+              as: "userInfo",
+            },
+          },
+          {
+            $unwind: "$userInfo",
+          },
+          {
+            $project: {
+              _id: 1,
+              date: 1,
+              start: 1,
+              end: 1,
+              userName: "$userInfo.name",
+              status: 1,
+              paymentStatus: 1,
+              amount: 1,
+            },
+          },
+          { $sort: { date: 1, start: 1 } },
+          { $skip: (page - 1) * limit },
+          { $limit: limit },
+        ]);
+        if(result){
+            const totalAppointments = await appointmentModel.countDocuments({
+              docId: docId,
+              date: { $gt: currentdate },
+            });
+            const totalPages = Math.ceil(totalAppointments / limit);
+          return {status:true,appointments:result,totalPages}
+        }else{
+          return {status:false}
+        }
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async getAvailableDate(id: Types.ObjectId): Promise<DoctorSlots[] | null> {
+      try{
+         const result = await doctorSlotsModel.find({
+           doctorId: id,
+           active: true,
+         });
+         return result;
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async getTimeSlots(id: Types.ObjectId, date: string): Promise<DoctorSlots | null> {
+      try{
+         const startOfDay = moment(date).startOf("day").toDate();
+         const endOfDay = moment(date).endOf("day").toDate();
+         const result = await doctorSlotsModel.findOne({
+           doctorId: id,
+           date: { $gte: startOfDay, $lte: endOfDay },
+         });
+    
+         return result;
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async deleteSlots(id: Types.ObjectId, date: Date, startTime:Date): Promise<boolean> {
+      try{
+         const startOfDay = moment(date).startOf("day").toDate();
+         const endOfDay = moment(date).endOf("day").toDate();
+        const reault=await doctorSlotsModel.updateOne({doctorId:id,date:{$gte:startOfDay,$lte:endOfDay}},{$pull:{slots:{start:startTime}}})
+        if(reault.modifiedCount>0)return true
+        return false
+
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async cancelAppointment(id: Types.ObjectId, date: Date, startTime: Date): Promise<{ status: boolean; amount?: string;id?:Types.ObjectId,userId?:Types.ObjectId }> {
+      const startOfDay = moment(date).startOf("day").toDate();
+      const endOfDay = moment(date).endOf("day").toDate();
+      try{
+        const result = await appointmentModel.findOneAndUpdate(
+          {
+            $and:[{docId: id},
+            {date: { $gte: startOfDay, $lte: endOfDay }},
+            {start: startTime}]
+          },
+          { status: "cancelled" },{
+            new:true
+          }
+        );
+        if(result){
+          return {status:true,amount:result.amount,id:result._id,userId:result.userId}
+        }else{
+          return {status:false}
+        }
+        
+
+      }
+      catch(error){
+        throw error
+      }
+      
+  }
+  async doctorWalletUpdate(docId: Types.ObjectId, appointmentId: Types.ObjectId, amount: string, type: string, reason: string, paymentMethod: string): Promise<boolean> {
+     const amountNum=Number(amount)
+      try{
+         const result = await doctorWalletModal.findOneAndUpdate(
+           { doctorId: docId },
+           {
+             $inc: {
+               balance: type === "credit" ? amountNum : -amountNum,
+               transactionCount: 1,
+             },
+             $push: {
+               transactions: {
+                 appointment: appointmentId,
+                 amount: amountNum,
+                 type: type,
+                 reason: reason,
+                 paymentMethod,
+               },
+             },
+           },
+           {
+             new: true,
+             upsert: true,
+             setDefaultsOnInsert: true,
+           }
+         );
+         if(result) return true
+         else return false
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async userWalletUpdate(userId: Types.ObjectId, appointmentId: Types.ObjectId, amount: string, type: string, reason: string, paymentMethod: string): Promise<boolean> {
+      const amountNum = Number(amount);
+      try{
+         const result = await userWalletModal.findOneAndUpdate(
+           { userId },
+           {
+             $inc: {
+               balance: type === "credit" ? amountNum : -amountNum,
+               transactionCount: 1,
+             },
+             $push: {
+               transactions: {
+                 appointment: appointmentId,
+                 amount: amountNum,
+                 type: type,
+                 reason: reason,
+                 paymentMethod,
+               },
+             },
+           },
+           {
+             new: true,
+             upsert: true,
+             setDefaultsOnInsert: true,
+           }
+         );
+          if (result.__v == 0) {
+            await userModel.updateOne(
+              { _id: userId },
+              { $set: { wallet: result._id } }
+            );
+          }
+         if (result) return true;
+         else return false;
+
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+
+  
+
+  async createCancelledAppointment(docId: Types.ObjectId, appointmentId: Types.ObjectId, amount: string, cancelledBy: string): Promise<boolean> {
+      try{
+        const result = await cancelledAppointmentsModel.create({
+          appointmentId:appointmentId,
+          docId:docId,
+          amount:amount,
+          cancelledBy
+
+        })
+        if(result) return true
+        else return false
 
       }
       catch(error){

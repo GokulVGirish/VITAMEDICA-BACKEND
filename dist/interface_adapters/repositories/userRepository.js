@@ -9,6 +9,8 @@ const DoctorSchema_1 = __importDefault(require("../../frameworks/mongoose/models
 const DoctorSlotsSchema_1 = __importDefault(require("../../frameworks/mongoose/models/DoctorSlotsSchema"));
 const AppointmentSchema_1 = __importDefault(require("../../frameworks/mongoose/models/AppointmentSchema"));
 const DoctorWalletSchema_1 = __importDefault(require("../../frameworks/mongoose/models/DoctorWalletSchema"));
+const UserWalletSchema_1 = __importDefault(require("../../frameworks/mongoose/models/UserWalletSchema"));
+const cancelledAppointmentSchema_1 = __importDefault(require("../../frameworks/mongoose/models/cancelledAppointmentSchema"));
 const moment = require("moment");
 class UserRepository {
     async tempOtpUser(data) {
@@ -318,12 +320,15 @@ class UserRepository {
     async doctorWalletUpdate(docId, appointmentId, amount, type, reason, paymentMethod) {
         try {
             const result = await DoctorWalletSchema_1.default.findOneAndUpdate({ doctorId: docId }, {
-                $inc: { balance: type === "credit" ? amount : -amount },
+                $inc: {
+                    balance: type === "credit" ? amount : -amount,
+                    transactionCount: 1,
+                },
                 $push: {
                     transactions: {
                         appointment: appointmentId,
                         amount: amount,
-                        type: "credit",
+                        type: type,
                         reason: reason,
                         paymentMethod,
                     },
@@ -340,6 +345,183 @@ class UserRepository {
                 return true;
             else
                 return false;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getAppointments(page, limit, userId) {
+        try {
+            const result = await AppointmentSchema_1.default.aggregate([
+                { $match: { userId: userId } },
+                { $lookup: {
+                        from: "doctors",
+                        localField: "docId",
+                        foreignField: "_id",
+                        as: "doctorInfo"
+                    }
+                },
+                {
+                    $unwind: "$doctorInfo"
+                },
+                {
+                    $project: {
+                        _id: 1,
+                        date: 1,
+                        status: 1,
+                        start: 1,
+                        end: 1,
+                        doctorName: "$doctorInfo.name",
+                        paymentStatus: 1,
+                        amount: 1,
+                        createdAt: 1
+                    }
+                },
+                { $sort: { createdAt: -1 } },
+                { $skip: (page - 1) * limit },
+                { $limit: limit }
+            ]);
+            const totalAppointments = await AppointmentSchema_1.default.countDocuments({ userId });
+            if (result.length !== 0)
+                return { status: true, appointments: result, totalPages: Math.ceil(totalAppointments / limit) };
+            return { status: false };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async userWalletInfo(page, limit, userId) {
+        try {
+            const result = await UserWalletSchema_1.default.aggregate([
+                { $match: { userId } },
+                {
+                    $project: {
+                        _id: 1,
+                        balance: 1,
+                        transactionCount: 1,
+                        transactions: {
+                            $slice: [
+                                { $reverseArray: "$transactions" },
+                                (page - 1) * limit,
+                                limit
+                            ]
+                        }
+                    }
+                }
+            ]);
+            if (!result || result.length === 0) {
+                return { status: false };
+            }
+            const totalPages = Math.ceil(result[0].transactionCount / limit);
+            return {
+                status: true,
+                userWallet: result[0],
+                totalPages: totalPages,
+            };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async cancelAppointment(appointmentId) {
+        try {
+            const response = await AppointmentSchema_1.default.findOneAndUpdate({ _id: appointmentId }, { status: "cancelled" }, { new: true });
+            if (response) {
+                return { status: true, amount: response.amount, docId: response.docId };
+            }
+            else {
+                return { status: false };
+            }
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async unbookSlot(docId, date, startTime) {
+        try {
+            const result = await DoctorSlotsSchema_1.default.updateOne({
+                doctorId: docId,
+                date: date,
+            }, {
+                $set: {
+                    "slots.$[slot].bookedBy": null,
+                    "slots.$[slot].availability": true,
+                    "slots.$[slot].locked": false,
+                    "slots.$[slot].lockedBy": null,
+                    "slots.$[slot].lockExpiration": null,
+                },
+            }, {
+                arrayFilters: [{ "slot.start": startTime }],
+            });
+            return result.modifiedCount > 0;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async createCancelledAppointment(docId, appointmentId, amount, cancelledBy) {
+        try {
+            try {
+                const result = await cancelledAppointmentSchema_1.default.create({
+                    appointmentId: appointmentId,
+                    docId: docId,
+                    amount: amount,
+                    cancelledBy,
+                });
+                if (result)
+                    return true;
+                else
+                    return false;
+            }
+            catch (error) {
+                throw error;
+            }
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async userWalletUpdate(userId, appointmentId, amount, type, reason, paymentMethod) {
+        try {
+            try {
+                const result = await UserWalletSchema_1.default.findOneAndUpdate({ userId: userId }, {
+                    $inc: {
+                        balance: type === "credit" ? amount : -amount,
+                        transactionCount: 1,
+                    },
+                    $push: {
+                        transactions: {
+                            appointment: appointmentId,
+                            amount: amount,
+                            type: type,
+                            reason: reason,
+                            paymentMethod,
+                        },
+                    },
+                }, {
+                    new: true,
+                    upsert: true,
+                    setDefaultsOnInsert: true,
+                });
+                if (result.__v == 0) {
+                    await UserSchema_1.default.updateOne({ _id: userId }, { $set: { wallet: result._id } });
+                }
+                if (result)
+                    return true;
+                else
+                    return false;
+            }
+            catch (error) {
+                throw error;
+            }
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getAppointment(appoinmentId) {
+        try {
+            return await AppointmentSchema_1.default.findOne({ _id: appoinmentId });
         }
         catch (error) {
             throw error;

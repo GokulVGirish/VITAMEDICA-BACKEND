@@ -11,6 +11,9 @@ import mongoose from "mongoose";
 import appointmentModel from "../../frameworks/mongoose/models/AppointmentSchema";
 import IAppointment from "../../entities/rules/appointments";
 import doctorWalletModal from "../../frameworks/mongoose/models/DoctorWalletSchema";
+import IUserWallet from "../../entities/rules/userWalletType";
+import userWalletModal from "../../frameworks/mongoose/models/UserWalletSchema";
+import cancelledAppointmentsModel from "../../frameworks/mongoose/models/cancelledAppointmentSchema";
 
 const moment = require("moment");
 
@@ -387,12 +390,15 @@ class UserRepository implements IUserRepository {
       const result = await doctorWalletModal.findOneAndUpdate(
         { doctorId: docId },
         {
-          $inc: { balance: type === "credit" ? amount : -amount },
+          $inc: {
+            balance: type === "credit" ? amount : -amount,
+            transactionCount: 1,
+          },
           $push: {
             transactions: {
               appointment: appointmentId,
               amount: amount,
-              type: "credit",
+              type: type,
               reason: reason,
               paymentMethod,
             },
@@ -415,6 +421,204 @@ class UserRepository implements IUserRepository {
     } catch (error) {
       throw error;
     }
+  }
+  async getAppointments(page: number, limit: number, userId: Types.ObjectId): Promise<{status:boolean;appointments?:IAppointment[],totalPages?:number}> {
+      try{
+        const result = await appointmentModel.aggregate([
+          { $match: { userId: userId } },
+          {$lookup:{
+            from:"doctors",
+            localField:"docId",
+            foreignField:"_id",
+            as:"doctorInfo"
+          }
+           },
+           {
+            $unwind:"$doctorInfo"
+           },
+           {
+            $project:{
+              _id:1,
+              date:1,
+              status:1,
+              start:1,
+              end:1,
+              doctorName:"$doctorInfo.name",
+              paymentStatus:1,
+              amount:1,
+              createdAt:1
+            }
+          },
+
+           
+          { $sort: { createdAt:-1 } },
+          { $skip: (page - 1) * limit },
+          {$limit:limit}
+        ]);
+        const totalAppointments=await appointmentModel.countDocuments({userId})
+        if(result.length!==0)return {status:true,appointments:result, totalPages: Math.ceil(totalAppointments / limit)}
+        return {status:false}
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async userWalletInfo(page: number, limit: number, userId: Types.ObjectId): Promise<{ status: boolean; userWallet?: IUserWallet; totalPages?: number; }> {
+      try{
+
+        const result = await userWalletModal.aggregate([
+          { $match: { userId } },
+          {
+            $project: {
+              _id: 1,
+              balance: 1,
+              transactionCount: 1,
+              transactions:{
+                $slice:[
+                  {$reverseArray:"$transactions"},
+                  (page-1)*limit,
+                  limit
+                ]
+              }
+            }
+          }
+        ]);
+         if (!result || result.length === 0) {
+           return { status: false };
+         }
+         const totalPages = Math.ceil(
+           result[0].transactionCount / limit
+         );
+         return {
+           status: true,
+           userWallet: result[0],
+           totalPages: totalPages,
+         };
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async cancelAppointment(appointmentId: string): Promise<{ status: boolean; amount?: string; docId?: Types.ObjectId; }> {
+      
+    try{
+
+      const response=await appointmentModel.findOneAndUpdate({_id:appointmentId},{status:"cancelled"},{new:true})
+      if(response){
+        return {status:true,amount:response.amount,docId:response.docId}
+      }
+      else{
+        return {status:false}
+      }
+
+    }
+    catch(error){
+      throw error
+    }
+  }
+  async unbookSlot(docId: Types.ObjectId, date: Date, startTime: Date): Promise<boolean> {
+    try{
+       const result = await doctorSlotsModel.updateOne(
+         {
+           doctorId: docId,
+           date: date,
+         },
+         {
+           $set: {
+             "slots.$[slot].bookedBy": null,
+             "slots.$[slot].availability": true,
+             "slots.$[slot].locked": false,
+             "slots.$[slot].lockedBy": null,
+             "slots.$[slot].lockExpiration": null,
+           },
+         },
+         {
+           arrayFilters: [{ "slot.start": startTime }], 
+         }
+       );
+      return result.modifiedCount>0
+
+
+    }
+    catch(error){
+      throw error
+    }
+      
+  }
+  async createCancelledAppointment(docId: Types.ObjectId, appointmentId: Types.ObjectId, amount: string, cancelledBy: string): Promise<boolean> {
+      try{
+          try {
+            const result = await cancelledAppointmentsModel.create({
+              appointmentId: appointmentId,
+              docId: docId,
+              amount: amount,
+              cancelledBy,
+            });
+            if (result) return true;
+            else return false;
+          } catch (error) {
+            throw error;
+          }
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async userWalletUpdate(userId: Types.ObjectId, appointmentId: Types.ObjectId, amount: number, type: string, reason: string, paymentMethod: string): Promise<boolean> {
+      try{
+        try {
+          const result = await userWalletModal.findOneAndUpdate(
+            {userId:userId },
+            {
+              $inc: {
+                balance: type === "credit" ? amount : -amount,
+                transactionCount: 1,
+              },
+              $push: {
+                transactions: {
+                  appointment: appointmentId,
+                  amount: amount,
+                  type: type,
+                  reason: reason,
+                  paymentMethod,
+                },
+              },
+            },
+            {
+              new: true,
+              upsert: true,
+              setDefaultsOnInsert: true,
+            }
+          );
+          if (result.__v == 0) {
+            await userModel.updateOne(
+              { _id: userId },
+              { $set: { wallet: result._id } }
+            );
+          }
+          if (result) return true;
+          else return false;
+        } catch (error) {
+          throw error;
+        }
+
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async getAppointment(appoinmentId: string): Promise<IAppointment | null> {
+      try{
+        return await appointmentModel.findOne({_id:appoinmentId})
+
+      }
+      catch(error){
+        throw error
+      }
   }
 }
 export default UserRepository

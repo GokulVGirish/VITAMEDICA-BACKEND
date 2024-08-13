@@ -11,6 +11,8 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 import s3Config from "../entities/services/awsS3";
 import { ObjectId, Types } from "mongoose";
 import { DoctorSlots } from "../entities/rules/slotsType";
+import { IDoctorWallet } from "../entities/rules/doctorWalletType";
+import IAppointment from "../entities/rules/appointments";
 
 const s3 = new S3Client({
   region: s3Config.BUCKET_REGION,
@@ -327,6 +329,108 @@ class DoctorInteractor implements IDoctorInteractor {
     catch(error){
       throw error
     }
+   }
+   async getWalletDetails(page: number, limit: number, docId: Types.ObjectId): Promise<{ status: boolean; doctorWallet?: IDoctorWallet; message: string;totalPages?:number }> {
+       try{
+        const response=await this.Repository.getWalletDetails(page,limit,docId)
+        if(!response.status) return {status:false,message:"No wallet Found"}
+        return {status:true,message:"Sucessful",doctorWallet:response.doctorWallet,totalPages:response.totalPages}
+
+       }
+       catch(error){
+        throw error
+       }
+   }
+   async getTodaysAppointments(docId: Types.ObjectId): Promise<{ status: boolean; message: string; appointments?: IAppointment[]; }> {
+       
+    try{
+      const response=await this.Repository.getTodaysAppointments(docId)
+      if(response){
+        return {status:true,message:"Success",appointments:response}
+      }
+      return {status:false,message:"no appointments"}
+
+    }
+    catch(error){
+      throw error
+    }
+   }
+   async getUpcommingAppointments(docId: Types.ObjectId,page:number,limit:number): Promise<{ status: boolean; message: string; appointments?: IAppointment[];totalPages?:number }> {
+       
+    try{
+      const response=await this.Repository.getUpcommingAppointments(docId,page,limit)
+      if(!response.status) return {status:false,message:"no appointments"}
+      return {status:true,message:"success",appointments:response.appointments,totalPages:response.totalPages}
+
+    }
+    catch(error){
+      throw error
+    }
+   }
+   async getAvailableDate(id: Types.ObjectId): Promise<{ status: boolean; message: string; dates?: string[]; }> {
+       try{
+        const response=await this.Repository.getAvailableDate(id)
+        if (!response) return { status: false, message: "no available slots" };
+        const dates = [
+          ...new Set(
+            response.map((slot) => slot.date.toISOString().split("T")[0])
+          ),
+        ];
+        return { status: true, message: "Success", dates: dates };
+
+
+       }
+       catch(error){
+        throw error
+       }
+   }
+   async getTimeSlots(id: Types.ObjectId, date: string): Promise<{ status: boolean; message: string; slots?: DoctorSlots; }> {
+       try{
+           const result = await this.Repository.getTimeSlots(id, date);
+        
+           if (!result)
+             return { status: false, message: "Something went wrong" };
+           return { status: true, message: "Success", slots: result };
+
+       }
+       catch(error){
+        throw error
+       }
+   }
+   async deleteUnbookedSlots(id: Types.ObjectId, date: Date, startTime:Date): Promise<{ status: boolean; message: string; }> {
+       try{
+
+        const response=await this.Repository.deleteSlots(id,date,startTime)
+        if(response)return {status:true,message:"Sucessfully Cancelled"}
+        return {status:false,message:"Something Went wrong"}
+
+       }
+       catch(error){
+        throw error
+       }
+   }
+   async deleteBookedTimeSlots(id: Types.ObjectId, date: Date,startTime:Date): Promise<{ status: boolean; message: string; }> {
+       try{
+
+        const result=await this.Repository.cancelAppointment(id,date,startTime)
+        if(!result.status) return {status:false,message:"Something Went Wrong"}
+        const  res=await this.Repository.createCancelledAppointment(id,result.id as Types.ObjectId,result.amount as string,"doctor")
+        if(!res) return {status:false,message:"Something Went Wrong"}
+        const response=await this.Repository.doctorWalletUpdate(id,result.id as Types.ObjectId,result.amount as string,"debit","appointment cancelled by Doc","razorpay")
+        if(!response)return { status: false, message: "Something Went Wrong" };
+
+      const userwaller=await this.Repository.userWalletUpdate(result.userId as Types.ObjectId,result.id as Types.ObjectId,result.amount as string,"credit","Appointment cancelled by doctor","razorpay")
+      if(!userwaller) return { status: false, message: "Something Went Wrong" };
+      const deleteSlot=await this.Repository.deleteSlots(id,date,startTime)
+      if(!deleteSlot) return { status: false, message: "Something Went Wrong" };
+
+      return {status:true,message:"sucessfully done"}
+
+
+       }
+       catch(error){
+        throw error
+       }
    }
 
 }

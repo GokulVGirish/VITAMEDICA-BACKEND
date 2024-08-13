@@ -4,6 +4,9 @@ import { MulterFile } from "../rules/multerFile";
 import { promises } from "dns";
 import { ObjectId, Types } from "mongoose";
 import { DoctorSlots } from "../rules/slotsType";
+import { IDoctorWallet } from "../rules/doctorWalletType";
+import IAppointment from "../rules/appointments";
+import { Type } from "@aws-sdk/client-s3";
 export interface IDoctorInteractor {
   otpSignup(doctor: OtpDoctor): Promise<{
     status: true | false;
@@ -55,6 +58,13 @@ export interface IDoctorInteractor {
     email:string
   ): Promise<{ status: boolean; message: string; errorCode?: string,data?:MongoDoctor }>;
    updateProfileImage(id:Types.ObjectId,image:MulterFile):Promise<{status:boolean;imageData?:string}>
-   addSlots(id:Types.ObjectId,data:DoctorSlots):Promise<{status:boolean,message:string,errorCode?:string}>
+   addSlots(id:Types.ObjectId,data:DoctorSlots):Promise<{status:boolean;message:string;errorCode?:string}>
+   getWalletDetails(page:number,limit:number,docId:Types.ObjectId):Promise<{status:boolean,doctorWallet?:IDoctorWallet,message:string;totalPages?:number}>
+   getTodaysAppointments(docId:Types.ObjectId):Promise<{status:boolean;message:string;appointments?:IAppointment[]}>
+   getUpcommingAppointments(docId:Types.ObjectId,page:number,limit:number):Promise<{status:boolean;message:string;appointments?:IAppointment[];totalPages?:number }>
+     getAvailableDate(id:Types.ObjectId):Promise<{status:boolean,message:string;dates?:string[]}>
+         getTimeSlots(id:Types.ObjectId,date:string):Promise<{status:boolean,message:string,slots?:DoctorSlots}>
+         deleteUnbookedSlots(id:Types.ObjectId,date:Date,startTime:Date):Promise<{status:boolean,message:string}>
+      deleteBookedTimeSlots(id:Types.ObjectId,date:Date,startTime:Date):Promise<{status:boolean;message:string}>
 
 }

@@ -12,60 +12,58 @@ const addressSchema = new mongoose.Schema(
   }
 );
 
-const userSchema=new mongoose.Schema({
-
-    name:{
-
-        type:String,
-        required:true
-    },
-    email:{
-        type:String,
-        required:true
-    },
-    phone:{
-        type:String,
-        default:null
-        
-    },
-    dob:{
-
-        type:Date,
-        default:null
-       
-    },
-    image:{
-        type:String,
-        default :null
-    },
-    password:{
-        type:String,
-        required:true
-    },
-    gender:{
-        type:String,
-        enum:["male","female"],
-        default:null
-      
-    },
-    address:{
-        type:addressSchema,
-        default:null
-         
-    },
-    bloodGroup:{
-        type:String,
-        default:null
-    },
-    register:{
-        type:String,
-        enum:["Google","Email"],
-        default:"Email"
-    },
-    isBlocked:{
-        type:Boolean,
-        default:false
-    }
-})
+const userSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+  },
+  email: {
+    type: String,
+    required: true,
+  },
+  phone: {
+    type: String,
+    default: null,
+  },
+  dob: {
+    type: Date,
+    default: null,
+  },
+  image: {
+    type: String,
+    default: null,
+  },
+  password: {
+    type: String,
+    required: true,
+  },
+  gender: {
+    type: String,
+    enum: ["male", "female"],
+    default: null,
+  },
+  address: {
+    type: addressSchema,
+    default: null,
+  },
+  bloodGroup: {
+    type: String,
+    default: null,
+  },
+  register: {
+    type: String,
+    enum: ["Google", "Email"],
+    default: "Email",
+  },
+  isBlocked: {
+    type: Boolean,
+    default: false,
+  },
+  wallet: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "UserWallet",
+    default: null,
+  },
+});
 const userModel=mongoose.model("User",userSchema)
 export default userModel

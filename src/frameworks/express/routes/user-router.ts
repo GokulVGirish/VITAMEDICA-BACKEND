@@ -19,7 +19,7 @@ const controller=new UserController(interactor)
 const userRouter=expreress.Router()
 userRouter.post("/signup",controller.otpSignup.bind(controller))
 userRouter.post("/signup/verify-otp",controller.verifyOtpSignup.bind(controller))
-userRouter.get("/token/verify",authMiddleware,verifyRole("user"),controller.verifyToken.bind(controller))
+userRouter.get("/token/verify",authMiddleware,getUser,verifyRole("user"),controller.verifyToken.bind(controller))
 userRouter.post("/login",controller.login.bind(controller))
 userRouter.post("/google/signup", controller.googleSignup.bind(controller));
 userRouter.post("/google/login", controller.googleLogin.bind(controller));

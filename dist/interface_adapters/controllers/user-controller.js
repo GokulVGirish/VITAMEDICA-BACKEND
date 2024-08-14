@@ -66,6 +66,7 @@ class UserController {
                     message: "logged in Sucessfully",
                     accessToken: response.accessToken,
                     refreshToken: response.refreshToken,
+                    userId: response.userId
                 });
             }
             else {

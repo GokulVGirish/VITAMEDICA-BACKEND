@@ -22,6 +22,7 @@ export interface IUserInteractor {
     accessToken?: string;
     refreshToken?: string;
     message?: string;
+    userId?: string;
   }>;
   googleSignup(
     email: string,
@@ -44,26 +45,95 @@ export interface IUserInteractor {
     message?: string;
     errorCode?: string;
   }>;
-  resendOtp(email:string):Promise<{status:boolean,message?:string,errorCode?:string}>
-  getProfile(image:string):Promise<{url:string|null}>
+  resendOtp(
+    email: string
+  ): Promise<{ status: boolean; message?: string; errorCode?: string }>;
+  getProfile(image: string): Promise<{ url: string | null }>;
   profileUpdate(
     data: any,
-    userId:Types.ObjectId,
-    email:string
-  ): Promise<{ status: boolean; message: string; errorCode?: string,data?:MongoUser }>;
-  updateProfileImage(id:Types.ObjectId,image:MulterFile):Promise<{status:boolean;imageData?:string}>
-  passwordResetLink(email:string):Promise<{status:boolean;message:string,link?:string}>
-  resetPassword(token:string,password:string):Promise<{status:boolean;message:string}>
-     getDoctorsList(skip:number,limit:number):Promise<{status:boolean,message:string,errorCode?:string,doctors?:MongoDoctor[];totalPages?:number}>
-     getDoctorPage(id:string):Promise<{status:boolean,message:string,doctor?:MongoDoctor}>
-     getAvailableDate(id:string):Promise<{status:boolean,message:string;dates?:string[]}>
-     getTimeSlots(id:string,date:string):Promise<{status:boolean,message:string,slots?:DoctorSlots}>
-     razorPayOrderGenerate(amount:string,currency:string,receipt:string):Promise<{status:boolean;order?:any,message:string}>
-     razorPayValidateBook(razorpay_payment_id:string,razorpay_order_id:string,razorpay_signature:string,docId:Types.ObjectId,slotDetails:any,userId:Types.ObjectId,fees:string):Promise<{status:boolean;message?:string;appointment?:IAppointment}>
-     lockSlot(userId:Types.ObjectId,docId:Types.ObjectId,date:Date,slotId:Types.ObjectId):Promise<{status:boolean,message?:string,errorCode?:string}>
-     getAppointments(page:number,limit:number,userId:Types.ObjectId):Promise<{status:boolean,message:string,appointments?:IAppointment[];totalPages?:number}>
-     getWalletInfo(page:number,limit:number,userId:Types.ObjectId):Promise<{status:boolean,userWallet?:IUserWallet,message:string;totalPages?:number}>
-     cancelAppointment(userId:Types.ObjectId,appointmentId:string,date:Date,startTime:Date):Promise<{status:boolean;message:string;}>
-     
- 
+    userId: Types.ObjectId,
+    email: string
+  ): Promise<{
+    status: boolean;
+    message: string;
+    errorCode?: string;
+    data?: MongoUser;
+  }>;
+  updateProfileImage(
+    id: Types.ObjectId,
+    image: MulterFile
+  ): Promise<{ status: boolean; imageData?: string }>;
+  passwordResetLink(
+    email: string
+  ): Promise<{ status: boolean; message: string; link?: string }>;
+  resetPassword(
+    token: string,
+    password: string
+  ): Promise<{ status: boolean; message: string }>;
+  getDoctorsList(
+    skip: number,
+    limit: number
+  ): Promise<{
+    status: boolean;
+    message: string;
+    errorCode?: string;
+    doctors?: MongoDoctor[];
+    totalPages?: number;
+  }>;
+  getDoctorPage(
+    id: string
+  ): Promise<{ status: boolean; message: string; doctor?: MongoDoctor }>;
+  getAvailableDate(
+    id: string
+  ): Promise<{ status: boolean; message: string; dates?: string[] }>;
+  getTimeSlots(
+    id: string,
+    date: string
+  ): Promise<{ status: boolean; message: string; slots?: DoctorSlots }>;
+  razorPayOrderGenerate(
+    amount: string,
+    currency: string,
+    receipt: string
+  ): Promise<{ status: boolean; order?: any; message: string }>;
+  razorPayValidateBook(
+    razorpay_payment_id: string,
+    razorpay_order_id: string,
+    razorpay_signature: string,
+    docId: Types.ObjectId,
+    slotDetails: any,
+    userId: Types.ObjectId,
+    fees: string
+  ): Promise<{ status: boolean; message?: string; appointment?: IAppointment }>;
+  lockSlot(
+    userId: Types.ObjectId,
+    docId: Types.ObjectId,
+    date: Date,
+    slotId: Types.ObjectId
+  ): Promise<{ status: boolean; message?: string; errorCode?: string }>;
+  getAppointments(
+    page: number,
+    limit: number,
+    userId: Types.ObjectId
+  ): Promise<{
+    status: boolean;
+    message: string;
+    appointments?: IAppointment[];
+    totalPages?: number;
+  }>;
+  getWalletInfo(
+    page: number,
+    limit: number,
+    userId: Types.ObjectId
+  ): Promise<{
+    status: boolean;
+    userWallet?: IUserWallet;
+    message: string;
+    totalPages?: number;
+  }>;
+  cancelAppointment(
+    userId: Types.ObjectId,
+    appointmentId: string,
+    date: Date,
+    startTime: Date
+  ): Promise<{ status: boolean; message: string }>;
 }

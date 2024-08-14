@@ -93,6 +93,7 @@ class UserInteractor {
                         accessToken,
                         refreshToken,
                         message: "logged in sucessfullly",
+                        userId: userExist._id
                     };
                 }
                 else {

@@ -10,6 +10,8 @@ import { S3Client ,PutObjectCommand,GetObjectCommand, S3,DeleteObjectCommand} fr
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 import s3Config from "../entities/services/awsS3";
 import { Types } from "mongoose";
+import { io } from "../frameworks/express/app";
+import { connectedUsers } from "../frameworks/websocket/socket.io";
 const s3=new S3Client({
     region:s3Config.BUCKET_REGION,
     credentials:{
@@ -171,6 +173,14 @@ class AdminInteractor implements IAdminInteractor {
       if (!response) {
         return { status: false, message: "internal server error" };
       }
+   
+   
+        io.to(connectedUsers[id]?.socketId).emit(
+          "blocked",
+          connectedUsers[id]?.role
+        );
+      
+
       return {
         status: true,
         message: `user has been sucessfully ${

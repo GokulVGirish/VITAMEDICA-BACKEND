@@ -7,6 +7,8 @@ const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const client_s3_1 = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const awsS3_1 = __importDefault(require("../entities/services/awsS3"));
+const app_1 = require("../frameworks/express/app");
+const socket_io_1 = require("../frameworks/websocket/socket.io");
 const s3 = new client_s3_1.S3Client({
     region: awsS3_1.default.BUCKET_REGION,
     credentials: {
@@ -142,6 +144,7 @@ class AdminInteractor {
             if (!response) {
                 return { status: false, message: "internal server error" };
             }
+            app_1.io.to(socket_io_1.connectedUsers[id]?.socketId).emit("blocked", socket_io_1.connectedUsers[id]?.role);
             return {
                 status: true,
                 message: `user has been sucessfully ${changedStatus ? "Blocked" : "Unblocked"}`,

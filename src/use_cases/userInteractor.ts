@@ -99,6 +99,7 @@ class UserInteractor implements IUserInteractor {
     accessToken?: string;
     refreshToken?: string;
     message?: string;
+    userId?:string
   }> {
     try {
       const userExist = await this.Repository.getUser(email);
@@ -128,6 +129,7 @@ class UserInteractor implements IUserInteractor {
             accessToken,
             refreshToken,
             message: "logged in sucessfullly",
+            userId:userExist._id as string
           };
         } else {
           return { status: false, message: "wrong password" };

@@ -175,10 +175,11 @@ class AdminInteractor implements IAdminInteractor {
       }
    
    
-        io.to(connectedUsers[id]?.socketId).emit(
-          "blocked",
-          connectedUsers[id]?.role
-        );
+       if(changedStatus){
+         if(connectedUsers[id]){
+          io.to(connectedUsers[id]).emit("blocked", "user");
+         }
+       }
       
 
       return {
@@ -267,6 +268,8 @@ class AdminInteractor implements IAdminInteractor {
   async verifyDoctor(id: string): Promise<boolean> {
       try{
         const result=await this.repository.verifyDoctor(id)
+       
+        io.to(connectedUsers[id]?.socketId).emit("doctorVerified");
         return result
 
       }
@@ -300,6 +303,12 @@ class AdminInteractor implements IAdminInteractor {
         const response=await this.repository.blockUnblockDoctor(id,changedStatus)
          if (!response) {
            return { status: false, message: "internal server error" };
+         }
+         if(changedStatus ){
+        if(connectedUsers[id]){
+             io.to(connectedUsers[id]).emit("blocked", "doctor");
+        }
+           
          }
            return {
              status: true,

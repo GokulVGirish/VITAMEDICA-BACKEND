@@ -19,8 +19,8 @@ export interface IDoctorInteractor {
     message?: string;
     accessToken?: string;
     refreshToken?: string;
-     doctor?:string,
-    docstatus?:string
+    doctor?: string;
+    docstatus?: string;
   }>;
   login(
     email: string,
@@ -33,6 +33,7 @@ export interface IDoctorInteractor {
     errorCode?: string;
     doctor?: string;
     doctorStatus?: string;
+    doctorId?: Types.ObjectId;
   }>;
   uploadFileToS3(
     bucketName: string,
@@ -50,21 +51,71 @@ export interface IDoctorInteractor {
     file3: MulterFile,
     file4: MulterFile
   ): Promise<{ status: boolean }>;
-   resendOtp(email:string):Promise<{status:boolean,message?:string,errorCode?:string}>
-   getProfile(image:string):Promise<{url:string|null}>
-     profileUpdate(
+  resendOtp(
+    email: string
+  ): Promise<{ status: boolean; message?: string; errorCode?: string }>;
+  getProfile(image: string): Promise<{ url: string | null }>;
+  profileUpdate(
     data: any,
-    userId:Types.ObjectId,
-    email:string
-  ): Promise<{ status: boolean; message: string; errorCode?: string,data?:MongoDoctor }>;
-   updateProfileImage(id:Types.ObjectId,image:MulterFile):Promise<{status:boolean;imageData?:string}>
-   addSlots(id:Types.ObjectId,data:DoctorSlots):Promise<{status:boolean;message:string;errorCode?:string}>
-   getWalletDetails(page:number,limit:number,docId:Types.ObjectId):Promise<{status:boolean,doctorWallet?:IDoctorWallet,message:string;totalPages?:number}>
-   getTodaysAppointments(docId:Types.ObjectId):Promise<{status:boolean;message:string;appointments?:IAppointment[]}>
-   getUpcommingAppointments(docId:Types.ObjectId,page:number,limit:number):Promise<{status:boolean;message:string;appointments?:IAppointment[];totalPages?:number }>
-     getAvailableDate(id:Types.ObjectId):Promise<{status:boolean,message:string;dates?:string[]}>
-         getTimeSlots(id:Types.ObjectId,date:string):Promise<{status:boolean,message:string,slots?:DoctorSlots}>
-         deleteUnbookedSlots(id:Types.ObjectId,date:Date,startTime:Date):Promise<{status:boolean,message:string}>
-      deleteBookedTimeSlots(id:Types.ObjectId,date:Date,startTime:Date):Promise<{status:boolean;message:string}>
-
+    userId: Types.ObjectId,
+    email: string
+  ): Promise<{
+    status: boolean;
+    message: string;
+    errorCode?: string;
+    data?: MongoDoctor;
+  }>;
+  updateProfileImage(
+    id: Types.ObjectId,
+    image: MulterFile
+  ): Promise<{ status: boolean; imageData?: string }>;
+  addSlots(
+    id: Types.ObjectId,
+    data: DoctorSlots
+  ): Promise<{ status: boolean; message: string; errorCode?: string }>;
+  getWalletDetails(
+    page: number,
+    limit: number,
+    docId: Types.ObjectId
+  ): Promise<{
+    status: boolean;
+    doctorWallet?: IDoctorWallet;
+    message: string;
+    totalPages?: number;
+  }>;
+  getTodaysAppointments(
+    docId: Types.ObjectId
+  ): Promise<{
+    status: boolean;
+    message: string;
+    appointments?: IAppointment[];
+  }>;
+  getUpcommingAppointments(
+    docId: Types.ObjectId,
+    page: number,
+    limit: number
+  ): Promise<{
+    status: boolean;
+    message: string;
+    appointments?: IAppointment[];
+    totalPages?: number;
+  }>;
+  getAvailableDate(
+    id: Types.ObjectId
+  ): Promise<{ status: boolean; message: string; dates?: string[] }>;
+  getTimeSlots(
+    id: Types.ObjectId,
+    date: string
+  ): Promise<{ status: boolean; message: string; slots?: DoctorSlots }>;
+  deleteUnbookedSlots(
+    id: Types.ObjectId,
+    date: Date,
+    startTime: Date
+  ): Promise<{ status: boolean; message: string }>;
+  deleteBookedTimeSlots(
+    id: Types.ObjectId,
+    date: Date,
+    startTime: Date
+  ): Promise<{ status: boolean; message: string }>;
+  getAppointmentDetail(id:string):Promise<{status:boolean,message?:string,detail?:IAppointment}>
 }

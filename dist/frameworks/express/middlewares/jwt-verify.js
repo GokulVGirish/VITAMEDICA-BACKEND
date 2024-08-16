@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.verifyAccessToken = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const verifyAccessToken = (token) => {
     try {
@@ -12,6 +13,7 @@ const verifyAccessToken = (token) => {
         return null;
     }
 };
+exports.verifyAccessToken = verifyAccessToken;
 const verifyRefreshToken = (token) => {
     try {
         return jsonwebtoken_1.default.verify(token, process.env.REFRESH_TOCKEN_SECRET);
@@ -27,7 +29,7 @@ const authMiddleware = (req, res, next) => {
     const [type, token] = authHeader.split(" ");
     if (type !== "Bearer")
         return res.status(401).json({ message: 'Invalid token type' });
-    const decodedToken = verifyAccessToken(token);
+    const decodedToken = (0, exports.verifyAccessToken)(token);
     if (decodedToken) {
         req.user = decodedToken;
         return next();
@@ -37,8 +39,8 @@ const authMiddleware = (req, res, next) => {
         return res.status(401).json({ message: 'No refresh token provided' });
     const decodedRefreshToken = verifyRefreshToken(refreshToken);
     if (decodedRefreshToken) {
-        const { emailId, role, verified } = decodedRefreshToken;
-        const newAccessToken = jsonwebtoken_1.default.sign({ emailId, role, verified }, process.env.ACCESS_TOCKEN_SECRET, { expiresIn: "1h" });
+        const { emailId, role, verified, userId } = decodedRefreshToken;
+        const newAccessToken = jsonwebtoken_1.default.sign({ emailId, role, verified, userId }, process.env.ACCESS_TOCKEN_SECRET, { expiresIn: "1h" });
         req.user = decodedRefreshToken;
         res.cookie("accessToken", newAccessToken, {
             path: "/"

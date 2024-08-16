@@ -12,7 +12,7 @@ export interface IDoctorRepository {
     status: boolean;
     departments?: MongoDepartment[];
   }>;
-  tempOtpDoctor(data: OtpDoctor): Promise<{ status: true | false }>;
+  tempOtpDoctor(data: OtpDoctor): Promise<{ userId: Types.ObjectId }>;
   doctorExists(email: string): Promise<null | MongoDoctor>;
   createDoctorOtp(
     otp: string
@@ -63,12 +63,21 @@ export interface IDoctorRepository {
   }>;
   getAvailableDate(id: Types.ObjectId): Promise<DoctorSlots[] | null>;
   getTimeSlots(id: Types.ObjectId, date: string): Promise<DoctorSlots | null>;
-  deleteSlots(id: Types.ObjectId, date: Date, startTime:Date): Promise<boolean>;
+  deleteSlots(
+    id: Types.ObjectId,
+    date: Date,
+    startTime: Date
+  ): Promise<boolean>;
   cancelAppointment(
     id: Types.ObjectId,
     date: Date,
     startTime: Date
-  ): Promise<{ status: boolean; amount?: string; id?: Types.ObjectId;userId?:Types.ObjectId  }>;
+  ): Promise<{
+    status: boolean;
+    amount?: string;
+    id?: Types.ObjectId;
+    userId?: Types.ObjectId;
+  }>;
   doctorWalletUpdate(
     docId: Types.ObjectId,
     appointmentId: Types.ObjectId,
@@ -92,4 +101,7 @@ export interface IDoctorRepository {
     amount: string,
     cancelledBy: string
   ): Promise<boolean>;
+  getAppointmentDetail(
+    id: string
+  ): Promise<IAppointment|null>;
 }

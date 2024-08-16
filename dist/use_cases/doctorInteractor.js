@@ -29,7 +29,7 @@ class DoctorInteractor {
                     doctor.otp = mailResponse.otp;
                     doctor.password = await bcryptjs_1.default.hash(doctor.password, 10);
                     const response = await this.Repository.tempOtpDoctor(doctor);
-                    const tempToken = this.JWTServices.generateToken({ emailId: doctor.email, role: "doctor", verified: false }, { expiresIn: "10m" });
+                    const tempToken = this.JWTServices.generateToken({ emailId: doctor.email, role: "doctor", userId: response.userId, verified: false }, { expiresIn: "10m" });
                     return {
                         status: true,
                         message: "otp sucessfully sent",
@@ -61,14 +61,15 @@ class DoctorInteractor {
         try {
             const response = await this.Repository.createDoctorOtp(otp);
             if (response.status && response.doctor) {
-                const accessToken = this.JWTServices.generateToken({ emailId: response.doctor.email, role: "doctor", verified: true }, { expiresIn: "1h" });
-                const refreshToken = this.JWTServices.generateRefreshToken({ emailId: response.doctor.email, role: "doctor", verified: true }, { expiresIn: "1d" });
+                const accessToken = this.JWTServices.generateToken({ emailId: response.doctor.email, role: "doctor", userId: response.doctor._id, verified: true }, { expiresIn: "1h" });
+                const refreshToken = this.JWTServices.generateRefreshToken({ emailId: response.doctor.email, role: "doctor", userId: response.doctor._id, verified: true }, { expiresIn: "1d" });
                 return {
                     status: true,
                     message: "signed Up Sucessfully",
                     accessToken,
                     refreshToken,
-                    doctor: response.doctor?.name, docstatus: response.doctor?.status
+                    doctor: response.doctor?.name,
+                    docstatus: response.doctor?.status,
                 };
             }
             else {
@@ -84,7 +85,11 @@ class DoctorInteractor {
         try {
             const rejectDoctor = await this.Repository.getRejectedDoctor(email);
             if (rejectDoctor)
-                return { status: false, message: rejectDoctor.reason, errorCode: "VERIFICATION_FAILED" };
+                return {
+                    status: false,
+                    message: rejectDoctor.reason,
+                    errorCode: "VERIFICATION_FAILED",
+                };
             const doctor = await this.Repository.getDoctor(email);
             if (!doctor) {
                 return {
@@ -104,8 +109,8 @@ class DoctorInteractor {
                     errorCode: "INVALID_Password",
                 };
             }
-            const accessToken = this.JWTServices.generateToken({ emailId: doctor.email, role: "doctor", verified: true }, { expiresIn: "1h" });
-            const refreshToken = this.JWTServices.generateRefreshToken({ emailId: doctor.email, role: "doctor", verified: true }, { expiresIn: "1d" });
+            const accessToken = this.JWTServices.generateToken({ emailId: doctor.email, role: "doctor", userId: doctor._id, verified: true }, { expiresIn: "1h" });
+            const refreshToken = this.JWTServices.generateRefreshToken({ emailId: doctor.email, role: "doctor", userId: doctor._id, verified: true }, { expiresIn: "1d" });
             return {
                 status: true,
                 message: "logged in sucessfully",
@@ -113,6 +118,7 @@ class DoctorInteractor {
                 refreshToken,
                 doctor: doctor.name,
                 doctorStatus: doctor.status,
+                doctorId: doctor._id,
             };
         }
         catch (error) {
@@ -189,7 +195,7 @@ class DoctorInteractor {
             if (image) {
                 const command = new client_s3_1.GetObjectCommand({
                     Bucket: awsS3_1.default.BUCKET_NAME,
-                    Key: image
+                    Key: image,
                 });
                 const url = await getSignedUrl(s3, command, {
                     expiresIn: 3600,
@@ -214,13 +220,13 @@ class DoctorInteractor {
                 Bucket: awsS3_1.default.BUCKET_NAME,
                 Key: key,
                 Body: image.buffer,
-                ContentType: image.mimetype
+                ContentType: image.mimetype,
             });
             await s3.send(command);
             const response = await this.Repository.updateProfileImage(id, key);
             const command2 = new client_s3_1.GetObjectCommand({
                 Bucket: awsS3_1.default.BUCKET_NAME,
-                Key: key
+                Key: key,
             });
             const url = await getSignedUrl(s3, command2, {
                 expiresIn: 3600,
@@ -234,12 +240,22 @@ class DoctorInteractor {
     }
     async profileUpdate(data, userId, email) {
         try {
-            const response = await this.Repository.profileUpdate(userId, { name: data.name, phone: data.phone, description: data.description, fees: data.fees, degree: data.degree });
+            const response = await this.Repository.profileUpdate(userId, {
+                name: data.name,
+                phone: data.phone,
+                description: data.description,
+                fees: data.fees,
+                degree: data.degree,
+            });
             if (!response)
                 return { status: false, message: "internal server error" };
             const result = await this.Repository.getDoctor(email);
             if (result) {
-                return { status: true, data: result, message: "Profile sucessfully Updated" };
+                return {
+                    status: true,
+                    data: result,
+                    message: "Profile sucessfully Updated",
+                };
             }
             else {
                 return { status: false, message: "internal server error" };
@@ -268,7 +284,12 @@ class DoctorInteractor {
             const response = await this.Repository.getWalletDetails(page, limit, docId);
             if (!response.status)
                 return { status: false, message: "No wallet Found" };
-            return { status: true, message: "Sucessful", doctorWallet: response.doctorWallet, totalPages: response.totalPages };
+            return {
+                status: true,
+                message: "Sucessful",
+                doctorWallet: response.doctorWallet,
+                totalPages: response.totalPages,
+            };
         }
         catch (error) {
             throw error;
@@ -291,7 +312,12 @@ class DoctorInteractor {
             const response = await this.Repository.getUpcommingAppointments(docId, page, limit);
             if (!response.status)
                 return { status: false, message: "no appointments" };
-            return { status: true, message: "success", appointments: response.appointments, totalPages: response.totalPages };
+            return {
+                status: true,
+                message: "success",
+                appointments: response.appointments,
+                totalPages: response.totalPages,
+            };
         }
         catch (error) {
             throw error;
@@ -351,6 +377,27 @@ class DoctorInteractor {
             if (!deleteSlot)
                 return { status: false, message: "Something Went Wrong" };
             return { status: true, message: "sucessfully done" };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getAppointmentDetail(id) {
+        try {
+            const response = await this.Repository.getAppointmentDetail(id);
+            if (!response)
+                return { status: false, message: "Something Went Wrong" };
+            if ("image" in response && response.image) {
+                const command = new client_s3_1.GetObjectCommand({
+                    Bucket: awsS3_1.default.BUCKET_NAME,
+                    Key: response.image,
+                });
+                const url = await getSignedUrl(s3, command, {
+                    expiresIn: 3600,
+                });
+                response.image = url;
+            }
+            return { status: true, message: "Success", detail: response };
         }
         catch (error) {
             throw error;

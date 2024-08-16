@@ -16,12 +16,7 @@ class UserRepository {
     async tempOtpUser(data) {
         try {
             const tempUser = await OtpSchema_1.default.create(data);
-            if (tempUser) {
-                return { status: true };
-            }
-            else {
-                return { status: false };
-            }
+            return { userId: tempUser._id };
         }
         catch (error) {
             throw error;

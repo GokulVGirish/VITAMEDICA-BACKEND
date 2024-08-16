@@ -2,7 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.initializeSocket = exports.connectedUsers = void 0;
 const socket_io_1 = require("socket.io");
-exports.connectedUsers = {};
+const jwt_verify_1 = require("../express/middlewares/jwt-verify");
+exports.connectedUsers = [];
 const initializeSocket = (server) => {
     const io = new socket_io_1.Server(server, {
         cors: {
@@ -13,18 +14,29 @@ const initializeSocket = (server) => {
     });
     io.on("connection", (socket) => {
         console.log(`A new user has connected: ${socket.id}`);
-        socket.on("register", (userId, role) => {
-            console.log("registered");
-            exports.connectedUsers[userId] = { socketId: socket.id, role };
+        const token = socket.handshake.auth.token;
+        console.log("out token", token);
+        if (token) {
+            const decodedToken = (0, jwt_verify_1.verifyAccessToken)(token);
+            const userId = decodedToken?.userId;
+            if (userId) {
+                exports.connectedUsers[userId?.toString()] = socket.id;
+            }
+        }
+        socket.on("loggedin", (id) => {
+            exports.connectedUsers[id] = socket.id;
+            console.log("connected users", exports.connectedUsers);
+        });
+        console.log("connected users", exports.connectedUsers);
+        socket.on("clientDisconnected", (data) => {
+            if (data) {
+                const decodedToken = (0, jwt_verify_1.verifyAccessToken)(token);
+                const { userId } = decodedToken;
+                delete exports.connectedUsers[userId.toString()];
+            }
         });
         socket.on("disconnect", () => {
             console.log(`User disconnected: ${socket.id}`);
-            for (let userId in exports.connectedUsers) {
-                if (exports.connectedUsers[userId].socketId === socket.id) {
-                    delete exports.connectedUsers[userId];
-                    break;
-                }
-            }
         });
     });
     return io;

@@ -1,9 +1,11 @@
 import jwt,{JwtPayload} from "jsonwebtoken"
 import { Request,Response,NextFunction } from "express"
-interface CustomJwtPayload extends JwtPayload {
+import { Types } from "mongoose"
+export interface CustomJwtPayload extends JwtPayload {
  emailId: string;
   role: string;
   verified:boolean;
+  userId:Types.ObjectId
 }
 
 
@@ -12,7 +14,7 @@ export interface CustomRequest extends Request {
 }
 
 
-const verifyAccessToken=(token:string)=>{
+export const verifyAccessToken=(token:string)=>{
 
     try{
         return jwt.verify(token,process.env.ACCESS_TOCKEN_SECRET as string)as CustomJwtPayload
@@ -49,9 +51,9 @@ const authMiddleware=(req:Request,res:Response,next:NextFunction)=>{
    if(!refreshToken) return res.status(401).json({ message: 'No refresh token provided' });
    const decodedRefreshToken=verifyRefreshToken(refreshToken)
    if(decodedRefreshToken){
-    const {emailId,role,verified}=decodedRefreshToken as CustomJwtPayload
+    const {emailId,role,verified,userId}=decodedRefreshToken as CustomJwtPayload
 
-    const newAccessToken=jwt.sign({emailId,role,verified},process.env.ACCESS_TOCKEN_SECRET as string,{expiresIn:"1h"});
+    const newAccessToken=jwt.sign({emailId,role,verified,userId},process.env.ACCESS_TOCKEN_SECRET as string,{expiresIn:"1h"});
     (req as CustomRequest).user=decodedRefreshToken
     res.cookie("accessToken", newAccessToken, {
       path: "/"

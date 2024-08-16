@@ -33,8 +33,8 @@ userRouter.put("/profile",authMiddleware,getUser,controller.profileUpdate.bind(c
 userRouter.put("/profile/picture",authMiddleware,getUser,upload.single("image"),controller.ProfilePictureUpdate.bind(controller));
 userRouter.post("/password/reset-request",controller.passwordResetLink.bind(controller));
 userRouter.post("/password/reset/:token",controller.resetPassword.bind(controller));
-userRouter.get("/doctor-list",authMiddleware,getUser,controller.getDoctorList.bind(controller));
-userRouter.get("/doctors/:id/profile",authMiddleware,verifyRole("user"),getUser,controller.getDoctorPage.bind(controller))
+userRouter.get("/doctor-list",controller.getDoctorList.bind(controller));
+userRouter.get("/doctors/:id/profile",controller.getDoctorPage.bind(controller))
 userRouter.get("/doctors/:doctorId/availability",authMiddleware,verifyRole("user"),getUser,controller.getAvailableDate.bind(controller));
 userRouter.get("/doctors/:doctorId/slots",authMiddleware,verifyRole("user"),getUser,controller.getTimeSlots.bind(controller));
 userRouter.post("/appointments/order",authMiddleware,verifyRole("user"),getUser,controller.razorPayOrder.bind(controller))

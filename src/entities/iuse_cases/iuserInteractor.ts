@@ -23,6 +23,7 @@ export interface IUserInteractor {
     refreshToken?: string;
     message?: string;
     userId?: string;
+    name?:string
   }>;
   googleSignup(
     email: string,

@@ -31,8 +31,8 @@ userRouter.put("/profile", jwt_verify_1.default, user_1.getUser, controller.prof
 userRouter.put("/profile/picture", jwt_verify_1.default, user_1.getUser, multer_1.default.single("image"), controller.ProfilePictureUpdate.bind(controller));
 userRouter.post("/password/reset-request", controller.passwordResetLink.bind(controller));
 userRouter.post("/password/reset/:token", controller.resetPassword.bind(controller));
-userRouter.get("/doctor-list", jwt_verify_1.default, user_1.getUser, controller.getDoctorList.bind(controller));
-userRouter.get("/doctors/:id/profile", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.getDoctorPage.bind(controller));
+userRouter.get("/doctor-list", controller.getDoctorList.bind(controller));
+userRouter.get("/doctors/:id/profile", controller.getDoctorPage.bind(controller));
 userRouter.get("/doctors/:doctorId/availability", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.getAvailableDate.bind(controller));
 userRouter.get("/doctors/:doctorId/slots", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.getTimeSlots.bind(controller));
 userRouter.post("/appointments/order", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.razorPayOrder.bind(controller));

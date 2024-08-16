@@ -37,4 +37,5 @@ doctorRouter.get("/getAvailableDates", jwt_verify_1.default, (0, role_Authentica
 doctorRouter.get("/slots", jwt_verify_1.default, (0, role_Authenticate_1.default)("doctor"), doctor_1.getDoctor, controller.getTimeSlots.bind(controller));
 doctorRouter.delete(`/cancelUnbookedSlots`, jwt_verify_1.default, (0, role_Authenticate_1.default)("doctor"), doctor_1.getDoctor, controller.deleteUnbookedTimeSlots.bind(controller));
 doctorRouter.delete(`/cancelBookedSlots`, jwt_verify_1.default, (0, role_Authenticate_1.default)("doctor"), doctor_1.getDoctor, controller.deleteBookedTimeSlots.bind(controller));
+doctorRouter.get(`/appointmentDetail/:id`, jwt_verify_1.default, (0, role_Authenticate_1.default)("doctor"), doctor_1.getDoctor, controller.getAppointmentDetails.bind(controller));
 exports.default = doctorRouter;

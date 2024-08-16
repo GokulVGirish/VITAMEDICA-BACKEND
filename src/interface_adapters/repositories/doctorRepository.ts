@@ -29,14 +29,10 @@ class DoctorRepository implements IDoctorRepository {
       throw error;
     }
   }
-  async tempOtpDoctor(data: OtpDoctor): Promise<{ status: true | false }> {
+  async tempOtpDoctor(data: OtpDoctor): Promise<{ userId: Types.ObjectId }> {
     try {
       const otpDoc = await doctorOtpModel.create(data);
-      if (otpDoc) {
-        return { status: true };
-      } else {
-        return { status: false };
-      }
+     return{userId:otpDoc._id}
     } catch (error) {
       console.log(error);
       throw error;
@@ -279,6 +275,7 @@ class DoctorRepository implements IDoctorRepository {
                start: 1,
                end: 1,
                userName: "$userInfo.name",
+               userId:"$userInfo._id",
                status: 1,
                paymentStatus: 1,
                amount: 1,
@@ -499,6 +496,42 @@ class DoctorRepository implements IDoctorRepository {
         })
         if(result) return true
         else return false
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async getAppointmentDetail(id: string): Promise<IAppointment | null> {
+      try{
+        console.log("id",id)
+
+        const result=await appointmentModel.aggregate([
+          {$match:{_id:new Types.ObjectId(id)}},
+          {$lookup:{from:"users",localField:"userId",foreignField:"_id",as:"userInfo"}},
+          {$unwind:"$userInfo"},
+          {$project:{
+            _id:1,
+            date:1,
+            start:1,
+            end:1,
+            status:1,
+            userId:"$userInfo._id",
+            userName:"$userInfo.name",
+            dob:"$userInfo.dob",
+            image:"$userInfo.image",
+            city:"$userInfo.address.city",
+            state:"$userInfo.address.state",
+
+            bloodGroup:"$userInfo.bloodGroup",
+
+          }}
+         
+
+        ])
+        console.log("result", result);
+        return result[0]
+        
 
       }
       catch(error){

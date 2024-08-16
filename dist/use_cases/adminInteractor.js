@@ -144,7 +144,11 @@ class AdminInteractor {
             if (!response) {
                 return { status: false, message: "internal server error" };
             }
-            app_1.io.to(socket_io_1.connectedUsers[id]?.socketId).emit("blocked", socket_io_1.connectedUsers[id]?.role);
+            if (changedStatus) {
+                if (socket_io_1.connectedUsers[id]) {
+                    app_1.io.to(socket_io_1.connectedUsers[id]).emit("blocked", "user");
+                }
+            }
             return {
                 status: true,
                 message: `user has been sucessfully ${changedStatus ? "Blocked" : "Unblocked"}`,
@@ -219,6 +223,7 @@ class AdminInteractor {
     async verifyDoctor(id) {
         try {
             const result = await this.repository.verifyDoctor(id);
+            app_1.io.to(socket_io_1.connectedUsers[id]?.socketId).emit("doctorVerified");
             return result;
         }
         catch (error) {
@@ -252,6 +257,11 @@ class AdminInteractor {
             const response = await this.repository.blockUnblockDoctor(id, changedStatus);
             if (!response) {
                 return { status: false, message: "internal server error" };
+            }
+            if (changedStatus) {
+                if (socket_io_1.connectedUsers[id]) {
+                    app_1.io.to(socket_io_1.connectedUsers[id]).emit("blocked", "doctor");
+                }
             }
             return {
                 status: true,

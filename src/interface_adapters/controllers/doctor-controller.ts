@@ -78,6 +78,7 @@ class DoctorController {
           refreshToken: response.refreshToken,
           doctor: response.doctor,
           status: response.doctorStatus,
+          docId:response.doctorId
         });
       } else {
         switch (response.errorCode) {
@@ -388,6 +389,24 @@ class DoctorController {
       console.log(error)
       next(error)
       console.log("manhhhh")
+    }
+
+  }
+  async getAppointmentDetails(req:Request,res:Response,next:NextFunction){
+    try{
+      const id=req.params.id
+      const response=await this.interactor.getAppointmentDetail(id)
+      if(response.status){
+        return res.status(200).json({success:true,message:response.message,detail:response.detail})
+      }
+      res.status(500).json({success:false,message:response.message})
+
+
+
+    }
+    catch(error){
+      console.log(error)
+      next(error)
     }
 
   }

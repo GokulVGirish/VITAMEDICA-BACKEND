@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const TempDoctor_1 = __importDefault(require("../../frameworks/mongoose/models/TempDoctor"));
 const departmentSchema_1 = __importDefault(require("../../frameworks/mongoose/models/departmentSchema"));
 const DoctorSchema_1 = __importDefault(require("../../frameworks/mongoose/models/DoctorSchema"));
+const mongoose_1 = require("mongoose");
 const RejectedDoctor_1 = __importDefault(require("../../frameworks/mongoose/models/RejectedDoctor"));
 const DoctorSlotsSchema_1 = __importDefault(require("../../frameworks/mongoose/models/DoctorSlotsSchema"));
 const DoctorWalletSchema_1 = __importDefault(require("../../frameworks/mongoose/models/DoctorWalletSchema"));
@@ -28,12 +29,7 @@ class DoctorRepository {
     async tempOtpDoctor(data) {
         try {
             const otpDoc = await TempDoctor_1.default.create(data);
-            if (otpDoc) {
-                return { status: true };
-            }
-            else {
-                return { status: false };
-            }
+            return { userId: otpDoc._id };
         }
         catch (error) {
             console.log(error);
@@ -260,6 +256,7 @@ class DoctorRepository {
                         start: 1,
                         end: 1,
                         userName: "$userInfo.name",
+                        userId: "$userInfo._id",
                         status: 1,
                         paymentStatus: 1,
                         amount: 1,
@@ -458,6 +455,35 @@ class DoctorRepository {
                 return true;
             else
                 return false;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getAppointmentDetail(id) {
+        try {
+            console.log("id", id);
+            const result = await AppointmentSchema_1.default.aggregate([
+                { $match: { _id: new mongoose_1.Types.ObjectId(id) } },
+                { $lookup: { from: "users", localField: "userId", foreignField: "_id", as: "userInfo" } },
+                { $unwind: "$userInfo" },
+                { $project: {
+                        _id: 1,
+                        date: 1,
+                        start: 1,
+                        end: 1,
+                        status: 1,
+                        userId: "$userInfo._id",
+                        userName: "$userInfo.name",
+                        dob: "$userInfo.dob",
+                        image: "$userInfo.image",
+                        city: "$userInfo.address.city",
+                        state: "$userInfo.address.state",
+                        bloodGroup: "$userInfo.bloodGroup",
+                    } }
+            ]);
+            console.log("result", result);
+            return result[0];
         }
         catch (error) {
             throw error;

@@ -19,14 +19,10 @@ const moment = require("moment");
 
 
 class UserRepository implements IUserRepository {
-  async tempOtpUser(data: User): Promise<{ status: true | false }> {
+  async tempOtpUser(data: User): Promise<{userId:Types.ObjectId}> {
     try {
       const tempUser = await otpModel.create(data);
-      if (tempUser) {
-        return { status: true };
-      } else {
-        return { status: false };
-      }
+     return {userId:tempUser._id}
     } catch (error) {
       throw error;
     }

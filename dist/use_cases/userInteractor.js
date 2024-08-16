@@ -34,9 +34,9 @@ class UserInteractor {
                     user.otp = mailResponse.otp;
                     user.password = await bcryptjs_1.default.hash(user.password, 10);
                     const response = await this.Repository.tempOtpUser(user);
-                    const tempToken = this.JWTServices.generateToken({ emailId: user.email, role: "user", verified: false }, { expiresIn: "10m" });
+                    const tempToken = this.JWTServices.generateToken({ emailId: user.email, userId: response.userId, role: "user", verified: false }, { expiresIn: "10m" });
                     return {
-                        status: response.status,
+                        status: true,
                         message: "otp sucessfully sent",
                         token: tempToken,
                     };
@@ -58,8 +58,13 @@ class UserInteractor {
         try {
             const response = await this.Repository.createUserOtp(otp);
             if (response.status) {
-                const accessToken = this.JWTServices.generateToken({ emailId: response.user.email, role: "user", verified: true }, { expiresIn: "1h" });
-                const refreshToken = this.JWTServices.generateRefreshToken({ emailId: response.user.email, role: "user", verified: true }, { expiresIn: "1d" });
+                const accessToken = this.JWTServices.generateToken({ emailId: response.user.email, userId: response.user._id, role: "user", verified: true }, { expiresIn: "1h" });
+                const refreshToken = this.JWTServices.generateRefreshToken({
+                    emailId: response.user.email,
+                    role: "user",
+                    userId: response.user._id,
+                    verified: true,
+                }, { expiresIn: "1d" });
                 return { status: true, accessToken, refreshToken };
             }
             else {
@@ -86,14 +91,15 @@ class UserInteractor {
                 if (match) {
                     if (userExist.isBlocked)
                         return { status: false, message: "Sorry User Blocked" };
-                    const accessToken = this.JWTServices.generateToken({ emailId: userExist.email, role: "user", verified: true }, { expiresIn: "1h" });
-                    const refreshToken = this.JWTServices.generateRefreshToken({ emailId: userExist.email, role: "user", verified: true }, { expiresIn: "1d" });
+                    const accessToken = this.JWTServices.generateToken({ emailId: userExist.email, userId: userExist._id, role: "user", verified: true }, { expiresIn: "1h" });
+                    const refreshToken = this.JWTServices.generateRefreshToken({ emailId: userExist.email, userId: userExist._id, role: "user", verified: true }, { expiresIn: "1d" });
                     return {
                         status: true,
                         accessToken,
                         refreshToken,
                         message: "logged in sucessfullly",
-                        userId: userExist._id
+                        userId: userExist._id,
+                        name: userExist.name
                     };
                 }
                 else {

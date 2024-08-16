@@ -59,13 +59,15 @@ class UserController {
     try {
       const { email, password } = req.body;
       const response = await this.interactor.login(email, password);
+     
       if (response.status) {
         res.status(200).json({
           success: true,
           message: "logged in Sucessfully",
           accessToken: response.accessToken,
           refreshToken: response.refreshToken,
-          userId:response.userId
+          userId:response.userId,
+          name:response.name
         });
       } else {
         res.status(400).json({ success: false, message: response.message });

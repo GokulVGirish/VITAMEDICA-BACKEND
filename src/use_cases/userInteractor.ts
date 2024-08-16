@@ -47,11 +47,11 @@ class UserInteractor implements IUserInteractor {
           user.password = await bcrypt.hash(user.password, 10);
           const response = await this.Repository.tempOtpUser(user);
           const tempToken = this.JWTServices.generateToken(
-            { emailId: user.email, role: "user", verified: false },
+            { emailId: user.email,userId:response.userId, role: "user", verified: false },
             { expiresIn: "10m" }
           );
           return {
-            status: response.status,
+            status: true,
             message: "otp sucessfully sent",
             token: tempToken,
           };
@@ -73,11 +73,16 @@ class UserInteractor implements IUserInteractor {
       const response = await this.Repository.createUserOtp(otp);
       if (response.status) {
         const accessToken = this.JWTServices.generateToken(
-          { emailId: response.user.email, role: "user", verified: true },
+          { emailId: response.user.email,userId:response.user._id, role: "user", verified: true },
           { expiresIn: "1h" }
         );
         const refreshToken = this.JWTServices.generateRefreshToken(
-          { emailId: response.user.email, role: "user", verified: true },
+          {
+            emailId: response.user.email,
+            role: "user",
+            userId: response.user._id,
+            verified: true,
+          },
           { expiresIn: "1d" }
         );
 
@@ -99,7 +104,8 @@ class UserInteractor implements IUserInteractor {
     accessToken?: string;
     refreshToken?: string;
     message?: string;
-    userId?:string
+    userId?:string;
+    name?:string
   }> {
     try {
       const userExist = await this.Repository.getUser(email);
@@ -116,11 +122,11 @@ class UserInteractor implements IUserInteractor {
           if (userExist.isBlocked)
             return { status: false, message: "Sorry User Blocked" };
           const accessToken = this.JWTServices.generateToken(
-            { emailId: userExist.email, role: "user", verified: true },
+            { emailId: userExist.email,userId:userExist._id, role: "user", verified: true },
             { expiresIn: "1h" }
           );
           const refreshToken = this.JWTServices.generateRefreshToken(
-            { emailId: userExist.email, role: "user", verified: true },
+            { emailId: userExist.email,userId:userExist._id, role: "user", verified: true },
             { expiresIn: "1d" }
           );
 
@@ -129,7 +135,8 @@ class UserInteractor implements IUserInteractor {
             accessToken,
             refreshToken,
             message: "logged in sucessfullly",
-            userId:userExist._id as string
+            userId:userExist._id as string,
+            name:userExist.name 
           };
         } else {
           return { status: false, message: "wrong password" };

@@ -36,6 +36,7 @@ doctorRouter.get("/getAvailableDates",authMiddleware,verifyRole("doctor"),getDoc
 doctorRouter.get("/slots",authMiddleware,verifyRole("doctor"),getDoctor,controller.getTimeSlots.bind(controller))
 doctorRouter.delete(`/cancelUnbookedSlots`,authMiddleware,verifyRole("doctor"),getDoctor,controller.deleteUnbookedTimeSlots.bind(controller));
 doctorRouter.delete(`/cancelBookedSlots`,authMiddleware,verifyRole("doctor"),getDoctor,controller.deleteBookedTimeSlots.bind(controller))
+doctorRouter.get(`/appointmentDetail/:id`,authMiddleware,verifyRole("doctor"),getDoctor,controller.getAppointmentDetails.bind(controller));
 
 
 export default doctorRouter;

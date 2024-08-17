@@ -8,7 +8,6 @@ const client_s3_1 = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const awsS3_1 = __importDefault(require("../entities/services/awsS3"));
 const app_1 = require("../frameworks/express/app");
-const socket_io_1 = require("../frameworks/websocket/socket.io");
 const s3 = new client_s3_1.S3Client({
     region: awsS3_1.default.BUCKET_REGION,
     credentials: {
@@ -145,9 +144,7 @@ class AdminInteractor {
                 return { status: false, message: "internal server error" };
             }
             if (changedStatus) {
-                if (socket_io_1.connectedUsers[id]) {
-                    app_1.io.to(socket_io_1.connectedUsers[id]).emit("blocked", "user");
-                }
+                app_1.io.to(id).emit("blocked", "user");
             }
             return {
                 status: true,
@@ -223,7 +220,7 @@ class AdminInteractor {
     async verifyDoctor(id) {
         try {
             const result = await this.repository.verifyDoctor(id);
-            app_1.io.to(socket_io_1.connectedUsers[id]?.socketId).emit("doctorVerified");
+            app_1.io.to(id).emit("doctorVerified");
             return result;
         }
         catch (error) {
@@ -259,9 +256,7 @@ class AdminInteractor {
                 return { status: false, message: "internal server error" };
             }
             if (changedStatus) {
-                if (socket_io_1.connectedUsers[id]) {
-                    app_1.io.to(socket_io_1.connectedUsers[id]).emit("blocked", "doctor");
-                }
+                app_1.io.to(id).emit("blocked", "doctor");
             }
             return {
                 status: true,

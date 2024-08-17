@@ -3,7 +3,7 @@ import { Server as HttpServer } from "http";
 import { verifyAccessToken } from "../express/middlewares/jwt-verify";
 import { CustomJwtPayload } from "../express/middlewares/jwt-verify";
 
-export const connectedUsers:any=[]
+
 
 export const initializeSocket = (server: HttpServer) => {
   const io = new Server(server, {
@@ -23,25 +23,39 @@ export const initializeSocket = (server: HttpServer) => {
       const decodedToken=verifyAccessToken(token)
       const userId =(decodedToken as CustomJwtPayload)?.userId
     if(userId){
-        connectedUsers[userId?.toString()] = socket.id;
+   
+        socket.join(userId.toString())
     }
     }
     socket.on("loggedin",(id)=>{
-      connectedUsers[id]=socket.id
-       console.log("connected users", connectedUsers);
+    socket.join(id)
 
     })
-     console.log("connected users", connectedUsers);
-      socket.on("clientDisconnected", (data) => {
-        if(data){
-           const decodedToken = verifyAccessToken(token);
-           const { userId } = decodedToken as CustomJwtPayload;
-           delete connectedUsers[userId.toString()]
-
-        }
-        
-       
+    socket.on("join", (room) => {
+      socket.join(room);
+    });
+      socket.on("calling", (message) => {
+        const { room, data } = message;
+        socket.to(room).emit("calling", data);
       });
+
+      socket.on("ignoredStatus", (room) => {
+        socket.to(room).emit("ignoredStatus");
+      });
+
+      socket.on("call-request", (data) => {
+        console.log("callrequest received",data)
+        const { from, room, to } = data;
+        io.to(to).emit("call-request", data);
+      });
+
+      socket.on("cut-call", (a) => {
+        io.to(a.from).emit("cut-call");
+      });
+    
+
+
+
    
   
 

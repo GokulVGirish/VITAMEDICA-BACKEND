@@ -11,7 +11,7 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 import s3Config from "../entities/services/awsS3";
 import { Types } from "mongoose";
 import { io } from "../frameworks/express/app";
-import { connectedUsers } from "../frameworks/websocket/socket.io";
+
 const s3=new S3Client({
     region:s3Config.BUCKET_REGION,
     credentials:{
@@ -176,9 +176,9 @@ class AdminInteractor implements IAdminInteractor {
    
    
        if(changedStatus){
-         if(connectedUsers[id]){
-          io.to(connectedUsers[id]).emit("blocked", "user");
-         }
+       
+          io.to(id).emit("blocked", "user");
+         
        }
       
 
@@ -269,7 +269,7 @@ class AdminInteractor implements IAdminInteractor {
       try{
         const result=await this.repository.verifyDoctor(id)
        
-        io.to(connectedUsers[id]?.socketId).emit("doctorVerified");
+        io.to(id).emit("doctorVerified");
         return result
 
       }
@@ -305,9 +305,9 @@ class AdminInteractor implements IAdminInteractor {
            return { status: false, message: "internal server error" };
          }
          if(changedStatus ){
-        if(connectedUsers[id]){
-             io.to(connectedUsers[id]).emit("blocked", "doctor");
-        }
+     
+             io.to(id).emit("blocked", "doctor");
+        
            
          }
            return {

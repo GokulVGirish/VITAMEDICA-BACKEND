@@ -471,6 +471,7 @@ class DoctorRepository {
                         _id: 1,
                         date: 1,
                         start: 1,
+                        docId: 1,
                         end: 1,
                         status: 1,
                         userId: "$userInfo._id",

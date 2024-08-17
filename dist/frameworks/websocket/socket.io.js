@@ -1,9 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.initializeSocket = exports.connectedUsers = void 0;
+exports.initializeSocket = void 0;
 const socket_io_1 = require("socket.io");
 const jwt_verify_1 = require("../express/middlewares/jwt-verify");
-exports.connectedUsers = [];
 const initializeSocket = (server) => {
     const io = new socket_io_1.Server(server, {
         cors: {
@@ -20,20 +19,29 @@ const initializeSocket = (server) => {
             const decodedToken = (0, jwt_verify_1.verifyAccessToken)(token);
             const userId = decodedToken?.userId;
             if (userId) {
-                exports.connectedUsers[userId?.toString()] = socket.id;
+                socket.join(userId.toString());
             }
         }
         socket.on("loggedin", (id) => {
-            exports.connectedUsers[id] = socket.id;
-            console.log("connected users", exports.connectedUsers);
+            socket.join(id);
         });
-        console.log("connected users", exports.connectedUsers);
-        socket.on("clientDisconnected", (data) => {
-            if (data) {
-                const decodedToken = (0, jwt_verify_1.verifyAccessToken)(token);
-                const { userId } = decodedToken;
-                delete exports.connectedUsers[userId.toString()];
-            }
+        socket.on("join", (room) => {
+            socket.join(room);
+        });
+        socket.on("calling", (message) => {
+            const { room, data } = message;
+            socket.to(room).emit("calling", data);
+        });
+        socket.on("ignoredStatus", (room) => {
+            socket.to(room).emit("ignoredStatus");
+        });
+        socket.on("call-request", (data) => {
+            console.log("callrequest received", data);
+            const { from, room, to } = data;
+            io.to(to).emit("call-request", data);
+        });
+        socket.on("cut-call", (a) => {
+            io.to(a.from).emit("cut-call");
         });
         socket.on("disconnect", () => {
             console.log(`User disconnected: ${socket.id}`);

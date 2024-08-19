@@ -544,5 +544,27 @@ class DoctorInteractor implements IDoctorInteractor {
         throw error
       }
   }
+  async addPrescription(appointmentId: string,prescription:MulterFile): Promise<{ status: boolean; message: string; }> {
+      try{
+        const folderPath = "prescriptions";
+        const fileExtension = prescription.originalname.split(".").pop();
+        const uniqueFileName = `prescription-${appointmentId}.${fileExtension}`;
+        const key = `${folderPath}/${uniqueFileName}`;
+        const command = new PutObjectCommand({
+          Bucket: s3Config.BUCKET_NAME,
+          Key: key,
+          Body:prescription.buffer,
+          ContentType: prescription.mimetype,
+        });
+        await s3.send(command);
+        const response=await this.Repository.addPrescription(appointmentId,key)
+        if(response)return {status:true,message:"Sucessfully added"}
+        return {status:false,message:"Internal Server Error"}
+
+      }
+      catch(error){
+        throw error
+      }
+  }
 }
 export default DoctorInteractor;

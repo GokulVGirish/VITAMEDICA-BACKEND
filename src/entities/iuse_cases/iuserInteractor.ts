@@ -137,4 +137,5 @@ export interface IUserInteractor {
     date: Date,
     startTime: Date
   ): Promise<{ status: boolean; message: string }>;
+  addReview(appointmentId:string,userId:Types.ObjectId,docId:string,rating:number,description?:string):Promise<{status:boolean;message:string}>
 }

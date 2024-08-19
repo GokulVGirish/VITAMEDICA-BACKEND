@@ -522,5 +522,14 @@ class UserRepository {
             throw error;
         }
     }
+    async addReview(appointmentId, userId, docId, rating, description) {
+        try {
+            const result = await DoctorSchema_1.default.updateOne({ _id: docId }, { $push: { reviews: { appointmentId, userId, rating, comment: description || "" } } });
+            return result.modifiedCount > 0;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
 }
 exports.default = UserRepository;

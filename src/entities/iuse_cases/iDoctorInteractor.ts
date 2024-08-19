@@ -118,4 +118,5 @@ export interface IDoctorInteractor {
     startTime: Date
   ): Promise<{ status: boolean; message: string }>;
   getAppointmentDetail(id:string):Promise<{status:boolean,message?:string,detail?:IAppointment}>
+  addPrescription(appointmentId:string,prescription:MulterFile):Promise<{status:boolean;message:string}>
 }

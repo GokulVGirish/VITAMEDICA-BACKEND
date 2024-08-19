@@ -47,6 +47,11 @@ const AppointmentSchema = new mongoose.Schema(
     paymentId: {
       type: String,
     },
+     prescription: {
+      type: String,
+      default: null,
+    
+  }
   },
   { timestamps: true }
 );

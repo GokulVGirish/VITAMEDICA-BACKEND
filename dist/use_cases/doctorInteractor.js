@@ -403,5 +403,27 @@ class DoctorInteractor {
             throw error;
         }
     }
+    async addPrescription(appointmentId, prescription) {
+        try {
+            const folderPath = "prescriptions";
+            const fileExtension = prescription.originalname.split(".").pop();
+            const uniqueFileName = `prescription-${appointmentId}.${fileExtension}`;
+            const key = `${folderPath}/${uniqueFileName}`;
+            const command = new client_s3_1.PutObjectCommand({
+                Bucket: awsS3_1.default.BUCKET_NAME,
+                Key: key,
+                Body: prescription.buffer,
+                ContentType: prescription.mimetype,
+            });
+            await s3.send(command);
+            const response = await this.Repository.addPrescription(appointmentId, key);
+            if (response)
+                return { status: true, message: "Sucessfully added" };
+            return { status: false, message: "Internal Server Error" };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
 }
 exports.default = DoctorInteractor;

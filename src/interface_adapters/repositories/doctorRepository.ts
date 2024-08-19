@@ -539,5 +539,18 @@ class DoctorRepository implements IDoctorRepository {
         throw error
       }
   }
+  async addPrescription(appointmentId: string,prescription:string): Promise<boolean> {
+      try{
+        const result = await appointmentModel.updateOne(
+          { _id: appointmentId },
+          { $set: { prescription, status: "completed"} }
+        );
+        return result.modifiedCount>0
+
+      }
+      catch(error){
+        throw error
+      }
+  }
 }
 export default DoctorRepository

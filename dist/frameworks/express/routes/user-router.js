@@ -42,4 +42,5 @@ userRouter.get("/appointments", jwt_verify_1.default, (0, role_Authenticate_1.de
 userRouter.put("/appointments/:appointmentId/cancel");
 userRouter.get("/wallet", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.getWalletInfo.bind(controller));
 userRouter.put("/appointments/:appointmentId/cancel", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.cancelAppointment.bind(controller));
+userRouter.put(`/appointments/:appointmentId/review`, jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.addReview.bind(controller));
 exports.default = userRouter;

@@ -443,5 +443,20 @@ class UserController {
             next(error);
         }
     }
+    async addReview(req, res, next) {
+        try {
+            const { docId, rating, description } = req.body;
+            const appointmentId = req.params.appointmentId;
+            const userId = req.userData._id;
+            console.log('docid', docId, "rating", rating, "description", description, "apppin", appointmentId, "userId", userId);
+            const response = await this.interactor.addReview(appointmentId, userId, docId, rating, description);
+            if (response.status)
+                return res.status(200).json({ success: true, message: response.message });
+            return res.status(500).json({ success: false, message: response.message });
+        }
+        catch (error) {
+            next(error);
+        }
+    }
 }
 exports.default = UserController;

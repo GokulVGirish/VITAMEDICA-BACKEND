@@ -1,5 +1,32 @@
 import mongoose, { Schema, Model, Document } from "mongoose";
 import { MongoDoctor } from "../../../entities/rules/doctor"; 
+import { Review } from "../../../entities/rules/doctor";
+const ReviewSchema = new Schema<Review>(
+  {
+    appointmentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Appointment",
+      required:true
+    },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5,
+      required: true,
+    },
+    comment: {
+      type: String,
+      default: "",
+    },
+  },
+  { _id: false, timestamps: true }
+);
+
 const documentSubSchema = new Schema(
   {
     certificateImage: {
@@ -95,6 +122,7 @@ const doctorSchema = new Schema<MongoDoctor>({
     type: Boolean,
     default: false,
   },
+  reviews:[ReviewSchema]
 });
 
 const doctorModel = mongoose.model<MongoDoctor>("Doctor", doctorSchema);

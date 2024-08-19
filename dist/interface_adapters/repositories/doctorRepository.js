@@ -490,5 +490,14 @@ class DoctorRepository {
             throw error;
         }
     }
+    async addPrescription(appointmentId, prescription) {
+        try {
+            const result = await AppointmentSchema_1.default.updateOne({ _id: appointmentId }, { $set: { prescription, status: "completed" } });
+            return result.modifiedCount > 0;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
 }
 exports.default = DoctorRepository;

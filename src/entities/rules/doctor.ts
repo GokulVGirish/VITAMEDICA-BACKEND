@@ -1,5 +1,13 @@
 import { Types, Document, ObjectId } from 'mongoose';
 
+export interface Review {
+  appointmentId:Types.ObjectId;
+  userId: Types.ObjectId;
+  rating: number;
+  comment: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
 export interface OtpDoctor {
   name: string;
   email: string;
@@ -21,9 +29,9 @@ export interface Doctor {
   phone: string;
   gender: string;
   department: ObjectId;
-  image:string|null
+  image: string | null;
   password: string;
-  description:string|null
+  description: string | null;
   documentsUploaded: boolean;
   documents: {
     certificateImage: string | null;
@@ -33,11 +41,12 @@ export interface Doctor {
     yearsOfExperience: number | null;
   } | null;
   isBlocked: boolean;
-  status:"Pending"|"Submitted"|"Verified"
-  degree:null|string
-  fees:null|string;
-  complete:boolean;
-  wallet:null|Types.ObjectId
+  status: "Pending" | "Submitted" | "Verified";
+  degree: null | string;
+  fees: null | string;
+  complete: boolean;
+  wallet: null | Types.ObjectId;
+  reviews: Review[];
 }
 
 export interface MongoDoctor extends Doctor, Document {

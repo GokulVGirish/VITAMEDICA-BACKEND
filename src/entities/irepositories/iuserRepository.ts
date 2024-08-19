@@ -99,5 +99,12 @@ interface IUserRepository {
     cancelledBy: string
   ): Promise<boolean>;
   getAppointment(appoinmentId: string): Promise<IAppointment | null>;
+  addReview(
+    appointmentId: string,
+    userId: Types.ObjectId,
+    docId: string,
+    rating: number,
+    description?: string
+  ): Promise<boolean>;
 }
 export default IUserRepository

@@ -44,6 +44,7 @@ userRouter.get("/appointments",authMiddleware,verifyRole("user"),getUser,control
 userRouter.put("/appointments/:appointmentId/cancel");
 userRouter.get("/wallet",authMiddleware,verifyRole("user"),getUser,controller.getWalletInfo.bind(controller))
 userRouter.put("/appointments/:appointmentId/cancel",authMiddleware,verifyRole("user"),getUser,controller.cancelAppointment.bind(controller));
+userRouter.put(`/appointments/:appointmentId/review`,authMiddleware,verifyRole("user"),getUser,controller.addReview.bind(controller));
 
 
 

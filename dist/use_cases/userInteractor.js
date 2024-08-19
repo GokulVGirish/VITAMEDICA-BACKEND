@@ -522,5 +522,16 @@ class UserInteractor {
             throw error;
         }
     }
+    async addReview(appointmentId, userId, docId, rating, description) {
+        try {
+            const response = await this.Repository.addReview(appointmentId, userId, docId, rating, description);
+            if (response)
+                return { status: true, message: "review added sucessfully" };
+            return { status: false, message: "Internal server Error" };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
 }
 exports.default = UserInteractor;

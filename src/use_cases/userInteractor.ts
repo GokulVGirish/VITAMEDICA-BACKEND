@@ -623,6 +623,18 @@ async cancelAppointment(userId: Types.ObjectId, appointmentId: string, date: Dat
       throw error
     }
 }
+async addReview(appointmentId: string, userId: Types.ObjectId, docId: string,rating:number,description?:string): Promise<{ status: boolean; message: string; }> {
+    try{
+      const response=await this.Repository.addReview(appointmentId,userId,docId,rating,description)
+      if(response) return {status:true,message:"review added sucessfully"}
+      return {status:false,message:"Internal server Error"}
+
+    }
+    catch(error){
+      throw error
+    }
+}
+
  
 }
 export default UserInteractor

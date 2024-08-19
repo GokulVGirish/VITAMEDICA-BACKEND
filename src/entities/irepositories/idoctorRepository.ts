@@ -104,4 +104,5 @@ export interface IDoctorRepository {
   getAppointmentDetail(
     id: string
   ): Promise<IAppointment|null>;
+  addPrescription(appointmentId:string,prescription:string):Promise<boolean>
 }

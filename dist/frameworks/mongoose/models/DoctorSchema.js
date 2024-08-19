@@ -24,6 +24,28 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
+const ReviewSchema = new mongoose_1.Schema({
+    appointmentId: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: "Appointment",
+        required: true
+    },
+    userId: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+    },
+    rating: {
+        type: Number,
+        min: 1,
+        max: 5,
+        required: true,
+    },
+    comment: {
+        type: String,
+        default: "",
+    },
+}, { _id: false, timestamps: true });
 const documentSubSchema = new mongoose_1.Schema({
     certificateImage: {
         type: String,
@@ -114,6 +136,7 @@ const doctorSchema = new mongoose_1.Schema({
         type: Boolean,
         default: false,
     },
+    reviews: [ReviewSchema]
 });
 const doctorModel = mongoose_1.default.model("Doctor", doctorSchema);
 exports.default = doctorModel;

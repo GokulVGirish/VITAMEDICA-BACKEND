@@ -410,5 +410,21 @@ class DoctorController {
     }
 
   }
+  async addPrescription(req:Request,res:Response,nex:NextFunction){
+    try{
+      const appointmentId = req.params.appointmentId;
+      const response=await this.interactor.addPrescription(appointmentId,req.file as MulterFile)
+      if(response.status)return res.status(200).json({success:true,message:response.message})
+        return res.status(500).json({success:false,message:response.message})
+        
+
+
+    }
+    catch(error){
+      console.log(error)
+      nex(error)
+    }
+
+  }
 }
 export default DoctorController;

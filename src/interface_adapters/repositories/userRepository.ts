@@ -616,5 +616,20 @@ class UserRepository implements IUserRepository {
         throw error
       }
   }
+  async addReview(appointmentId: string, userId: Types.ObjectId, docId: string,rating:number,description?:string): Promise<boolean> {
+      try{
+
+        const result = await doctorModel.updateOne(
+          { _id: docId },
+          { $push: { reviews: { appointmentId, userId ,rating,comment:description||""} } }
+        );
+
+        return result.modifiedCount>0
+
+      }
+      catch(error){
+        throw error
+      }
+  }
 }
 export default UserRepository

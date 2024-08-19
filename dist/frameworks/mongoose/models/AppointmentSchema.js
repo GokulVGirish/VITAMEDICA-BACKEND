@@ -49,6 +49,10 @@ const AppointmentSchema = new mongoose_1.default.Schema({
     paymentId: {
         type: String,
     },
+    prescription: {
+        type: String,
+        default: null,
+    }
 }, { timestamps: true });
 const appointmentModel = mongoose_1.default.model("Appointment", AppointmentSchema);
 exports.default = appointmentModel;

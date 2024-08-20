@@ -16,6 +16,7 @@ const mailer=new Mailer()
 const jwtservices=new JwtService(process.env.ACCESS_TOCKEN_SECRET as string,process.env.REFRESH_TOCKEN_SECRET as string)
 const interactor=new UserInteractor(repository,mailer,jwtservices)
 const controller=new UserController(interactor)
+
 const userRouter=expreress.Router()
 userRouter.post("/signup",controller.otpSignup.bind(controller))
 userRouter.post("/signup/verify-otp",controller.verifyOtpSignup.bind(controller))

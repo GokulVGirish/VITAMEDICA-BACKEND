@@ -18,4 +18,3 @@ const connectDB = async () => {
     }
 };
 exports.default = connectDB;
-//enabling "strictQuery", you ensure that Mongoose validates queries against your schema definitions, providing stricter control over data integrity and schema adherence in your MongoDB database.

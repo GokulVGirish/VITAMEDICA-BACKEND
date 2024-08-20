@@ -1,0 +1,20 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const auth_1 = __importDefault(require("./auth"));
+const profile_1 = __importDefault(require("./profile"));
+const appointment_1 = __importDefault(require("./appointment"));
+const slot_1 = __importDefault(require("./slot"));
+const wallet_1 = __importDefault(require("./wallet"));
+const doctorUtilities_1 = __importDefault(require("./doctorUtilities"));
+const doctorRouter = express_1.default.Router();
+doctorRouter.use("/auth", auth_1.default);
+doctorRouter.use("/profile", profile_1.default);
+doctorRouter.use("/appointments", appointment_1.default);
+doctorRouter.use("/slots", slot_1.default);
+doctorRouter.use("/wallet", wallet_1.default);
+doctorRouter.use("/utility", doctorUtilities_1.default);
+exports.default = doctorRouter;

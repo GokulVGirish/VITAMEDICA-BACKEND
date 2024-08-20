@@ -315,9 +315,10 @@ class DoctorRepository implements IDoctorRepository {
               status: 1,
               paymentStatus: 1,
               amount: 1,
+              createdAt:1
             },
           },
-          { $sort: { date: 1, start: 1 } },
+          { $sort: { createdAt: -1 } },
           { $skip: (page - 1) * limit },
           { $limit: limit },
         ]);
@@ -523,7 +524,7 @@ class DoctorRepository implements IDoctorRepository {
             image:"$userInfo.image",
             city:"$userInfo.address.city",
             state:"$userInfo.address.state",
-
+            prescription:1,
             bloodGroup:"$userInfo.bloodGroup",
 
           }}

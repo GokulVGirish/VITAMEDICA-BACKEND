@@ -23,7 +23,7 @@ export interface IUserInteractor {
     refreshToken?: string;
     message?: string;
     userId?: string;
-    name?:string
+    name?: string;
   }>;
   googleSignup(
     email: string,
@@ -135,7 +135,28 @@ export interface IUserInteractor {
     userId: Types.ObjectId,
     appointmentId: string,
     date: Date,
-    startTime: Date
+    startTime: Date,
+    reason:string
   ): Promise<{ status: boolean; message: string }>;
-  addReview(appointmentId:string,userId:Types.ObjectId,docId:string,rating:number,description?:string):Promise<{status:boolean;message:string}>
+  addReview(
+    appointmentId: string,
+    userId: Types.ObjectId,
+    docId: string,
+    rating: number,
+    description?: string
+  ): Promise<{ status: boolean; message: string }>;
+  getDoctorsByCategory(
+    category: string,
+    skip: number,
+    limit: number
+  ): Promise<{
+    status: boolean;
+    message: string;
+    errorCode?: string;
+    doctors?: MongoDoctor[];
+    totalPages?: number;
+  }>;
+  getDoctorBySearch(
+    searchKey: string
+  ): Promise<{ status: boolean; message: string; doctors?: MongoDoctor[] }>;
 }

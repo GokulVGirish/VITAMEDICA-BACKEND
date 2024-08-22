@@ -139,6 +139,15 @@ class DoctorRepository {
             throw error;
         }
     }
+    async resetPassword(email, password) {
+        try {
+            const result = await DoctorSchema_1.default.updateOne({ email: email }, { $set: { password: password } });
+            return result.modifiedCount > 0;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
     async updateProfileImage(id, imagePath) {
         try {
             const result = await DoctorSchema_1.default.updateOne({ _id: id }, { $set: { image: imagePath } });
@@ -150,7 +159,16 @@ class DoctorRepository {
     }
     async profileUpdate(id, data) {
         try {
-            const result = await DoctorSchema_1.default.updateOne({ _id: id }, { $set: { name: data.name, phone: data.phone, description: data.description, fees: data.fees, degree: data.degree, complete: true } });
+            const result = await DoctorSchema_1.default.updateOne({ _id: id }, {
+                $set: {
+                    name: data.name,
+                    phone: data.phone,
+                    description: data.description,
+                    fees: data.fees,
+                    degree: data.degree,
+                    complete: true,
+                },
+            });
             if (result.modifiedCount > 0)
                 return true;
             else
@@ -171,7 +189,10 @@ class DoctorRepository {
     }
     async getSlot(date, id) {
         try {
-            const result = await DoctorSlotsSchema_1.default.findOne({ date: date, doctorId: id });
+            const result = await DoctorSlotsSchema_1.default.findOne({
+                date: date,
+                doctorId: id,
+            });
             return result;
         }
         catch (error) {
@@ -183,7 +204,7 @@ class DoctorRepository {
             const slot = await DoctorSlotsSchema_1.default.create({
                 doctorId: id,
                 date: data.date,
-                slots: data.slots.map((slot) => ({ start: slot.start, end: slot.end }))
+                slots: data.slots.map((slot) => ({ start: slot.start, end: slot.end })),
             });
             if (slot)
                 return true;
@@ -221,7 +242,11 @@ class DoctorRepository {
                 return { status: false };
             }
             const totalPages = Math.ceil(walletDetails[0].transactionCount / limit);
-            return { status: true, doctorWallet: walletDetails[0], totalPages: totalPages };
+            return {
+                status: true,
+                doctorWallet: walletDetails[0],
+                totalPages: totalPages,
+            };
         }
         catch (error) {
             throw error;
@@ -295,7 +320,7 @@ class DoctorRepository {
                         status: 1,
                         paymentStatus: 1,
                         amount: 1,
-                        createdAt: 1
+                        createdAt: 1,
                     },
                 },
                 { $sort: { createdAt: -1 } },
@@ -348,6 +373,7 @@ class DoctorRepository {
         try {
             const startOfDay = (0, moment_1.default)(date).startOf("day").toDate();
             const endOfDay = (0, moment_1.default)(date).endOf("day").toDate();
+            console.log("sewf", startOfDay, endOfDay, startTime);
             const reault = await DoctorSlotsSchema_1.default.updateOne({ doctorId: id, date: { $gte: startOfDay, $lte: endOfDay } }, { $pull: { slots: { start: startTime } } });
             if (reault.modifiedCount > 0)
                 return true;
@@ -362,14 +388,21 @@ class DoctorRepository {
         const endOfDay = (0, moment_1.default)(date).endOf("day").toDate();
         try {
             const result = await AppointmentSchema_1.default.findOneAndUpdate({
-                $and: [{ docId: id },
+                $and: [
+                    { docId: id },
                     { date: { $gte: startOfDay, $lte: endOfDay } },
-                    { start: startTime }]
+                    { start: startTime },
+                ],
             }, { status: "cancelled" }, {
-                new: true
+                new: true,
             });
             if (result) {
-                return { status: true, amount: result.amount, id: result._id, userId: result.userId };
+                return {
+                    status: true,
+                    amount: result.amount,
+                    id: result._id,
+                    userId: result.userId,
+                };
             }
             else {
                 return { status: false };
@@ -444,13 +477,14 @@ class DoctorRepository {
             throw error;
         }
     }
-    async createCancelledAppointment(docId, appointmentId, amount, cancelledBy) {
+    async createCancelledAppointment(docId, appointmentId, amount, cancelledBy, reason) {
         try {
             const result = await cancelledAppointmentSchema_1.default.create({
                 appointmentId: appointmentId,
                 docId: docId,
                 amount: amount,
-                cancelledBy
+                cancelledBy,
+                reason,
             });
             if (result)
                 return true;
@@ -466,9 +500,17 @@ class DoctorRepository {
             console.log("id", id);
             const result = await AppointmentSchema_1.default.aggregate([
                 { $match: { _id: new mongoose_1.Types.ObjectId(id) } },
-                { $lookup: { from: "users", localField: "userId", foreignField: "_id", as: "userInfo" } },
+                {
+                    $lookup: {
+                        from: "users",
+                        localField: "userId",
+                        foreignField: "_id",
+                        as: "userInfo",
+                    },
+                },
                 { $unwind: "$userInfo" },
-                { $project: {
+                {
+                    $project: {
                         _id: 1,
                         date: 1,
                         start: 1,
@@ -483,7 +525,8 @@ class DoctorRepository {
                         state: "$userInfo.address.state",
                         prescription: 1,
                         bloodGroup: "$userInfo.bloodGroup",
-                    } }
+                    },
+                },
             ]);
             console.log("result", result);
             return result[0];

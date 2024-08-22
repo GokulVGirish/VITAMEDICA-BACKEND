@@ -24,6 +24,10 @@ const CancelledAppointmentsSchema = new mongoose_1.default.Schema({
         type: String,
         required: true
     },
+    reason: {
+        type: String,
+        required: true
+    },
     Date: {
         type: Date,
         default: Date.now

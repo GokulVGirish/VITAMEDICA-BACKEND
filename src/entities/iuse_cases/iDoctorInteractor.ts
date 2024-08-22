@@ -83,9 +83,7 @@ export interface IDoctorInteractor {
     message: string;
     totalPages?: number;
   }>;
-  getTodaysAppointments(
-    docId: Types.ObjectId
-  ): Promise<{
+  getTodaysAppointments(docId: Types.ObjectId): Promise<{
     status: boolean;
     message: string;
     appointments?: IAppointment[];
@@ -115,8 +113,21 @@ export interface IDoctorInteractor {
   deleteBookedTimeSlots(
     id: Types.ObjectId,
     date: Date,
-    startTime: Date
+    startTime: Date,
+    reason: string
   ): Promise<{ status: boolean; message: string }>;
-  getAppointmentDetail(id:string):Promise<{status:boolean,message?:string,detail?:IAppointment}>
-  addPrescription(appointmentId:string,prescription:MulterFile):Promise<{status:boolean;message:string}>
+  getAppointmentDetail(
+    id: string
+  ): Promise<{ status: boolean; message?: string; detail?: IAppointment }>;
+  addPrescription(
+    appointmentId: string,
+    prescription: MulterFile
+  ): Promise<{ status: boolean; message: string }>;
+  passwordResetLink(
+    email: string
+  ): Promise<{ status: boolean; message: string; link?: string }>;
+  resetPassword(
+    token: string,
+    password: string
+  ): Promise<{ status: boolean; message: string }>;
 }

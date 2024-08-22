@@ -116,11 +116,14 @@ class UserAppointmentControllers {
       const appointmentId = req.params.appointmentId;
       const date = new Date(req.query.date as string);
       const startTime = new Date(req.query.startTime as string);
+      const reason=req.body.reason
+      console.log('reason of user',reason)
       const response = await this.interactor.cancelAppointment(
         userId as Types.ObjectId,
         appointmentId,
         date,
         startTime
+        ,reason
       );
       if (response.status) {
         res.status(200).json({ success: true, message: response.message });

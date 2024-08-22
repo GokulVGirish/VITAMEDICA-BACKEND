@@ -99,10 +99,13 @@ export interface IDoctorRepository {
     docId: Types.ObjectId,
     appointmentId: Types.ObjectId,
     amount: string,
-    cancelledBy: string
+    cancelledBy: string,
+    reason: string
   ): Promise<boolean>;
-  getAppointmentDetail(
-    id: string
-  ): Promise<IAppointment|null>;
-  addPrescription(appointmentId:string,prescription:string):Promise<boolean>
+  getAppointmentDetail(id: string): Promise<IAppointment | null>;
+  addPrescription(
+    appointmentId: string,
+    prescription: string
+  ): Promise<boolean>;
+  resetPassword(email: string, password: string): Promise<boolean>;
 }

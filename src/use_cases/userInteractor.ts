@@ -20,6 +20,7 @@ import { DoctorSlots, Slot } from "../entities/rules/slotsType";
 import instance from "../frameworks/services/razorpayInstance";
 import IAppointment from "../entities/rules/appointments";
 import IUserWallet from "../entities/rules/userWalletType";
+import { error } from "console";
 
 const s3=new S3Client({
     region:s3Config.BUCKET_REGION,
@@ -389,7 +390,7 @@ class UserInteractor implements IUserInteractor {
         const resetTokenExpiry = Date.now() + 600000;
           const payload = { email,resetTokenExpiry };
           const hashedToken = jwt.sign(payload,process.env.Password_RESET_SECRET as string);
-          const resetLink=`http://localhost:5173/reset-password?token=${hashedToken}`
+          const resetLink = `http://localhost:5173/reset-password?token=${hashedToken}&request=user`;
           const result=await this.Mailer.sendPasswordResetLink(email,resetLink)
           if(!result.success)return {status:false,message:"Internal Server Error"}
 
@@ -589,7 +590,7 @@ async getWalletInfo(page: number, limit: number, userId: Types.ObjectId): Promis
       throw error
     }
 }
-async cancelAppointment(userId: Types.ObjectId, appointmentId: string, date: Date, startTime: Date): Promise<{ status: boolean; message: string; }> {
+async cancelAppointment(userId: Types.ObjectId, appointmentId: string, date: Date, startTime: Date,reason:string): Promise<{ status: boolean; message: string; }> {
     try{
 
       const appointment=await this.Repository.getAppointment(appointmentId)
@@ -613,7 +614,7 @@ async cancelAppointment(userId: Types.ObjectId, appointmentId: string, date: Dat
       if(!cancelSlot) return { status: false, message: "Slot Cancellation Failed" };
       
       const doctorWalletDeduction=await this.Repository.doctorWalletUpdate(appointmentCancel.docId as Types.ObjectId,new mongoose.Types.ObjectId(appointmentId),refundAmount,"debit","User Cancelled Appointment","razorpay")
-      const cancellationAppointment = await this.Repository.createCancelledAppointment(appointmentCancel.docId as  Types.ObjectId,new mongoose.Types.ObjectId(appointmentId),refundAmount.toString(),"user");
+      const cancellationAppointment = await this.Repository.createCancelledAppointment(appointmentCancel.docId as  Types.ObjectId,new mongoose.Types.ObjectId(appointmentId),refundAmount.toString(),"user",reason);
       if(!doctorWalletDeduction) return {status:false,message:"failure doing refunds"}
       const userWalletUpdate=await this.Repository.userWalletUpdate(userId,new mongoose.Types.ObjectId(appointmentId),refundAmount,"credit","cancelled appointment refund","razorpay")
       if(!userWalletUpdate) return {status:false,message:"something went wrong"}
@@ -633,6 +634,75 @@ async addReview(appointmentId: string, userId: Types.ObjectId, docId: string,rat
     catch(error){
       throw error
     }
+}
+async getDoctorsByCategory(category: string, skip: number, limit: number): Promise<{ status: boolean; message: string; errorCode?: string; doctors?: MongoDoctor[]; totalPages?: number; }> {
+    try{
+
+      const result=await this.Repository.getDoctorsByCategory(category,skip,limit)
+       if (result) {
+         for (const doctor of result.doctors as MongoDoctor[]) {
+           if (doctor.image) {
+             const command2 = new GetObjectCommand({
+               Bucket: s3Config.BUCKET_NAME,
+               Key: doctor.image,
+             });
+             const url = await getSignedUrl(s3, command2, {
+               expiresIn: 3600,
+             });
+             doctor.image = url;
+           }
+         }
+
+         return {
+           status: true,
+           message: "Successfully fetched",
+           doctors: result.doctors,
+           totalPages: result.totalPages,
+         };
+       }
+
+       return { status: false, message: "Something Went Wrong" };
+
+
+    }
+    catch(error){
+      throw error
+    }
+}
+async getDoctorBySearch(searchKey: string): Promise<{ status: boolean; message: string; doctors?: MongoDoctor[]; }> {
+    try{
+
+      const regex=new RegExp(searchKey,"i")
+      const result=await this.Repository.getDoctorBySearch(regex)
+      if(result){
+        for (const doctor of result as MongoDoctor[]) {
+          if (doctor.image) {
+            const command2 = new GetObjectCommand({
+              Bucket: s3Config.BUCKET_NAME,
+              Key: doctor.image,
+            });
+            const url = await getSignedUrl(s3, command2, {
+              expiresIn: 3600,
+            });
+            doctor.image = url;
+          }
+        }
+
+        return {
+          status: true,
+          message: "Successfully fetched",
+          doctors: result
+        };
+
+
+
+      }
+
+      return {status:false,message:"Something Went Wrong"}
+
+    }
+    catch(error){}
+    throw error
 }
 
  

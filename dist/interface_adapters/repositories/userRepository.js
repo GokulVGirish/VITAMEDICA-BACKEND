@@ -160,12 +160,57 @@ class UserRepository {
     async getDoctors(skip, limit) {
         try {
             const result = await DoctorSchema_1.default
-                .find({ status: "Verified", complete: true }).skip(skip).limit(limit)
+                .find({ status: "Verified", complete: true })
+                .skip(skip)
+                .limit(limit)
                 .lean()
                 .populate({ path: "department", select: "name" })
                 .select("_id name department image degree fees");
-            const totalDoctors = await DoctorSchema_1.default.countDocuments();
+            const totalDoctors = await DoctorSchema_1.default.countDocuments({
+                status: "Verified",
+                complete: true,
+            });
             return { doctors: result, totalPages: Math.ceil(totalDoctors / limit) };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getDoctorsByCategory(category, skip, limit) {
+        try {
+            const result = await DoctorSchema_1.default
+                .find({ status: "Verified", complete: true, department: category })
+                .skip(skip)
+                .limit(limit)
+                .lean()
+                .populate({ path: "department", select: "name" })
+                .select("_id name department image degree fees");
+            const totalDoctors = await DoctorSchema_1.default.countDocuments({
+                status: "Verified",
+                complete: true,
+                department: category,
+            });
+            return {
+                doctors: result,
+                totalPages: Math.ceil(totalDoctors / limit),
+            };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getDoctorBySearch(searchKey) {
+        try {
+            const response = await DoctorSchema_1.default
+                .find({
+                $and: [{ name: { $regex: searchKey } },
+                    { status: "Verified" },
+                    { complete: true }]
+            })
+                .lean()
+                .populate({ path: "department", select: "name" })
+                .select("_id name department image degree fees");
+            return response;
         }
         catch (error) {
             throw error;
@@ -349,15 +394,16 @@ class UserRepository {
         try {
             const result = await AppointmentSchema_1.default.aggregate([
                 { $match: { userId: userId } },
-                { $lookup: {
+                {
+                    $lookup: {
                         from: "doctors",
                         localField: "docId",
                         foreignField: "_id",
-                        as: "doctorInfo"
-                    }
+                        as: "doctorInfo",
+                    },
                 },
                 {
-                    $unwind: "$doctorInfo"
+                    $unwind: "$doctorInfo",
                 },
                 {
                     $project: {
@@ -369,16 +415,22 @@ class UserRepository {
                         doctorName: "$doctorInfo.name",
                         paymentStatus: 1,
                         amount: 1,
-                        createdAt: 1
-                    }
+                        createdAt: 1,
+                    },
                 },
                 { $sort: { createdAt: -1 } },
                 { $skip: (page - 1) * limit },
-                { $limit: limit }
+                { $limit: limit },
             ]);
-            const totalAppointments = await AppointmentSchema_1.default.countDocuments({ userId });
+            const totalAppointments = await AppointmentSchema_1.default.countDocuments({
+                userId,
+            });
             if (result.length !== 0)
-                return { status: true, appointments: result, totalPages: Math.ceil(totalAppointments / limit) };
+                return {
+                    status: true,
+                    appointments: result,
+                    totalPages: Math.ceil(totalAppointments / limit),
+                };
             return { status: false };
         }
         catch (error) {
@@ -398,11 +450,11 @@ class UserRepository {
                             $slice: [
                                 { $reverseArray: "$transactions" },
                                 (page - 1) * limit,
-                                limit
-                            ]
-                        }
-                    }
-                }
+                                limit,
+                            ],
+                        },
+                    },
+                },
             ]);
             if (!result || result.length === 0) {
                 return { status: false };
@@ -454,7 +506,7 @@ class UserRepository {
             throw error;
         }
     }
-    async createCancelledAppointment(docId, appointmentId, amount, cancelledBy) {
+    async createCancelledAppointment(docId, appointmentId, amount, cancelledBy, reason) {
         try {
             try {
                 const result = await cancelledAppointmentSchema_1.default.create({
@@ -462,6 +514,7 @@ class UserRepository {
                     docId: docId,
                     amount: amount,
                     cancelledBy,
+                    reason
                 });
                 if (result)
                     return true;
@@ -524,7 +577,16 @@ class UserRepository {
     }
     async addReview(appointmentId, userId, docId, rating, description) {
         try {
-            const result = await DoctorSchema_1.default.updateOne({ _id: docId }, { $push: { reviews: { appointmentId, userId, rating, comment: description || "" } } });
+            const result = await DoctorSchema_1.default.updateOne({ _id: docId }, {
+                $push: {
+                    reviews: {
+                        appointmentId,
+                        userId,
+                        rating,
+                        comment: description || "",
+                    },
+                },
+            });
             return result.modifiedCount > 0;
         }
         catch (error) {

@@ -12,6 +12,7 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const awsS3_1 = __importDefault(require("../entities/services/awsS3"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const razorpayInstance_1 = __importDefault(require("../frameworks/services/razorpayInstance"));
+const console_1 = require("console");
 const s3 = new client_s3_1.S3Client({
     region: awsS3_1.default.BUCKET_REGION,
     credentials: {
@@ -309,7 +310,7 @@ class UserInteractor {
             const resetTokenExpiry = Date.now() + 600000;
             const payload = { email, resetTokenExpiry };
             const hashedToken = jsonwebtoken_1.default.sign(payload, process.env.Password_RESET_SECRET);
-            const resetLink = `http://localhost:5173/reset-password?token=${hashedToken}`;
+            const resetLink = `http://localhost:5173/reset-password?token=${hashedToken}&request=user`;
             const result = await this.Mailer.sendPasswordResetLink(email, resetLink);
             if (!result.success)
                 return { status: false, message: "Internal Server Error" };
@@ -489,7 +490,7 @@ class UserInteractor {
             throw error;
         }
     }
-    async cancelAppointment(userId, appointmentId, date, startTime) {
+    async cancelAppointment(userId, appointmentId, date, startTime, reason) {
         try {
             const appointment = await this.Repository.getAppointment(appointmentId);
             if (!appointment)
@@ -510,7 +511,7 @@ class UserInteractor {
             if (!cancelSlot)
                 return { status: false, message: "Slot Cancellation Failed" };
             const doctorWalletDeduction = await this.Repository.doctorWalletUpdate(appointmentCancel.docId, new mongoose_1.default.Types.ObjectId(appointmentId), refundAmount, "debit", "User Cancelled Appointment", "razorpay");
-            const cancellationAppointment = await this.Repository.createCancelledAppointment(appointmentCancel.docId, new mongoose_1.default.Types.ObjectId(appointmentId), refundAmount.toString(), "user");
+            const cancellationAppointment = await this.Repository.createCancelledAppointment(appointmentCancel.docId, new mongoose_1.default.Types.ObjectId(appointmentId), refundAmount.toString(), "user", reason);
             if (!doctorWalletDeduction)
                 return { status: false, message: "failure doing refunds" };
             const userWalletUpdate = await this.Repository.userWalletUpdate(userId, new mongoose_1.default.Types.ObjectId(appointmentId), refundAmount, "credit", "cancelled appointment refund", "razorpay");
@@ -532,6 +533,63 @@ class UserInteractor {
         catch (error) {
             throw error;
         }
+    }
+    async getDoctorsByCategory(category, skip, limit) {
+        try {
+            const result = await this.Repository.getDoctorsByCategory(category, skip, limit);
+            if (result) {
+                for (const doctor of result.doctors) {
+                    if (doctor.image) {
+                        const command2 = new client_s3_1.GetObjectCommand({
+                            Bucket: awsS3_1.default.BUCKET_NAME,
+                            Key: doctor.image,
+                        });
+                        const url = await getSignedUrl(s3, command2, {
+                            expiresIn: 3600,
+                        });
+                        doctor.image = url;
+                    }
+                }
+                return {
+                    status: true,
+                    message: "Successfully fetched",
+                    doctors: result.doctors,
+                    totalPages: result.totalPages,
+                };
+            }
+            return { status: false, message: "Something Went Wrong" };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getDoctorBySearch(searchKey) {
+        try {
+            const regex = new RegExp(searchKey, "i");
+            const result = await this.Repository.getDoctorBySearch(regex);
+            if (result) {
+                for (const doctor of result) {
+                    if (doctor.image) {
+                        const command2 = new client_s3_1.GetObjectCommand({
+                            Bucket: awsS3_1.default.BUCKET_NAME,
+                            Key: doctor.image,
+                        });
+                        const url = await getSignedUrl(s3, command2, {
+                            expiresIn: 3600,
+                        });
+                        doctor.image = url;
+                    }
+                }
+                return {
+                    status: true,
+                    message: "Successfully fetched",
+                    doctors: result
+                };
+            }
+            return { status: false, message: "Something Went Wrong" };
+        }
+        catch (error) { }
+        throw console_1.error;
     }
 }
 exports.default = UserInteractor;

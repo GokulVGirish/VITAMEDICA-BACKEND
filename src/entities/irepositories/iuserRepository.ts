@@ -96,7 +96,8 @@ interface IUserRepository {
     docId: Types.ObjectId,
     appointmentId: Types.ObjectId,
     amount: string,
-    cancelledBy: string
+    cancelledBy: string,
+    reason:string
   ): Promise<boolean>;
   getAppointment(appoinmentId: string): Promise<IAppointment | null>;
   addReview(
@@ -106,5 +107,11 @@ interface IUserRepository {
     rating: number,
     description?: string
   ): Promise<boolean>;
+  getDoctorsByCategory(
+    category: string,
+    skip: number,
+    limit: number
+  ): Promise<{ doctors?: MongoDoctor[]; totalPages?: number }>;
+  getDoctorBySearch(searchKey:RegExp):Promise<MongoDoctor[]|null>
 }
 export default IUserRepository

@@ -19,10 +19,10 @@ const moment = require("moment");
 
 
 class UserRepository implements IUserRepository {
-  async tempOtpUser(data: User): Promise<{userId:Types.ObjectId}> {
+  async tempOtpUser(data: User): Promise<{ userId: Types.ObjectId }> {
     try {
       const tempUser = await otpModel.create(data);
-     return {userId:tempUser._id}
+      return { userId: tempUser._id };
     } catch (error) {
       throw error;
     }
@@ -173,18 +173,71 @@ class UserRepository implements IUserRepository {
       throw error;
     }
   }
-  async getDoctors(skip: number, limit: number): Promise<{doctors?:MongoDoctor[],totalPages?:number}> {
+  async getDoctors(
+    skip: number,
+    limit: number
+  ): Promise<{ doctors?: MongoDoctor[]; totalPages?: number }> {
     try {
       const result = await doctorModel
-        .find({ status: "Verified", complete: true }).skip(skip).limit(limit)
+        .find({ status: "Verified", complete: true })
+        .skip(skip)
+        .limit(limit)
         .lean()
         .populate({ path: "department", select: "name" })
         .select("_id name department image degree fees");
-        const totalDoctors = await doctorModel.countDocuments();
+      const totalDoctors = await doctorModel.countDocuments({
+        status: "Verified",
+        complete: true,
+      });
       return { doctors: result, totalPages: Math.ceil(totalDoctors / limit) };
     } catch (error) {
       throw error;
     }
+  }
+  async getDoctorsByCategory(
+    category: string,
+    skip: number,
+    limit: number
+  ): Promise<{ doctors?: MongoDoctor[]; totalPages?: number }> {
+    try {
+      const result = await doctorModel
+        .find({ status: "Verified", complete: true, department: category })
+        .skip(skip)
+        .limit(limit)
+        .lean()
+        .populate({ path: "department", select: "name" })
+        .select("_id name department image degree fees");
+      const totalDoctors = await doctorModel.countDocuments({
+        status: "Verified",
+        complete: true,
+        department: category,
+      });
+      return {
+        doctors: result,
+        totalPages: Math.ceil(totalDoctors / limit),
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+  async getDoctorBySearch(searchKey: RegExp): Promise<MongoDoctor[] | null> {
+      try{
+
+        const response = await doctorModel
+          .find({
+          $and:[  {name: { $regex: searchKey }},
+            {status: "Verified"},
+           { complete: true}]
+          })
+          .lean()
+          .populate({ path: "department", select: "name" })
+          .select("_id name department image degree fees");
+          return response
+
+      }
+      catch(error){
+        throw error
+      }
   }
   async getDoctor(id: string): Promise<MongoDoctor | null> {
     try {
@@ -418,218 +471,254 @@ class UserRepository implements IUserRepository {
       throw error;
     }
   }
-  async getAppointments(page: number, limit: number, userId: Types.ObjectId): Promise<{status:boolean;appointments?:IAppointment[],totalPages?:number}> {
-      try{
-        const result = await appointmentModel.aggregate([
-          { $match: { userId: userId } },
-          {$lookup:{
-            from:"doctors",
-            localField:"docId",
-            foreignField:"_id",
-            as:"doctorInfo"
-          }
-           },
-           {
-            $unwind:"$doctorInfo"
-           },
-           {
-            $project:{
-              _id:1,
-              date:1,
-              status:1,
-              start:1,
-              end:1,
-              doctorName:"$doctorInfo.name",
-              paymentStatus:1,
-              amount:1,
-              createdAt:1
-            }
+  async getAppointments(
+    page: number,
+    limit: number,
+    userId: Types.ObjectId
+  ): Promise<{
+    status: boolean;
+    appointments?: IAppointment[];
+    totalPages?: number;
+  }> {
+    try {
+      const result = await appointmentModel.aggregate([
+        { $match: { userId: userId } },
+        {
+          $lookup: {
+            from: "doctors",
+            localField: "docId",
+            foreignField: "_id",
+            as: "doctorInfo",
           },
+        },
+        {
+          $unwind: "$doctorInfo",
+        },
+        {
+          $project: {
+            _id: 1,
+            date: 1,
+            status: 1,
+            start: 1,
+            end: 1,
+            doctorName: "$doctorInfo.name",
+            paymentStatus: 1,
+            amount: 1,
+            createdAt: 1,
+          },
+        },
 
-           
-          { $sort: { createdAt:-1 } },
-          { $skip: (page - 1) * limit },
-          {$limit:limit}
-        ]);
-        const totalAppointments=await appointmentModel.countDocuments({userId})
-        if(result.length!==0)return {status:true,appointments:result, totalPages: Math.ceil(totalAppointments / limit)}
-        return {status:false}
-
-      }
-      catch(error){
-        throw error
-      }
+        { $sort: { createdAt: -1 } },
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
+      ]);
+      const totalAppointments = await appointmentModel.countDocuments({
+        userId,
+      });
+      if (result.length !== 0)
+        return {
+          status: true,
+          appointments: result,
+          totalPages: Math.ceil(totalAppointments / limit),
+        };
+      return { status: false };
+    } catch (error) {
+      throw error;
+    }
   }
-  async userWalletInfo(page: number, limit: number, userId: Types.ObjectId): Promise<{ status: boolean; userWallet?: IUserWallet; totalPages?: number; }> {
-      try{
-
-        const result = await userWalletModal.aggregate([
-          { $match: { userId } },
+  async userWalletInfo(
+    page: number,
+    limit: number,
+    userId: Types.ObjectId
+  ): Promise<{
+    status: boolean;
+    userWallet?: IUserWallet;
+    totalPages?: number;
+  }> {
+    try {
+      const result = await userWalletModal.aggregate([
+        { $match: { userId } },
+        {
+          $project: {
+            _id: 1,
+            balance: 1,
+            transactionCount: 1,
+            transactions: {
+              $slice: [
+                { $reverseArray: "$transactions" },
+                (page - 1) * limit,
+                limit,
+              ],
+            },
+          },
+        },
+      ]);
+      if (!result || result.length === 0) {
+        return { status: false };
+      }
+      const totalPages = Math.ceil(result[0].transactionCount / limit);
+      return {
+        status: true,
+        userWallet: result[0],
+        totalPages: totalPages,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+  async cancelAppointment(
+    appointmentId: string
+  ): Promise<{ status: boolean; amount?: string; docId?: Types.ObjectId }> {
+    try {
+      const response = await appointmentModel.findOneAndUpdate(
+        { _id: appointmentId },
+        { status: "cancelled" },
+        { new: true }
+      );
+      if (response) {
+        return { status: true, amount: response.amount, docId: response.docId };
+      } else {
+        return { status: false };
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+  async unbookSlot(
+    docId: Types.ObjectId,
+    date: Date,
+    startTime: Date
+  ): Promise<boolean> {
+    try {
+      const result = await doctorSlotsModel.updateOne(
+        {
+          doctorId: docId,
+          date: date,
+        },
+        {
+          $set: {
+            "slots.$[slot].bookedBy": null,
+            "slots.$[slot].availability": true,
+            "slots.$[slot].locked": false,
+            "slots.$[slot].lockedBy": null,
+            "slots.$[slot].lockExpiration": null,
+          },
+        },
+        {
+          arrayFilters: [{ "slot.start": startTime }],
+        }
+      );
+      return result.modifiedCount > 0;
+    } catch (error) {
+      throw error;
+    }
+  }
+  async createCancelledAppointment(
+    docId: Types.ObjectId,
+    appointmentId: Types.ObjectId,
+    amount: string,
+    cancelledBy: string,
+    reason:string
+  ): Promise<boolean> {
+    try {
+      try {
+        const result = await cancelledAppointmentsModel.create({
+          appointmentId: appointmentId,
+          docId: docId,
+          amount: amount,
+          cancelledBy,
+          reason
+        });
+        if (result) return true;
+        else return false;
+      } catch (error) {
+        throw error;
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+  async userWalletUpdate(
+    userId: Types.ObjectId,
+    appointmentId: Types.ObjectId,
+    amount: number,
+    type: string,
+    reason: string,
+    paymentMethod: string
+  ): Promise<boolean> {
+    try {
+      try {
+        const result = await userWalletModal.findOneAndUpdate(
+          { userId: userId },
           {
-            $project: {
-              _id: 1,
-              balance: 1,
+            $inc: {
+              balance: type === "credit" ? amount : -amount,
               transactionCount: 1,
-              transactions:{
-                $slice:[
-                  {$reverseArray:"$transactions"},
-                  (page-1)*limit,
-                  limit
-                ]
-              }
-            }
-          }
-        ]);
-         if (!result || result.length === 0) {
-           return { status: false };
-         }
-         const totalPages = Math.ceil(
-           result[0].transactionCount / limit
-         );
-         return {
-           status: true,
-           userWallet: result[0],
-           totalPages: totalPages,
-         };
-
-      }
-      catch(error){
-        throw error
-      }
-  }
-  async cancelAppointment(appointmentId: string): Promise<{ status: boolean; amount?: string; docId?: Types.ObjectId; }> {
-      
-    try{
-
-      const response=await appointmentModel.findOneAndUpdate({_id:appointmentId},{status:"cancelled"},{new:true})
-      if(response){
-        return {status:true,amount:response.amount,docId:response.docId}
-      }
-      else{
-        return {status:false}
-      }
-
-    }
-    catch(error){
-      throw error
-    }
-  }
-  async unbookSlot(docId: Types.ObjectId, date: Date, startTime: Date): Promise<boolean> {
-    try{
-       const result = await doctorSlotsModel.updateOne(
-         {
-           doctorId: docId,
-           date: date,
-         },
-         {
-           $set: {
-             "slots.$[slot].bookedBy": null,
-             "slots.$[slot].availability": true,
-             "slots.$[slot].locked": false,
-             "slots.$[slot].lockedBy": null,
-             "slots.$[slot].lockExpiration": null,
-           },
-         },
-         {
-           arrayFilters: [{ "slot.start": startTime }], 
-         }
-       );
-      return result.modifiedCount>0
-
-
-    }
-    catch(error){
-      throw error
-    }
-      
-  }
-  async createCancelledAppointment(docId: Types.ObjectId, appointmentId: Types.ObjectId, amount: string, cancelledBy: string): Promise<boolean> {
-      try{
-          try {
-            const result = await cancelledAppointmentsModel.create({
-              appointmentId: appointmentId,
-              docId: docId,
-              amount: amount,
-              cancelledBy,
-            });
-            if (result) return true;
-            else return false;
-          } catch (error) {
-            throw error;
-          }
-
-      }
-      catch(error){
-        throw error
-      }
-  }
-  async userWalletUpdate(userId: Types.ObjectId, appointmentId: Types.ObjectId, amount: number, type: string, reason: string, paymentMethod: string): Promise<boolean> {
-      try{
-        try {
-          const result = await userWalletModal.findOneAndUpdate(
-            {userId:userId },
-            {
-              $inc: {
-                balance: type === "credit" ? amount : -amount,
-                transactionCount: 1,
-              },
-              $push: {
-                transactions: {
-                  appointment: appointmentId,
-                  amount: amount,
-                  type: type,
-                  reason: reason,
-                  paymentMethod,
-                },
+            },
+            $push: {
+              transactions: {
+                appointment: appointmentId,
+                amount: amount,
+                type: type,
+                reason: reason,
+                paymentMethod,
               },
             },
-            {
-              new: true,
-              upsert: true,
-              setDefaultsOnInsert: true,
-            }
-          );
-          if (result.__v == 0) {
-            await userModel.updateOne(
-              { _id: userId },
-              { $set: { wallet: result._id } }
-            );
+          },
+          {
+            new: true,
+            upsert: true,
+            setDefaultsOnInsert: true,
           }
-          if (result) return true;
-          else return false;
-        } catch (error) {
-          throw error;
+        );
+        if (result.__v == 0) {
+          await userModel.updateOne(
+            { _id: userId },
+            { $set: { wallet: result._id } }
+          );
         }
-
-
+        if (result) return true;
+        else return false;
+      } catch (error) {
+        throw error;
       }
-      catch(error){
-        throw error
-      }
+    } catch (error) {
+      throw error;
+    }
   }
   async getAppointment(appoinmentId: string): Promise<IAppointment | null> {
-      try{
-        return await appointmentModel.findOne({_id:appoinmentId})
-
-      }
-      catch(error){
-        throw error
-      }
+    try {
+      return await appointmentModel.findOne({ _id: appoinmentId });
+    } catch (error) {
+      throw error;
+    }
   }
-  async addReview(appointmentId: string, userId: Types.ObjectId, docId: string,rating:number,description?:string): Promise<boolean> {
-      try{
+  async addReview(
+    appointmentId: string,
+    userId: Types.ObjectId,
+    docId: string,
+    rating: number,
+    description?: string
+  ): Promise<boolean> {
+    try {
+      const result = await doctorModel.updateOne(
+        { _id: docId },
+        {
+          $push: {
+            reviews: {
+              appointmentId,
+              userId,
+              rating,
+              comment: description || "",
+            },
+          },
+        }
+      );
 
-        const result = await doctorModel.updateOne(
-          { _id: docId },
-          { $push: { reviews: { appointmentId, userId ,rating,comment:description||""} } }
-        );
-
-        return result.modifiedCount>0
-
-      }
-      catch(error){
-        throw error
-      }
+      return result.modifiedCount > 0;
+    } catch (error) {
+      throw error;
+    }
   }
 }
 export default UserRepository

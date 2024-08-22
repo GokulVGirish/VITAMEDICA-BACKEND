@@ -93,11 +93,13 @@ class DoctorSlotsControllers {
       const docId = (req as doctorDataRequest).doctorData._id;
       const date = new Date(req.query.date as string);
       const startTime = new Date(req.query.startTime as string);
+      const reason=req.body.reason
+      console.log("reason ",reason)
 
       const response = await this.interactor.deleteBookedTimeSlots(
         docId,
         date,
-        startTime
+        startTime,reason
       );
       if (response.status) {
         res.status(200).json({ success: true, message: response.message });

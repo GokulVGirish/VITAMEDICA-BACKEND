@@ -39,4 +39,6 @@ profileRouter.put(
   verifyRole("doctor"),
   controller.DoctorProfileUpdate.bind(controller)
 );
+profileRouter.post("/password/reset-request",controller.passwordResetLink.bind(controller));
+profileRouter.post("/password/reset/:token",controller.resetPassword.bind(controller));
 export default profileRouter

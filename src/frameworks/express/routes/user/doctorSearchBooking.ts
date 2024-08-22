@@ -22,6 +22,11 @@ doctorSearchBookingRouter.get(
   "/list",
   controller.getDoctorList.bind(controller)
 );
+doctorSearchBookingRouter.get("/category",controller.getDoctorsByDepartment.bind(controller));
+doctorSearchBookingRouter.get(
+  "/search",
+  controller.getDoctorBySearch.bind(controller)
+);
 doctorSearchBookingRouter.get(
   "/:id/profile",
   controller.getDoctorPage.bind(controller)
@@ -40,5 +45,6 @@ doctorSearchBookingRouter.get(
   getUser,
   controller.getTimeSlots.bind(controller)
 );
+
 
 export default doctorSearchBookingRouter

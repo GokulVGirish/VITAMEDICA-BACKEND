@@ -22,4 +22,6 @@ const profileRouter = express_1.default.Router();
 profileRouter.get("/", jwt_verify_1.default, doctor_1.getDoctor, controller.getProfile.bind(controller));
 profileRouter.post("/picture", jwt_verify_1.default, (0, role_Authenticate_1.default)("doctor"), doctor_1.getDoctor, multer_1.default.single("image"), controller.UpdateProfileImage.bind(controller));
 profileRouter.put("/", jwt_verify_1.default, doctor_1.getDoctor, (0, role_Authenticate_1.default)("doctor"), controller.DoctorProfileUpdate.bind(controller));
+profileRouter.post("/password/reset-request", controller.passwordResetLink.bind(controller));
+profileRouter.post("/password/reset/:token", controller.resetPassword.bind(controller));
 exports.default = profileRouter;

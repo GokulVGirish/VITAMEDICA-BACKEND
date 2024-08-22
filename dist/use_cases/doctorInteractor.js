@@ -7,6 +7,7 @@ const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const client_s3_1 = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const awsS3_1 = __importDefault(require("../entities/services/awsS3"));
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const s3 = new client_s3_1.S3Client({
     region: awsS3_1.default.BUCKET_REGION,
     credentials: {
@@ -29,7 +30,12 @@ class DoctorInteractor {
                     doctor.otp = mailResponse.otp;
                     doctor.password = await bcryptjs_1.default.hash(doctor.password, 10);
                     const response = await this.Repository.tempOtpDoctor(doctor);
-                    const tempToken = this.JWTServices.generateToken({ emailId: doctor.email, role: "doctor", userId: response.userId, verified: false }, { expiresIn: "10m" });
+                    const tempToken = this.JWTServices.generateToken({
+                        emailId: doctor.email,
+                        role: "doctor",
+                        userId: response.userId,
+                        verified: false,
+                    }, { expiresIn: "10m" });
                     return {
                         status: true,
                         message: "otp sucessfully sent",
@@ -61,8 +67,18 @@ class DoctorInteractor {
         try {
             const response = await this.Repository.createDoctorOtp(otp);
             if (response.status && response.doctor) {
-                const accessToken = this.JWTServices.generateToken({ emailId: response.doctor.email, role: "doctor", userId: response.doctor._id, verified: true }, { expiresIn: "1h" });
-                const refreshToken = this.JWTServices.generateRefreshToken({ emailId: response.doctor.email, role: "doctor", userId: response.doctor._id, verified: true }, { expiresIn: "1d" });
+                const accessToken = this.JWTServices.generateToken({
+                    emailId: response.doctor.email,
+                    role: "doctor",
+                    userId: response.doctor._id,
+                    verified: true,
+                }, { expiresIn: "1h" });
+                const refreshToken = this.JWTServices.generateRefreshToken({
+                    emailId: response.doctor.email,
+                    role: "doctor",
+                    userId: response.doctor._id,
+                    verified: true,
+                }, { expiresIn: "1d" });
                 return {
                     status: true,
                     message: "signed Up Sucessfully",
@@ -78,6 +94,43 @@ class DoctorInteractor {
         }
         catch (error) {
             console.log(error);
+            throw error;
+        }
+    }
+    async passwordResetLink(email) {
+        try {
+            const user = await this.Repository.getDoctor(email);
+            if (!user)
+                return { status: false, message: "User Not Found" };
+            const resetTokenExpiry = Date.now() + 600000;
+            const payload = { email, resetTokenExpiry };
+            const hashedToken = jsonwebtoken_1.default.sign(payload, process.env.Password_RESET_SECRET);
+            const resetLink = `http://localhost:5173/reset-password?token=${hashedToken}&request=doctor`;
+            const result = await this.Mailer.sendPasswordResetLink(email, resetLink);
+            if (!result.success)
+                return { status: false, message: "Internal Server Error" };
+            return { status: true, message: "Link Sucessfully Sent" };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async resetPassword(token, password) {
+        try {
+            const decodedToken = jsonwebtoken_1.default.verify(token, process.env.Password_RESET_SECRET);
+            const { email, resetTokenExpiry } = decodedToken;
+            const userExist = await this.Repository.getDoctor(email);
+            if (!userExist)
+                return { status: false, message: "Invalid User" };
+            if (Date.now() > new Date(resetTokenExpiry).getTime())
+                return { status: false, message: "Expired Link" };
+            const hashedPassword = await bcryptjs_1.default.hash(password, 10);
+            const response = await this.Repository.resetPassword(email, hashedPassword);
+            if (!response)
+                return { status: false, message: "Internal server error" };
+            return { status: true, message: "Password Changed Sucessfully" };
+        }
+        catch (error) {
             throw error;
         }
     }
@@ -109,8 +162,18 @@ class DoctorInteractor {
                     errorCode: "INVALID_Password",
                 };
             }
-            const accessToken = this.JWTServices.generateToken({ emailId: doctor.email, role: "doctor", userId: doctor._id, verified: true }, { expiresIn: "1h" });
-            const refreshToken = this.JWTServices.generateRefreshToken({ emailId: doctor.email, role: "doctor", userId: doctor._id, verified: true }, { expiresIn: "1d" });
+            const accessToken = this.JWTServices.generateToken({
+                emailId: doctor.email,
+                role: "doctor",
+                userId: doctor._id,
+                verified: true,
+            }, { expiresIn: "1h" });
+            const refreshToken = this.JWTServices.generateRefreshToken({
+                emailId: doctor.email,
+                role: "doctor",
+                userId: doctor._id,
+                verified: true,
+            }, { expiresIn: "1d" });
             return {
                 status: true,
                 message: "logged in sucessfully",
@@ -359,12 +422,12 @@ class DoctorInteractor {
             throw error;
         }
     }
-    async deleteBookedTimeSlots(id, date, startTime) {
+    async deleteBookedTimeSlots(id, date, startTime, reason) {
         try {
             const result = await this.Repository.cancelAppointment(id, date, startTime);
             if (!result.status)
                 return { status: false, message: "Something Went Wrong" };
-            const res = await this.Repository.createCancelledAppointment(id, result.id, result.amount, "doctor");
+            const res = await this.Repository.createCancelledAppointment(id, result.id, result.amount, "doctor", reason);
             if (!res)
                 return { status: false, message: "Something Went Wrong" };
             const response = await this.Repository.doctorWalletUpdate(id, result.id, result.amount, "debit", "appointment cancelled by Doc", "razorpay");
@@ -396,6 +459,16 @@ class DoctorInteractor {
                     expiresIn: 3600,
                 });
                 response.image = url;
+            }
+            if ("prescription" in response && response.prescription) {
+                const command = new client_s3_1.GetObjectCommand({
+                    Bucket: awsS3_1.default.BUCKET_NAME,
+                    Key: response.prescription,
+                });
+                const url = await getSignedUrl(s3, command, {
+                    expiresIn: 3600,
+                });
+                response.prescription = url;
             }
             return { status: true, message: "Success", detail: response };
         }

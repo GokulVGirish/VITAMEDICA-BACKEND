@@ -19,6 +19,8 @@ const interactor = new userInteractor_1.default(respository, mailer, jwtservices
 const controller = new doctorSearchBooking_1.default(interactor);
 const doctorSearchBookingRouter = express_1.default.Router();
 doctorSearchBookingRouter.get("/list", controller.getDoctorList.bind(controller));
+doctorSearchBookingRouter.get("/category", controller.getDoctorsByDepartment.bind(controller));
+doctorSearchBookingRouter.get("/search", controller.getDoctorBySearch.bind(controller));
 doctorSearchBookingRouter.get("/:id/profile", controller.getDoctorPage.bind(controller));
 doctorSearchBookingRouter.get("/:doctorId/availability", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.getAvailableDate.bind(controller));
 doctorSearchBookingRouter.get("/:doctorId/slots", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.getTimeSlots.bind(controller));

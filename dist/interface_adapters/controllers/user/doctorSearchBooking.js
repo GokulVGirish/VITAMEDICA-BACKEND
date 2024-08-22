@@ -95,5 +95,41 @@ class DoctorSearchBookingControllers {
             next(error);
         }
     }
+    async getDoctorsByDepartment(req, res, next) {
+        try {
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 6;
+            const skip = (page - 1) * limit;
+            const category = req.query.category;
+            console.log("category", category, page, limit);
+            const response = await this.interactor.getDoctorsByCategory(category, skip, limit);
+            if (response.status)
+                return res.status(200).json({
+                    success: true,
+                    message: response.message,
+                    doctors: response.doctors,
+                    totalPages: response.totalPages,
+                });
+            else
+                res.status(500).json({ success: false, message: response.message });
+        }
+        catch (error) {
+            console.log(error);
+            next(error);
+        }
+    }
+    async getDoctorBySearch(req, res, next) {
+        try {
+            const search = req.query.search;
+            const response = await this.interactor.getDoctorBySearch(search);
+            if (response.status)
+                return res.status(200).json({ success: true, message: response.message, doctors: response.doctors });
+            res.status(404).json({ success: false, message: response.message });
+        }
+        catch (error) {
+            console.log(error);
+            next(error);
+        }
+    }
 }
 exports.default = DoctorSearchBookingControllers;

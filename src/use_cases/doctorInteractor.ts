@@ -13,6 +13,8 @@ import { ObjectId, Types } from "mongoose";
 import { DoctorSlots } from "../entities/rules/slotsType";
 import { IDoctorWallet } from "../entities/rules/doctorWalletType";
 import IAppointment from "../entities/rules/appointments";
+import jwt from "jsonwebtoken";
+import { ResetPasswordToken } from "../entities/rules/resetPassword";
 
 const s3 = new S3Client({
   region: s3Config.BUCKET_REGION,
@@ -43,7 +45,12 @@ class DoctorInteractor implements IDoctorInteractor {
           doctor.password = await bcrypt.hash(doctor.password, 10);
           const response = await this.Repository.tempOtpDoctor(doctor);
           const tempToken = this.JWTServices.generateToken(
-            { emailId: doctor.email, role: "doctor",userId:response.userId, verified: false },
+            {
+              emailId: doctor.email,
+              role: "doctor",
+              userId: response.userId,
+              verified: false,
+            },
             { expiresIn: "10m" }
           );
           return {
@@ -82,11 +89,21 @@ class DoctorInteractor implements IDoctorInteractor {
       const response = await this.Repository.createDoctorOtp(otp);
       if (response.status && response.doctor) {
         const accessToken = this.JWTServices.generateToken(
-          { emailId: response.doctor.email, role: "doctor",userId:response.doctor._id, verified: true },
+          {
+            emailId: response.doctor.email,
+            role: "doctor",
+            userId: response.doctor._id,
+            verified: true,
+          },
           { expiresIn: "1h" }
         );
         const refreshToken = this.JWTServices.generateRefreshToken(
-          { emailId: response.doctor.email, role: "doctor",userId:response.doctor._id, verified: true },
+          {
+            emailId: response.doctor.email,
+            role: "doctor",
+            userId: response.doctor._id,
+            verified: true,
+          },
           { expiresIn: "1d" }
         );
         return {
@@ -105,6 +122,53 @@ class DoctorInteractor implements IDoctorInteractor {
       throw error;
     }
   }
+  async passwordResetLink(
+    email: string
+  ): Promise<{ status: boolean; message: string; link?: string }> {
+    try {
+      const user = await this.Repository.getDoctor(email);
+      if (!user) return { status: false, message: "User Not Found" };
+      const resetTokenExpiry = Date.now() + 600000;
+      const payload = { email, resetTokenExpiry };
+      const hashedToken = jwt.sign(
+        payload,
+        process.env.Password_RESET_SECRET as string
+      );
+      const resetLink = `http://localhost:5173/reset-password?token=${hashedToken}&request=doctor`;
+      const result = await this.Mailer.sendPasswordResetLink(email, resetLink);
+      if (!result.success)
+        return { status: false, message: "Internal Server Error" };
+
+      return { status: true, message: "Link Sucessfully Sent" };
+    } catch (error) {
+      throw error;
+    }
+  }
+  async resetPassword(
+    token: string,
+    password: string
+  ): Promise<{ status: boolean; message: string }> {
+    try {
+      const decodedToken = jwt.verify(
+        token,
+        process.env.Password_RESET_SECRET as string
+      );
+      const { email, resetTokenExpiry } = decodedToken as ResetPasswordToken;
+      const userExist = await this.Repository.getDoctor(email);
+      if (!userExist) return { status: false, message: "Invalid User" };
+      if (Date.now() > new Date(resetTokenExpiry).getTime())
+        return { status: false, message: "Expired Link" };
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const response = await this.Repository.resetPassword(
+        email,
+        hashedPassword
+      );
+      if (!response) return { status: false, message: "Internal server error" };
+      return { status: true, message: "Password Changed Sucessfully" };
+    } catch (error) {
+      throw error;
+    }
+  }
   async login(
     email: string,
     password: string
@@ -116,7 +180,7 @@ class DoctorInteractor implements IDoctorInteractor {
     errorCode?: string;
     doctor?: string;
     doctorStatus?: string;
-    doctorId?:Types.ObjectId
+    doctorId?: Types.ObjectId;
   }> {
     try {
       const rejectDoctor = await this.Repository.getRejectedDoctor(email);
@@ -146,11 +210,21 @@ class DoctorInteractor implements IDoctorInteractor {
         };
       }
       const accessToken = this.JWTServices.generateToken(
-        { emailId: doctor.email, role: "doctor",userId:doctor._id, verified: true },
+        {
+          emailId: doctor.email,
+          role: "doctor",
+          userId: doctor._id,
+          verified: true,
+        },
         { expiresIn: "1h" }
       );
       const refreshToken = this.JWTServices.generateRefreshToken(
-        { emailId: doctor.email, role: "doctor",userId:doctor._id, verified: true },
+        {
+          emailId: doctor.email,
+          role: "doctor",
+          userId: doctor._id,
+          verified: true,
+        },
         { expiresIn: "1d" }
       );
 
@@ -384,9 +458,7 @@ class DoctorInteractor implements IDoctorInteractor {
       throw error;
     }
   }
-  async getTodaysAppointments(
-    docId: Types.ObjectId
-  ): Promise<{
+  async getTodaysAppointments(docId: Types.ObjectId): Promise<{
     status: boolean;
     message: string;
     appointments?: IAppointment[];
@@ -474,7 +546,8 @@ class DoctorInteractor implements IDoctorInteractor {
   async deleteBookedTimeSlots(
     id: Types.ObjectId,
     date: Date,
-    startTime: Date
+    startTime: Date,
+    reason: string
   ): Promise<{ status: boolean; message: string }> {
     try {
       const result = await this.Repository.cancelAppointment(
@@ -488,7 +561,8 @@ class DoctorInteractor implements IDoctorInteractor {
         id,
         result.id as Types.ObjectId,
         result.amount as string,
-        "doctor"
+        "doctor",
+        reason
       );
       if (!res) return { status: false, message: "Something Went Wrong" };
       const response = await this.Repository.doctorWalletUpdate(
@@ -520,51 +594,64 @@ class DoctorInteractor implements IDoctorInteractor {
       throw error;
     }
   }
-  async getAppointmentDetail(id: string): Promise<{ status: boolean; message?: string; detail?: IAppointment; }> {
-      try{
+  async getAppointmentDetail(
+    id: string
+  ): Promise<{ status: boolean; message?: string; detail?: IAppointment }> {
+    try {
+      const response = await this.Repository.getAppointmentDetail(id);
+      if (!response) return { status: false, message: "Something Went Wrong" };
 
-        const response=await this.Repository.getAppointmentDetail(id)
-        if(!response)return {status:false,message:"Something Went Wrong"}
-
-        if ("image" in response && response.image) {
-            const command = new GetObjectCommand({
-              Bucket: s3Config.BUCKET_NAME,
-              Key: response.image as string,
-            });
-            const url = await getSignedUrl(s3, command, {
-              expiresIn: 3600,
-            });
-            response.image=url
-        }
-
-        return {status:true,message:"Success",detail:response}
-
-      }
-      catch(error){
-        throw error
-      }
-  }
-  async addPrescription(appointmentId: string,prescription:MulterFile): Promise<{ status: boolean; message: string; }> {
-      try{
-        const folderPath = "prescriptions";
-        const fileExtension = prescription.originalname.split(".").pop();
-        const uniqueFileName = `prescription-${appointmentId}.${fileExtension}`;
-        const key = `${folderPath}/${uniqueFileName}`;
-        const command = new PutObjectCommand({
+      if ("image" in response && response.image) {
+        const command = new GetObjectCommand({
           Bucket: s3Config.BUCKET_NAME,
-          Key: key,
-          Body:prescription.buffer,
-          ContentType: prescription.mimetype,
+          Key: response.image as string,
         });
-        await s3.send(command);
-        const response=await this.Repository.addPrescription(appointmentId,key)
-        if(response)return {status:true,message:"Sucessfully added"}
-        return {status:false,message:"Internal Server Error"}
+        const url = await getSignedUrl(s3, command, {
+          expiresIn: 3600,
+        });
+        response.image = url;
+      }
+      if ("prescription" in response && response.prescription) {
+        const command = new GetObjectCommand({
+          Bucket: s3Config.BUCKET_NAME,
+          Key: response.prescription as string,
+        });
+        const url = await getSignedUrl(s3, command, {
+          expiresIn: 3600,
+        });
+        response.prescription = url;
+      }
 
-      }
-      catch(error){
-        throw error
-      }
+      return { status: true, message: "Success", detail: response };
+    } catch (error) {
+      throw error;
+    }
+  }
+  async addPrescription(
+    appointmentId: string,
+    prescription: MulterFile
+  ): Promise<{ status: boolean; message: string }> {
+    try {
+      const folderPath = "prescriptions";
+      const fileExtension = prescription.originalname.split(".").pop();
+      const uniqueFileName = `prescription-${appointmentId}.${fileExtension}`;
+      const key = `${folderPath}/${uniqueFileName}`;
+      const command = new PutObjectCommand({
+        Bucket: s3Config.BUCKET_NAME,
+        Key: key,
+        Body: prescription.buffer,
+        ContentType: prescription.mimetype,
+      });
+      await s3.send(command);
+      const response = await this.Repository.addPrescription(
+        appointmentId,
+        key
+      );
+      if (response) return { status: true, message: "Sucessfully added" };
+      return { status: false, message: "Internal Server Error" };
+    } catch (error) {
+      throw error;
+    }
   }
 }
 export default DoctorInteractor;

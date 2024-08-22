@@ -68,5 +68,34 @@ class DoctorProfileControllers {
       throw error;
     }
   }
+  async passwordResetLink(req: Request, res: Response, next: NextFunction) {
+    try {
+      const email = req.body.email;
+      const response = await this.interactor.passwordResetLink(email);
+      if (response.status) {
+        res.status(200).json({ success: true, message: response.message });
+      } else {
+        res.status(500).json({ success: false, message: response.message });
+      }
+    } catch (error) {
+      console.log(error);
+      next(error);
+    }
+  }
+  async resetPassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const token = req.params.token;
+      const password = req.body.password;
+      const response = await this.interactor.resetPassword(token, password);
+      if (response.status) {
+        res.status(200).json({ success: true, message: response.message });
+      } else {
+        res.status(500).json({ success: false, message: response.message });
+      }
+    } catch (error) {
+      console.log(error);
+      next(error);
+    }
+  }
 }
 export default DoctorProfileControllers

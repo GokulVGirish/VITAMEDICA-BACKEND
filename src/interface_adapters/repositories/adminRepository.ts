@@ -9,206 +9,565 @@ import departmentModel from "../../frameworks/mongoose/models/departmentSchema"
 import doctorModel from "../../frameworks/mongoose/models/DoctorSchema"
 import userModel from "../../frameworks/mongoose/models/UserSchema"
 import rejectedDoctorModel from "../../frameworks/mongoose/models/RejectedDoctor"
+import { getCurrentMonthDates, getCurrentWeekDates } from "../../frameworks/services/dates"
+import appointmentModel from "../../frameworks/mongoose/models/AppointmentSchema"
 
-class AdminRepository implements IAdminRepository{
-   
+class AdminRepository implements IAdminRepository {
+  async getAdmin(email: string): Promise<MongoAdmin | null> {
+    const admin = await adminModel.findOne({ email: email });
+    return admin;
+  }
+  async getDepartments(): Promise<{
+    status: boolean;
+    departments?: MongoDepartment[];
+  }> {
+    try {
+      const departments = await departmentModel.find();
+      if (departments) {
+        return { status: true, departments: departments };
+      } else {
+        return {
+          status: false,
+        };
+      }
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+  async addDepartment(
+    name: string
+  ): Promise<{ status: boolean; department?: MongoDepartment }> {
+    try {
+      const department = await departmentModel.create({ name: name });
+      if (!department) {
+        return { status: false };
+      }
+      return { status: true, department };
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+  async deleteDepartment(
+    id: string
+  ): Promise<{ status: boolean; message?: string }> {
+    try {
+      const result = await departmentModel.deleteOne({ _id: id });
+      if (result.deletedCount === 1) {
+        return {
+          status: true,
+          message: "Department deleted successfully",
+        };
+      } else {
+        return {
+          status: false,
+          message: "Department not found or could not be deleted",
+        };
+      }
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+  async getUsers(): Promise<{
+    status: boolean;
+    message: string;
+    users?: MongoUser[];
+  }> {
+    try {
+      const users = await userModel.find();
+      if (!users) {
+        return { status: false, message: "error retriving users" };
+      }
+      return { status: true, message: "sucessful", users };
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+  async blockUnblockUser(id: string, status: boolean): Promise<boolean> {
+    try {
+      const result = await userModel.updateOne(
+        { _id: id },
+        { $set: { isBlocked: status } }
+      );
 
+      return result.modifiedCount > 0;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+  async getUnverifiedDoctors(): Promise<{
+    status: boolean;
+    doctors?: MongoDoctor[];
+  }> {
+    try {
+      const result = await doctorModel.aggregate([
+        {
+          $match: {
+            documentsUploaded: true,
+            status: "Submitted",
+          },
+        },
+        {
+          $lookup: {
+            from: "departments", // The name of the department collection
+            localField: "department",
+            foreignField: "_id",
+            as: "department",
+          },
+        },
+        {
+          $unwind: {
+            path: "$department",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+      ]);
 
-   async getAdmin(email: string): Promise<MongoAdmin | null> {
-    const admin=await adminModel.findOne({email:email})
-    return admin
-       
-   }
-   async getDepartments(): Promise<{ status: boolean; departments?: MongoDepartment[]; }> {
-       try{
-         const departments=await departmentModel.find()
-         if(departments){
-            return {status:true,departments:departments}
-         }else{
-            return {
-               status:false
-            }
-         }
+      return { status: true, doctors: result };
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+  async getDoctor(
+    id: string
+  ): Promise<{ status: boolean; doctor?: MongoDoctor }> {
+    try {
+      const result = await doctorModel
+        .findOne({ _id: id })
+        .populate("department");
+      if (result) {
+        return { status: true, doctor: result };
+      } else {
+        return { status: false };
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+  async verifyDoctor(id: string): Promise<boolean> {
+    try {
+      const result = await doctorModel.updateOne(
+        { _id: id },
+        { $set: { status: "Verified" } }
+      );
+      return result.modifiedCount > 0;
+    } catch (error) {
+      throw error;
+    }
+  }
+  async getDoctors(): Promise<{ status: boolean; doctors?: MongoDoctor[] }> {
+    try {
+      const doctors = await doctorModel.find({ status: "Verified" });
+      if (doctors) {
+        return { status: true, doctors: doctors };
+      } else {
+        return { status: false };
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+  async blockUnblockDoctor(id: string, status: boolean): Promise<boolean> {
+    try {
+      const result = await doctorModel.updateOne(
+        { _id: id },
+        { $set: { isBlocked: status } }
+      );
+      return result.modifiedCount > 0;
+    } catch (error) {
+      throw error;
+    }
+  }
+  async deleteDoctor(id: string): Promise<boolean> {
+    try {
+      const result = await doctorModel.deleteOne({ _id: id });
+      return result.deletedCount === 1;
+    } catch (error) {
+      throw error;
+    }
+  }
+  async createRejectedDoctor(email: string, reason: string): Promise<boolean> {
+    try {
+      const result = await rejectedDoctorModel.create({
+        email: email,
+        reason: reason,
+      });
+      return result ? true : false;
+    } catch (error) {
+      throw error;
+    }
+  }
+  async getWeeklyRevenue(): Promise<{ label: string; totalRevenue: number }[]> {
+    try {
+      const { startOfWeek, endOfWeek } = getCurrentWeekDates();
 
-       }
-       catch(error){
-         console.log(error)
-         throw error
-       }
-   }
-   async addDepartment(name: string): Promise<{ status: boolean; department?: MongoDepartment; }> {
-       try{
-         const department=await departmentModel.create({name:name})
-         if(!department){
-            return {status:false}
-         }
-         return {status:true,department}
+      const weeklyRevenue = await appointmentModel.aggregate([
+        {
+          $match: {
+            createdAt: {
+              $gte: startOfWeek,
+              $lte: endOfWeek,
+            },
+            paymentStatus: "captured",
+          },
+        },
+        {
+          $addFields: {
+            dayOfWeek: { $dayOfWeek: "$createdAt" }, // Ensure this uses createdAt or appropriate date field
+          },
+        },
+        {
+          $group: {
+            _id: "$dayOfWeek",
+            totalRevenue: {
+              $sum: {
+                $toDouble: "$amount",
+              },
+            },
+          },
+        },
+        {
+          $sort: { _id: 1 },
+        },
+      ]);
 
-       }
-       catch(error){
-         console.log(error)
-         throw error
-       }
-   }
-   async deleteDepartment(id: string): Promise<{ status: boolean; message?: string; }> {
-       try{
-         const result=await departmentModel.deleteOne({_id:id})
-           if (result.deletedCount === 1) {
-             return {
-               status: true,
-               message: "Department deleted successfully",
-             };
-           } else {
-             return {
-               status: false,
-               message: "Department not found or could not be deleted",
-             };
-           }
+      // Correct mapping for day names
+      const dayNames = [
+        "Sunday", // 1 -> Sunday
+        "Monday", // 2 -> Monday
+        "Tuesday", // 3 -> Tuesday
+        "Wednesday", // 4 -> Wednesday
+        "Thursday", // 5 -> Thursday
+        "Friday", // 6 -> Friday
+        "Saturday", // 7 -> Saturday
+      ];
 
-       }
-       catch(error){
-         console.log(error)
-         throw error
-       }
-   }
-   async getUsers(): Promise<{ status: boolean; message: string; users?: MongoUser[]; }> {
-       try{
-         const users=await userModel.find()
-         if(!users){
-            return {status:false,message:"error retriving users"}
-         }
-         return {status:true,message:"sucessful",users}
+      // Ensure correct labels
+      const formattedWeeklyRevenue = weeklyRevenue.map((item) => ({
+        label: dayNames[item._id - 1], // Adjust using dayNames array index
+        totalRevenue: item.totalRevenue,
+      }));
 
-       }
-       catch(error){
-         console.log(error)
-         throw error
-       }
-   }
-   async blockUnblockUser(id: string,status:boolean): Promise<boolean> {
-       try{
-         const result=await userModel.updateOne({_id:id},{$set:{isBlocked:status}})
-         
-            return result.modifiedCount > 0
+      return formattedWeeklyRevenue;
+    } catch (error) {
+      throw error;
+    }
+  }
 
+  async getWeeklyAppointmentCount(): Promise<{
+    appointmentsCount: number;
+    cancellationsCount: number;
+    
+  }> {
+    try {
+      const { startOfWeek, endOfWeek } = getCurrentWeekDates();
 
-       }
-       catch(error){
-         console.log(error)
-         throw error
+      const result = await appointmentModel.aggregate([
+        {
+          $match: {
+            createdAt: {
+              $gte: startOfWeek,
+              $lte: endOfWeek,
+            },
+          },
+        },
+        {
+          $group: {
+            _id: "$status",
+            count: { $sum: 1 },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            status: "$_id",
+            count: 1,
+          },
+        },
+      ]);
 
-       }
-   }
-   async getUnverifiedDoctors(): Promise<{ status: boolean; doctors?: MongoDoctor[]; }> {
-       try{
-       const result = await doctorModel.aggregate([
-         {
-           $match: {
-             documentsUploaded: true,
-             status: "Submitted",
-           },
-         },
-         {
-           $lookup: {
-             from: "departments", // The name of the department collection
-             localField: "department",
-             foreignField: "_id",
-             as: "department",
-           },
-         },
-         {
-           $unwind: {
-             path: "$department",
-             preserveNullAndEmptyArrays: true, 
-           },
-         },
-       ]);
+      const stats = {
+        appointmentsCount: 0,
+        cancellationsCount: 0,
+      };
 
-       return { status: true, doctors: result };
-
-       }
-       catch(error){
-         console.log(error)
-         throw error
-       }
-   }
-   async getDoctor(id: string): Promise<{ status: boolean; doctor?: MongoDoctor; }> {
-       try{
-        const result = await doctorModel
-          .findOne({ _id: id })
-          .populate("department")
-        if (result) {
-          return { status: true, doctor: result };
-        } else {
-          return { status: false };
+      result?.forEach((entry) => {
+        if (entry.status === "completed" || entry.status === "pending") {
+          stats.appointmentsCount += entry.count;
+        } else if (entry.status === "cancelled") {
+          stats.cancellationsCount = entry.count;
         }
+      });
+      return stats;
+    } catch (error) {
+      throw error;
+    }
+  }
+  async getMonthlyRevenue(): Promise<
+    { label: string; totalRevenue: number }[]
+  > {
+    try {
+      const startOfYear = new Date(new Date().getFullYear(), 0, 1); // January 1st of the current year
+      const endOfYear = new Date(new Date().getFullYear(), 11, 31, 23, 59, 59); // December 31st of the current year
 
-       }
-       catch(error){
-         throw error
-       }
-   }
-   async verifyDoctor(id: string): Promise<boolean> {
-       try{
-         const result=await doctorModel.updateOne({_id:id},{$set:{status:"Verified"}})
-       return result.modifiedCount>0
+      const monthlyRevenue = await appointmentModel.aggregate([
+        {
+          $match: {
+            createdAt: {
+              $gte: startOfYear,
+              $lte: endOfYear,
+            },
+            paymentStatus: "captured", // Consider only successful payments
+          },
+        },
+        // Create a new field for the month of the year (1=January, 2=February, ..., 12=December)
+        {
+          $addFields: {
+            month: { $month: "$date" },
+          },
+        },
+        // Calculate net revenue (amount - fees) and group by month
+        {
+          $group: {
+            _id: "$month",
+            totalRevenue: {
+              $sum: {
+                  $toDouble: "$amount" 
+              },
+            },
+          },
+        },
+        // Sort results by month
+        {
+          $sort: { _id: 1 },
+        },
+      ]);
 
-       }
-       catch(error){
-         throw error
-       }
-   }
-   async getDoctors(): Promise<{ status: boolean; doctors?: MongoDoctor[]; }> {
-       try{
-         const doctors=await doctorModel.find({status:"Verified"})
-         if(doctors){
-            return {status:true,doctors:doctors}
-         }else{
-            return {status:false}
-         }
+      // Map the results to a more readable format (month names instead of numbers)
+      const monthNames = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+      ];
+      const formattedMonthlyRevenue = monthlyRevenue.map((item) => ({
+        label: monthNames[item._id - 1],
+        totalRevenue: item.totalRevenue,
+      }));
 
-       }
-       catch(error){
-         throw error
-       }
-   }
-   async blockUnblockDoctor(id: string, status: boolean): Promise<boolean> {
-       try{
-         const result = await doctorModel.updateOne(
-           { _id: id },
-           { $set: { isBlocked:status } }
-         );
-          return result.modifiedCount > 0;
+      return formattedMonthlyRevenue;
+    } catch (error) {
+      throw error;
+    }
+  }
+  async getMonthlyAppointmentCount(): Promise<{
+    appointmentsCount: number;
+    cancellationsCount: number;
+  }> {
+    try {
+      const { startOfMonth, endOfMonth } = getCurrentMonthDates();
+      const result = await appointmentModel.aggregate([
+        {
+          $match: {
+            createdAt: {
+              $gte: startOfMonth,
+              $lte: endOfMonth,
+            },
+          },
+        },
+        {
+          $group: {
+            _id: "$status",
+            count: { $sum: 1 },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            status: "$_id",
+            count: 1,
+          },
+        },
+      ]);
 
+      const stats = {
+        appointmentsCount: 0,
+        cancellationsCount: 0,
+      };
 
-       }
-       catch(error){
-         throw error
-       }
-   }
-   async deleteDoctor(id: string): Promise<boolean> {
-       try{
-        const result=await doctorModel.deleteOne({_id:id})
-        return result.deletedCount===1
+      result?.forEach((entry) => {
+        if (entry.status === "completed" || entry.status === "pending") {
+          stats.appointmentsCount += entry.count;
+        } else if (entry.status === "cancelled") {
+          stats.cancellationsCount = entry.count;
+        }
+      });
+      return stats;
+    } catch (error) {
+      throw error;
+    }
+  }
+  async getYearlyRevenue(): Promise<{ label: string; totalRevenue: number }[]> {
+    try {
+      const yearlyRevenue = await appointmentModel.aggregate([
+        {
+          $match: {
+            paymentStatus: "captured",
+          },
+        },
+        {
+          $group: {
+            _id: { label: { $year: "$date" } },
+            totalRevenue: {
+              $sum: {
+                 $toDouble: "$amount" 
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            label: "$_id.label",
+            _id: 0,
+            totalRevenue: 1,
+          },
+        },
+        {
+          $sort: { _id: 1 },
+        },
+      ]);
+      return yearlyRevenue;
+    } catch (error) {
+      throw error;
+    }
+  }
+  async getTodaysRevenue(): Promise<number> {
+    try {
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
 
-       }
-       catch(error){
+      const endOfDay = new Date();
+      endOfDay.setHours(23, 59, 59, 999);
+
+      const result = await appointmentModel.aggregate([
+        {
+          $match: {
+            createdAt: {
+              $gte: startOfDay,
+              $lte: endOfDay,
+            },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalRevenue: {
+              $sum: {
+                $toDouble: "$amount",
+              },
+            },
+          },
+        },
+      ]);
+
+      const totalAmount = result.length > 0 ? result[0].totalRevenue : 0;
+
+      return totalAmount;
+    } catch (error) {
+      throw error;
+    }
+  }
+  async getTodaysAppointmentCount(): Promise<{
+    appointmentsCount: number;
+    cancellationsCount: number;
+  }> {
+    try {
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+
+      const endOfDay = new Date();
+      endOfDay.setHours(23, 59, 59, 999);
+      const result = await appointmentModel.aggregate([
+        {
+          $match: {
+            createdAt: {
+              $gte: startOfDay,
+              $lte: endOfDay,
+            },
+          },
+        },
+        {
+          $group: {
+            _id: "$status",
+            count: { $sum: 1 },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            status: "$_id",
+            count: 1,
+          },
+        },
+      ]);
+      const stats = {
+        appointmentsCount: 0,
+        cancellationsCount: 0,
+      };
+
+      result?.forEach((entry) => {
+        if (entry.status === "completed" || entry.status === "pending") {
+          stats.appointmentsCount += entry.count;
+        } else if (entry.status === "cancelled") {
+          stats.cancellationsCount = entry.count;
+        }
+      });
+      return stats;
+    } catch (error) {
+      throw error;
+    }
+  }
+  async getDoctorsCount(): Promise<number> {
+      try{
+        const result=(await doctorModel.countDocuments({status:"Verified"}))
+        return result
+
+      }
+      catch(error){
         throw error
-       }
-   }
-   async createRejectedDoctor(email: string, reason: string): Promise<boolean> {
-       try{
-        const result=await rejectedDoctorModel.create({
-          email:email,
-          reason:reason
-        })
-        return result?true:false
-
-
-       }
-       catch(error){
-        throw error
-       }
-   }
+      }
+  }
+  async getUnverifiedDoctorsCount(): Promise<number> {  
+     try {
+    const result = await doctorModel.countDocuments({ status: "Pending" });
+    return result;
+  } catch (error) {
+    throw error;
+  }
+      
+  }
+  async getUsersCount(): Promise<number> {
+        try {
+          const result = await userModel.countDocuments({});
+          return result;
+        } catch (error) {
+          throw error;
+        }
+    
+      
+  }
 }
 export default AdminRepository

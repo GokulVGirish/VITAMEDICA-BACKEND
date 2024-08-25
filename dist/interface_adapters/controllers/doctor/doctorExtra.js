@@ -51,5 +51,18 @@ class DoctorExtraControllers {
             next(error);
         }
     }
+    async getYearlyRevenue(req, res, next) {
+        try {
+            const id = req.doctorData._id;
+            const response = await this.interactor.getYearlyRevenue(id);
+            if (response.status)
+                return res.status(200).json({ success: true, message: response.message, dataYearly: response.dataYearly, dataMonthly: response.dataMonthly, weeklyCount: response.weeklyCount, monthlyCount: response.monthlyCount });
+            return res.status(404).json({ success: false, message: response.message });
+        }
+        catch (error) {
+            console.log(error);
+            next(error);
+        }
+    }
 }
 exports.default = DoctorExtraControllers;

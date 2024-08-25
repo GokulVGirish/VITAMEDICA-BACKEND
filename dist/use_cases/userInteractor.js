@@ -192,6 +192,7 @@ class UserInteractor {
                 accessToken,
                 refreshToken,
                 message: "logged in Sucessfully",
+                name: userExist.name
             };
         }
         catch (error) {
@@ -417,7 +418,8 @@ class UserInteractor {
     }
     async razorPayOrderGenerate(amount, currency, receipt) {
         try {
-            const order = await razorpayInstance_1.default.orders.create({ amount, currency, receipt });
+            const totalAmount = Math.round(parseFloat(amount) * 100);
+            const order = await razorpayInstance_1.default.orders.create({ amount: totalAmount.toString(), currency, receipt });
             if (!order)
                 return { status: false, message: "Something Went Wrong" };
             return { status: true, message: "Success", order: order };

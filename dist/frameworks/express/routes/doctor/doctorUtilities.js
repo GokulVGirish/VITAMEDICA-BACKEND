@@ -21,4 +21,5 @@ const controller = new doctorExtra_1.default(interactor);
 const doctorUtilitiesRouter = express_1.default.Router();
 doctorUtilitiesRouter.get("/departments", controller.getDepartments.bind(controller));
 doctorUtilitiesRouter.post("/upload-documents", jwt_verify_1.default, (0, role_Authenticate_1.default)("doctor"), doctor_1.getDoctor, multer_1.default.array("images"), controller.uploadDocuments.bind(controller));
+doctorUtilitiesRouter.get("/dash/data", jwt_verify_1.default, (0, role_Authenticate_1.default)("doctor"), doctor_1.getDoctor, controller.getYearlyRevenue.bind(controller));
 exports.default = doctorUtilitiesRouter;

@@ -18,6 +18,7 @@ import { Type } from "@aws-sdk/client-s3";
 import cancelledAppointmentsModel from "../../frameworks/mongoose/models/cancelledAppointmentSchema";
 import userWalletModal from "../../frameworks/mongoose/models/UserWalletSchema";
 import userModel from "../../frameworks/mongoose/models/UserSchema";
+import { getCurrentMonthDates, getCurrentWeekDates } from "../../frameworks/services/dates";
 
 class DoctorRepository implements IDoctorRepository {
   async doctorExists(email: string): Promise<null | MongoDoctor> {
@@ -628,5 +629,212 @@ class DoctorRepository implements IDoctorRepository {
       throw error;
     }
   }
+  async getYearlyRevenue(id: Types.ObjectId): Promise<{ _id: number; totalRevenue: number; }[]> {
+    
+      try{
+        const revenue = await doctorWalletModal.aggregate([
+          {
+            $match: { doctorId: id },
+          },
+          {
+            $unwind: "$transactions",
+          },
+          {
+            $match: {
+              "transactions.type": "credit",
+            },
+          },
+          {
+            $group: {
+              _id: {
+                $year: "$transactions.date",
+              },
+              totalRevenue: { $sum: "$transactions.amount" },
+            },
+          },
+          { $sort: { _id: 1 } },
+        ]);
+       return revenue
+        
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async getMonthlyRevenue(id: Types.ObjectId): Promise<{ month: string; totalRevenue: number; }[]> {
+    const currentYear = new Date().getFullYear(); 
+
+    try {
+      const revenue = await doctorWalletModal.aggregate([
+        {
+          $match: {
+            doctorId: id,
+          },
+        },
+        {
+          $unwind: "$transactions",
+        },
+        {
+          $match: {
+            "transactions.date": {
+              $gte: new Date(`${currentYear}-01-01`),
+              $lt: new Date(`${currentYear + 1}-01-01`),
+            },
+            "transactions.type": "credit",
+          },
+        },
+        {
+          $group: {
+            _id: {
+              year: { $year: "$transactions.date" },
+              month: { $month: "$transactions.date" },
+            },
+            totalRevenue: { $sum: "$transactions.amount" },
+          },
+        },
+        {
+          $sort: {
+            "_id.month": 1,
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            month: {
+              $arrayElemAt: [
+                [
+                  "January",
+                  "February",
+                  "March",
+                  "April",
+                  "May",
+                  "June",
+                  "July",
+                  "August",
+                  "September",
+                  "October",
+                  "November",
+                  "December",
+                ],
+                { $subtract: ["$_id.month", 1] },
+              ],
+            },
+            totalRevenue: 1,
+          },
+        },
+      ]);
+      return revenue
+
+    } catch (error) {
+      throw error;
+    }
+  }
+  async getWeeklyAppointmentCount(id: Types.ObjectId): Promise<{ appointmentsCount: number; cancellationsCount: number } > {
+      try{
+          const { startOfWeek, endOfWeek } = getCurrentWeekDates();
+          console.log(id)
+          const result = await appointmentModel.aggregate([
+            {
+              $match: {
+                docId: id,
+                date: {
+                  $gte: startOfWeek,
+                  $lte: endOfWeek,
+                },
+              },
+            },
+            {
+              $group: {
+                _id: "$status",
+                count: { $sum: 1 },
+              },
+            },
+            {
+              $project: {
+                _id: 0,
+                status: "$_id",
+                count: 1,
+              },
+            },
+          ]);
+        
+            const stats = {
+              appointmentsCount: 0,
+              cancellationsCount: 0,
+            };
+         
+
+            result?.forEach((entry) => {
+              if (entry.status === "completed"||entry.status==="pending") {
+               stats.appointmentsCount+=entry.count
+              } else if (entry.status === "cancelled") {
+                stats.cancellationsCount = entry.count;
+              }
+            });
+            return stats
+
+          
+        
+
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async getMonthlyAppointmentCount(id: Types.ObjectId): Promise<{ appointmentsCount: number; cancellationsCount: number; }> {
+      try{
+          const { startOfMonth, endOfMonth } = getCurrentMonthDates();
+          const result = await appointmentModel.aggregate([
+            {
+              $match: {
+                docId: id,
+                date: {
+                  $gte: startOfMonth,
+                  $lte: endOfMonth,
+                },
+              },
+            },
+            {
+              $group: {
+                _id: "$status",
+                count: { $sum: 1 },
+              },
+            },
+            {
+              $project: {
+                _id: 0,
+                status: "$_id",
+                count: 1,
+              },
+            },
+          ]);
+
+        
+            const stats = {
+              appointmentsCount: 0,
+              cancellationsCount: 0,
+            };
+
+             result?.forEach((entry) => {
+               if (entry.status === "completed" || entry.status === "pending") {
+                 stats.appointmentsCount += entry.count;
+               } else if (entry.status === "cancelled") {
+                 stats.cancellationsCount = entry.count;
+               }
+             });
+            return stats;
+        
+        
+
+
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+
 }
 export default DoctorRepository

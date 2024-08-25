@@ -108,4 +108,19 @@ export interface IDoctorRepository {
     prescription: string
   ): Promise<boolean>;
   resetPassword(email: string, password: string): Promise<boolean>;
+  getYearlyRevenue(
+    id: Types.ObjectId
+  ): Promise<{ _id: number; totalRevenue: number }[]>;
+  getMonthlyRevenue(id: Types.ObjectId): Promise<{
+    month: string; 
+    totalRevenue: number;
+  }[]>;
+  getWeeklyAppointmentCount(id:Types.ObjectId):Promise<{
+    appointmentsCount: number,
+    cancellationsCount: number,
+  }>
+  getMonthlyAppointmentCount(id:Types.ObjectId):Promise<{
+    appointmentsCount: number,
+    cancellationsCount: number,
+  }>
 }

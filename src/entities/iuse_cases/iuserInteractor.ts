@@ -45,6 +45,7 @@ export interface IUserInteractor {
     refreshToken?: string;
     message?: string;
     errorCode?: string;
+    name?: string;
   }>;
   resendOtp(
     email: string
@@ -136,7 +137,7 @@ export interface IUserInteractor {
     appointmentId: string,
     date: Date,
     startTime: Date,
-    reason:string
+    reason: string
   ): Promise<{ status: boolean; message: string }>;
   addReview(
     appointmentId: string,

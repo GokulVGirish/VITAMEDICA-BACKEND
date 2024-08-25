@@ -30,4 +30,5 @@ doctorUtilitiesRouter.post(
   upload.array("images"),
   controller.uploadDocuments.bind(controller)
 );
+doctorUtilitiesRouter.get("/dash/data",authMiddleware,verifyRole("doctor"),getDoctor,controller.getYearlyRevenue.bind(controller));
 export default doctorUtilitiesRouter;

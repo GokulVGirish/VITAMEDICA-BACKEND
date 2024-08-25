@@ -653,5 +653,35 @@ class DoctorInteractor implements IDoctorInteractor {
       throw error;
     }
   }
+  async getYearlyRevenue(id: Types.ObjectId): Promise<{
+    status: boolean;
+    message: string;
+    dataYearly?: { _id: number; totalRevenue: number }[];
+    dataMonthly?: {
+      month: string;
+      totalRevenue: number;
+    }[];
+    weeklyCount?: { appointmentsCount: number; cancellationsCount: number };
+    monthlyCount?: { appointmentsCount: number; cancellationsCount: number };
+  }> {
+    try {
+      const result = await this.Repository.getYearlyRevenue(id);
+      const monthlyRevenue = await this.Repository.getMonthlyRevenue(id);
+      const weeklyAppointmentCount = await this.Repository.getWeeklyAppointmentCount(id);
+      const monthlyAppointmentCount=await this.Repository.getMonthlyAppointmentCount(id)
+
+ 
+        return {
+          status: true,
+          message: "success",
+          dataYearly: result,
+          dataMonthly: monthlyRevenue,
+          weeklyCount: weeklyAppointmentCount,
+          monthlyCount:monthlyAppointmentCount
+        };
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 export default DoctorInteractor;

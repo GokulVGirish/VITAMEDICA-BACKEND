@@ -221,6 +221,7 @@ class UserInteractor implements IUserInteractor {
     refreshToken?: string;
     message?: string;
     errorCode?: string;
+    name?:string
   }> {
     try {
       console.log("mail", email, password, "password");
@@ -261,6 +262,7 @@ class UserInteractor implements IUserInteractor {
         accessToken,
         refreshToken,
         message: "logged in Sucessfully",
+        name:userExist.name
       };
     } catch (error) {
       console.log(error);
@@ -510,7 +512,8 @@ class UserInteractor implements IUserInteractor {
   }
   async razorPayOrderGenerate(amount:string,currency:string,receipt:string): Promise<{ status: boolean; order?: any; message: string; }> {
       try{
-        const order=await instance.orders.create({amount,currency,receipt})
+           const totalAmount = Math.round(parseFloat(amount) * 100);
+        const order=await instance.orders.create({amount:totalAmount.toString(),currency,receipt})
         if(!order)return {status:false,message:"Something Went Wrong"}
         return {status:true,message:"Success",order:order}
 

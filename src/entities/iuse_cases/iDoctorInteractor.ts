@@ -130,4 +130,15 @@ export interface IDoctorInteractor {
     token: string,
     password: string
   ): Promise<{ status: boolean; message: string }>;
+  getYearlyRevenue(id: Types.ObjectId): Promise<{
+    status: boolean;
+    message: string;
+    dataYearly?: { _id: number; totalRevenue: number }[];
+    dataMonthly?: {
+      month: string;
+      totalRevenue: number;
+    }[];
+    weeklyCount?: { appointmentsCount: number; cancellationsCount: number };
+    monthlyCount?: { appointmentsCount: number; cancellationsCount: number };
+  }>;
 }

@@ -15,6 +15,7 @@ const AppointmentSchema_1 = __importDefault(require("../../frameworks/mongoose/m
 const cancelledAppointmentSchema_1 = __importDefault(require("../../frameworks/mongoose/models/cancelledAppointmentSchema"));
 const UserWalletSchema_1 = __importDefault(require("../../frameworks/mongoose/models/UserWalletSchema"));
 const UserSchema_1 = __importDefault(require("../../frameworks/mongoose/models/UserSchema"));
+const dates_1 = require("../../frameworks/services/dates");
 class DoctorRepository {
     async doctorExists(email) {
         try {
@@ -539,6 +540,194 @@ class DoctorRepository {
         try {
             const result = await AppointmentSchema_1.default.updateOne({ _id: appointmentId }, { $set: { prescription, status: "completed" } });
             return result.modifiedCount > 0;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getYearlyRevenue(id) {
+        try {
+            const revenue = await DoctorWalletSchema_1.default.aggregate([
+                {
+                    $match: { doctorId: id },
+                },
+                {
+                    $unwind: "$transactions",
+                },
+                {
+                    $match: {
+                        "transactions.type": "credit",
+                    },
+                },
+                {
+                    $group: {
+                        _id: {
+                            $year: "$transactions.date",
+                        },
+                        totalRevenue: { $sum: "$transactions.amount" },
+                    },
+                },
+                { $sort: { _id: 1 } },
+            ]);
+            return revenue;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getMonthlyRevenue(id) {
+        const currentYear = new Date().getFullYear();
+        try {
+            const revenue = await DoctorWalletSchema_1.default.aggregate([
+                {
+                    $match: {
+                        doctorId: id,
+                    },
+                },
+                {
+                    $unwind: "$transactions",
+                },
+                {
+                    $match: {
+                        "transactions.date": {
+                            $gte: new Date(`${currentYear}-01-01`),
+                            $lt: new Date(`${currentYear + 1}-01-01`),
+                        },
+                        "transactions.type": "credit",
+                    },
+                },
+                {
+                    $group: {
+                        _id: {
+                            year: { $year: "$transactions.date" },
+                            month: { $month: "$transactions.date" },
+                        },
+                        totalRevenue: { $sum: "$transactions.amount" },
+                    },
+                },
+                {
+                    $sort: {
+                        "_id.month": 1,
+                    },
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        month: {
+                            $arrayElemAt: [
+                                [
+                                    "January",
+                                    "February",
+                                    "March",
+                                    "April",
+                                    "May",
+                                    "June",
+                                    "July",
+                                    "August",
+                                    "September",
+                                    "October",
+                                    "November",
+                                    "December",
+                                ],
+                                { $subtract: ["$_id.month", 1] },
+                            ],
+                        },
+                        totalRevenue: 1,
+                    },
+                },
+            ]);
+            return revenue;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getWeeklyAppointmentCount(id) {
+        try {
+            const { startOfWeek, endOfWeek } = (0, dates_1.getCurrentWeekDates)();
+            console.log(id);
+            const result = await AppointmentSchema_1.default.aggregate([
+                {
+                    $match: {
+                        docId: id,
+                        date: {
+                            $gte: startOfWeek,
+                            $lte: endOfWeek,
+                        },
+                    },
+                },
+                {
+                    $group: {
+                        _id: "$status",
+                        count: { $sum: 1 },
+                    },
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        status: "$_id",
+                        count: 1,
+                    },
+                },
+            ]);
+            const stats = {
+                appointmentsCount: 0,
+                cancellationsCount: 0,
+            };
+            result?.forEach((entry) => {
+                if (entry.status === "completed" || entry.status === "pending") {
+                    stats.appointmentsCount += entry.count;
+                }
+                else if (entry.status === "cancelled") {
+                    stats.cancellationsCount = entry.count;
+                }
+            });
+            return stats;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getMonthlyAppointmentCount(id) {
+        try {
+            const { startOfMonth, endOfMonth } = (0, dates_1.getCurrentMonthDates)();
+            const result = await AppointmentSchema_1.default.aggregate([
+                {
+                    $match: {
+                        docId: id,
+                        date: {
+                            $gte: startOfMonth,
+                            $lte: endOfMonth,
+                        },
+                    },
+                },
+                {
+                    $group: {
+                        _id: "$status",
+                        count: { $sum: 1 },
+                    },
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        status: "$_id",
+                        count: 1,
+                    },
+                },
+            ]);
+            const stats = {
+                appointmentsCount: 0,
+                cancellationsCount: 0,
+            };
+            result?.forEach((entry) => {
+                if (entry.status === "completed" || entry.status === "pending") {
+                    stats.appointmentsCount += entry.count;
+                }
+                else if (entry.status === "cancelled") {
+                    stats.cancellationsCount = entry.count;
+                }
+            });
+            return stats;
         }
         catch (error) {
             throw error;

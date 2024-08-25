@@ -498,5 +498,24 @@ class DoctorInteractor {
             throw error;
         }
     }
+    async getYearlyRevenue(id) {
+        try {
+            const result = await this.Repository.getYearlyRevenue(id);
+            const monthlyRevenue = await this.Repository.getMonthlyRevenue(id);
+            const weeklyAppointmentCount = await this.Repository.getWeeklyAppointmentCount(id);
+            const monthlyAppointmentCount = await this.Repository.getMonthlyAppointmentCount(id);
+            return {
+                status: true,
+                message: "success",
+                dataYearly: result,
+                dataMonthly: monthlyRevenue,
+                weeklyCount: weeklyAppointmentCount,
+                monthlyCount: monthlyAppointmentCount
+            };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
 }
 exports.default = DoctorInteractor;

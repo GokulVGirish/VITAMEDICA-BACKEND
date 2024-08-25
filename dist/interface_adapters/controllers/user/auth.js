@@ -121,6 +121,7 @@ class UserAuthControllers {
                     message: "logged in Sucessfully",
                     accessToken: response.accessToken,
                     refreshToken: response.refreshToken,
+                    name: response.name
                 });
             }
             else {

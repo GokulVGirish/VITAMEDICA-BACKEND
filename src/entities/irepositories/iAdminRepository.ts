@@ -1,3 +1,4 @@
+import { promises } from "dns";
 import { MongoAdmin } from "../rules/admin"
 import MongoDepartment from "../rules/departments"
 import { MongoDoctor } from "../rules/doctor";
@@ -24,7 +25,26 @@ export interface IAdminRepository {
   verifyDoctor(id: string): Promise<boolean>;
   getDoctors(): Promise<{ status: boolean; doctors?: MongoDoctor[] }>;
   blockUnblockDoctor(id: string, status: boolean): Promise<boolean>;
-   deleteDoctor(id:string):Promise<boolean>
-   createRejectedDoctor(email:string,reason:string):Promise<boolean>
+  deleteDoctor(id: string): Promise<boolean>;
+  createRejectedDoctor(email: string, reason: string): Promise<boolean>;
+  getWeeklyRevenue(): Promise<{ label: string; totalRevenue: number }[]>;
+  getWeeklyAppointmentCount(): Promise<{
+    appointmentsCount: number;
+    cancellationsCount: number;
+  }>;
+  getMonthlyRevenue(): Promise<{ label: string; totalRevenue: number }[]>;
+  getMonthlyAppointmentCount(): Promise<{
+    appointmentsCount: number;
+    cancellationsCount: number;
+  }>;
+  getYearlyRevenue(): Promise<{ label: string; totalRevenue: number }[]>;
+  getTodaysRevenue(): Promise<number>;
+  getTodaysAppointmentCount(): Promise<{
+    appointmentsCount: number;
+    cancellationsCount: number;
+  }>;
+  getUnverifiedDoctorsCount():Promise<number>
+  getUsersCount():Promise<number>
+  getDoctorsCount():Promise<number>
 }
 export default IAdminRepository

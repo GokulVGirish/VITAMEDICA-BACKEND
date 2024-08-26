@@ -15,7 +15,7 @@ import s3Config from "../entities/services/awsS3";
 import { MulterFile } from "../entities/rules/multerFile";
 import mongoose, { ObjectId, Types } from "mongoose";
 import { ResetPasswordToken } from "../entities/rules/resetPassword";
-import { MongoDoctor } from "../entities/rules/doctor";
+import { MongoDoctor, Review } from "../entities/rules/doctor";
 import { DoctorSlots, Slot } from "../entities/rules/slotsType";
 import instance from "../frameworks/services/razorpayInstance";
 import IAppointment from "../entities/rules/appointments";
@@ -460,7 +460,15 @@ class UserInteractor implements IUserInteractor {
         throw error
       }
   }
-  async getDoctorPage(id: string): Promise<{ status: boolean; message: string; doctor?: MongoDoctor; }> {
+  async getDoctorPage(id: string,page:number,limit:number): Promise<{ status: boolean; message: string; doctor?: MongoDoctor;
+    reviews?:{
+    _id: Types.ObjectId;
+    name: string;
+    email: string;
+    averageRating: number;
+    totalReviews: number;
+    latestReviews: Review[];
+  } }> {
       try{
         const response=await this.Repository.getDoctor(id)
         if(!response) return {status:false,message:"something went wrong"}
@@ -474,7 +482,23 @@ class UserInteractor implements IUserInteractor {
          });
          response.image = url;
        }
-        return {status:true,message:"Sucessful",doctor:response}
+       const result=await this.Repository.fetchDoctorRating(id,page,limit)
+    
+        return {status:true,message:"Sucessful",doctor:response,reviews:result}
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async fetchMoreReviews(id:string,page:number,limit:number): Promise<{ status: boolean; message: string; reviews?: { _id: Types.ObjectId; name: string; email: string; averageRating: number; totalReviews: number; latestReviews: Review[]; }; }> {
+      try{
+        const result = await this.Repository.fetchDoctorRating(id, page, limit);
+              return {
+                status: true,
+                message: "Sucessful",
+                reviews: result,
+              };
 
       }
       catch(error){
@@ -706,6 +730,43 @@ async getDoctorBySearch(searchKey: string): Promise<{ status: boolean; message: 
     }
     catch(error){}
     throw error
+}
+async getAppointmentDetail(id: string): Promise<{ status: boolean; message: string; appointmentDetail?: IAppointment; }> {
+    try{
+      const response=await this.Repository.getAppointment(id)
+      if( response && "docImage" in response && response.docImage){
+           const command2 = new GetObjectCommand({ 
+             Bucket: s3Config.BUCKET_NAME,
+             Key: response.docImage as string,
+           });
+           const url = await getSignedUrl(s3, command2, {
+             expiresIn: 3600,
+           });
+           response.docImage=url
+      }
+      if (response?.status === "completed" && "prescription" in response && response.prescription){
+          const command2 = new GetObjectCommand({
+            Bucket: s3Config.BUCKET_NAME,
+            Key: response.prescription as string,
+          });
+          const url = await getSignedUrl(s3, command2, {
+            expiresIn: 3600,
+          });
+          response.prescription = url;
+
+      }
+        if (response)
+          return {
+            status: true,
+            message: "success",
+            appointmentDetail: response,
+          };
+     return {status:false,message:"something went wrong"}
+
+    }
+    catch(error){
+      throw error
+    }
 }
 
  

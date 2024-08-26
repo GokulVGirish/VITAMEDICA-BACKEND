@@ -7,6 +7,7 @@ const OtpSchema_1 = __importDefault(require("../../frameworks/mongoose/models/Ot
 const UserSchema_1 = __importDefault(require("../../frameworks/mongoose/models/UserSchema"));
 const DoctorSchema_1 = __importDefault(require("../../frameworks/mongoose/models/DoctorSchema"));
 const DoctorSlotsSchema_1 = __importDefault(require("../../frameworks/mongoose/models/DoctorSlotsSchema"));
+const mongoose_1 = __importDefault(require("mongoose"));
 const AppointmentSchema_1 = __importDefault(require("../../frameworks/mongoose/models/AppointmentSchema"));
 const DoctorWalletSchema_1 = __importDefault(require("../../frameworks/mongoose/models/DoctorWalletSchema"));
 const UserWalletSchema_1 = __importDefault(require("../../frameworks/mongoose/models/UserWalletSchema"));
@@ -159,13 +160,47 @@ class UserRepository {
     }
     async getDoctors(skip, limit) {
         try {
-            const result = await DoctorSchema_1.default
-                .find({ status: "Verified", complete: true })
-                .skip(skip)
-                .limit(limit)
-                .lean()
-                .populate({ path: "department", select: "name" })
-                .select("_id name department image degree fees");
+            const result = await DoctorSchema_1.default.aggregate([
+                {
+                    $match: { status: "Verified", complete: true },
+                },
+                {
+                    $set: {
+                        reviews: { $ifNull: ["$reviews", []] },
+                    },
+                },
+                {
+                    $addFields: {
+                        averageRating: { $avg: "$reviews.rating" },
+                        totalReviews: { $size: "$reviews" },
+                    },
+                },
+                {
+                    $lookup: {
+                        from: "departments",
+                        localField: "department",
+                        foreignField: "_id",
+                        as: "department",
+                    },
+                },
+                {
+                    $unwind: "$department",
+                },
+                {
+                    $project: {
+                        _id: 1,
+                        name: 1,
+                        department: { name: 1 },
+                        image: 1,
+                        degree: 1,
+                        fees: 1,
+                        averageRating: 1,
+                        totalReviews: 1,
+                    },
+                },
+                { $skip: skip },
+                { $limit: limit },
+            ]);
             const totalDoctors = await DoctorSchema_1.default.countDocuments({
                 status: "Verified",
                 complete: true,
@@ -569,7 +604,50 @@ class UserRepository {
     }
     async getAppointment(appoinmentId) {
         try {
-            return await AppointmentSchema_1.default.findOne({ _id: appoinmentId });
+            const appointment = await AppointmentSchema_1.default.aggregate([
+                {
+                    $match: {
+                        _id: new mongoose_1.default.Types.ObjectId(appoinmentId),
+                    },
+                },
+                {
+                    $lookup: {
+                        localField: "docId",
+                        foreignField: "_id",
+                        from: "doctors",
+                        as: "docInfo",
+                    },
+                },
+                {
+                    $unwind: "$docInfo",
+                },
+                {
+                    $lookup: {
+                        localField: "docInfo.department",
+                        foreignField: "_id",
+                        from: "departments",
+                        as: "depatmentInfo",
+                    },
+                },
+                {
+                    $unwind: "$depatmentInfo",
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        date: 1,
+                        start: 1, end: 1,
+                        amount: 1,
+                        prescription: 1,
+                        createdAt: 1,
+                        docName: "$docInfo.name",
+                        docImage: "$docInfo.image",
+                        status: 1,
+                        docDegree: "$docInfo.degree"
+                    }
+                }
+            ]);
+            return appointment[0];
         }
         catch (error) {
             throw error;
@@ -588,6 +666,73 @@ class UserRepository {
                 },
             });
             return result.modifiedCount > 0;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async fetchDoctorRating(id, page, limit) {
+        console.log("id", id, page, limit);
+        const skipReviews = (page - 1) * limit;
+        try {
+            const result = await DoctorSchema_1.default.aggregate([
+                {
+                    $match: {
+                        _id: new mongoose_1.default.Types.ObjectId(id),
+                    },
+                },
+                {
+                    $unwind: "$reviews",
+                },
+                {
+                    $lookup: {
+                        from: "users",
+                        localField: "reviews.userId",
+                        foreignField: "_id",
+                        as: "userDetails",
+                    },
+                },
+                // Unwind userDetails array to simplify the user data structure
+                {
+                    $unwind: {
+                        path: "$userDetails",
+                        preserveNullAndEmptyArrays: true, // This ensures that reviews without user details are not dropped
+                    },
+                },
+                {
+                    $sort: {
+                        "reviews.createdAt": -1,
+                    },
+                },
+                {
+                    $group: {
+                        _id: "$_id",
+                        name: { $first: "$name" }, // Include doctor's name if needed
+                        email: { $first: "$email" }, // Include doctor's email if needed
+                        averageRating: { $avg: "$reviews.rating" }, // Calculate average rating
+                        totalReviews: { $sum: 1 }, // Calculate total number of reviews
+                        reviews: {
+                            $push: {
+                                rating: "$reviews.rating",
+                                comment: "$reviews.comment",
+                                createdAt: "$reviews.createdAt",
+                                userId: "$reviews.userId",
+                                userName: "$userDetails.name",
+                            },
+                        },
+                    },
+                },
+                {
+                    $project: {
+                        _id: 1,
+                        name: 1,
+                        averageRating: 1,
+                        totalReviews: 1,
+                        reviews: { $slice: ["$reviews", skipReviews, limit] },
+                    },
+                },
+            ]);
+            return result[0];
         }
         catch (error) {
             throw error;

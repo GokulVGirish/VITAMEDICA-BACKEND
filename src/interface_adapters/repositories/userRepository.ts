@@ -3,7 +3,7 @@ import otpModel from "../../frameworks/mongoose/models/OtpSchema";
 import { MongoUser, User } from "../../entities/rules/user";
 import userModel from "../../frameworks/mongoose/models/UserSchema";
 import { Types } from "mongoose";
-import { MongoDoctor } from "../../entities/rules/doctor";
+import { MongoDoctor, Review } from "../../entities/rules/doctor";
 import doctorModel from "../../frameworks/mongoose/models/DoctorSchema";
 import { DoctorSlots } from "../../entities/rules/slotsType";
 import doctorSlotsModel from "../../frameworks/mongoose/models/DoctorSlotsSchema";
@@ -178,13 +178,57 @@ class UserRepository implements IUserRepository {
     limit: number
   ): Promise<{ doctors?: MongoDoctor[]; totalPages?: number }> {
     try {
-      const result = await doctorModel
-        .find({ status: "Verified", complete: true })
-        .skip(skip)
-        .limit(limit)
-        .lean()
-        .populate({ path: "department", select: "name" })
-        .select("_id name department image degree fees");
+ const result = await doctorModel.aggregate([
+
+   {
+     $match: { status: "Verified", complete: true },
+   },
+  
+   {
+     $set: {
+       reviews: { $ifNull: ["$reviews", []] },
+     },
+   },
+
+   {
+     $addFields: {
+       averageRating: { $avg: "$reviews.rating" },
+       totalReviews: { $size: "$reviews" },
+     },
+   },
+
+   {
+     $lookup: {
+       from: "departments",
+       localField: "department",
+       foreignField: "_id",
+       as: "department",
+     },
+   },
+
+   {
+     $unwind: "$department",
+   },
+   
+   {
+     $project: {
+       _id: 1,
+       name: 1,
+       department: { name: 1 },
+       image: 1,
+       degree: 1,
+       fees: 1,
+       averageRating: 1,
+       totalReviews: 1,
+     },
+   },
+
+   { $skip: skip },
+   { $limit: limit },
+ ]);
+   
+       
+        
       const totalDoctors = await doctorModel.countDocuments({
         status: "Verified",
         complete: true,
@@ -688,7 +732,51 @@ class UserRepository implements IUserRepository {
   }
   async getAppointment(appoinmentId: string): Promise<IAppointment | null> {
     try {
-      return await appointmentModel.findOne({ _id: appoinmentId });
+    const appointment = await appointmentModel.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(appoinmentId),
+        },
+      },
+      {
+        $lookup: {
+          localField: "docId",
+          foreignField: "_id",
+          from: "doctors",
+          as: "docInfo",
+        },
+      },
+      {
+        $unwind: "$docInfo",
+      },
+      {
+        $lookup: {
+          localField: "docInfo.department",
+          foreignField: "_id",
+          from: "departments",
+          as: "depatmentInfo",
+        },
+      },
+      {
+        $unwind: "$depatmentInfo",
+      },
+      {
+        $project:{
+          _id:0,
+          date:1,
+          start:1,end:1,
+          amount:1,
+          prescription:1,
+          createdAt:1,
+          docName:"$docInfo.name",
+          docImage:"$docInfo.image",
+          status:1,
+          docDegree:"$docInfo.degree"
+
+        }
+      }
+    ]);
+        return appointment[0] as IAppointment
     } catch (error) {
       throw error;
     }
@@ -719,6 +807,74 @@ class UserRepository implements IUserRepository {
     } catch (error) {
       throw error;
     }
+  }
+  async fetchDoctorRating(id: string,page:number,limit:number): Promise<{ _id: Types.ObjectId; name: string; email: string; averageRating: number; totalReviews: number; latestReviews: Review[]; }> {
+    console.log("id",id,page,limit)
+     const skipReviews = (page - 1) * limit;
+      try{
+        const result = await doctorModel.aggregate([
+          {
+            $match: {
+              _id: new mongoose.Types.ObjectId(id),
+            },
+          },
+          {
+            $unwind: "$reviews",
+          },
+          {
+            $lookup: {
+              from: "users",
+              localField: "reviews.userId",
+              foreignField: "_id",
+              as: "userDetails",
+            },
+          },
+          // Unwind userDetails array to simplify the user data structure
+          {
+            $unwind: {
+              path: "$userDetails",
+              preserveNullAndEmptyArrays: true, // This ensures that reviews without user details are not dropped
+            },
+          },
+          {
+            $sort: {
+              "reviews.createdAt": -1,
+            },
+          },
+          {
+            $group: {
+              _id: "$_id",
+              name: { $first: "$name" }, // Include doctor's name if needed
+              email: { $first: "$email" }, // Include doctor's email if needed
+              averageRating: { $avg: "$reviews.rating" }, // Calculate average rating
+              totalReviews: { $sum: 1 }, // Calculate total number of reviews
+              reviews: {
+                $push: {
+                  rating: "$reviews.rating",
+                  comment: "$reviews.comment",
+                  createdAt: "$reviews.createdAt",
+                  userId: "$reviews.userId",
+                  userName: "$userDetails.name", 
+                },
+              },
+            },
+          },
+          {
+            $project: {
+              _id: 1,
+              name: 1,
+              averageRating: 1,
+              totalReviews: 1,
+              reviews: { $slice: ["$reviews", skipReviews, limit] },
+            },
+          },
+        ]);
+        return result[0]
+
+      }
+      catch(error){
+        throw error
+      }
   }
 }
 export default UserRepository

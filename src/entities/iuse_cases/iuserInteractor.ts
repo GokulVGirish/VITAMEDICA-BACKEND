@@ -1,7 +1,7 @@
 import { MongoUser, User } from "../rules/user"
 import { MulterFile } from "../rules/multerFile";
 import { Types } from "mongoose";
-import { MongoDoctor } from "../rules/doctor";
+import { MongoDoctor, Review } from "../rules/doctor";
 import { DoctorSlots } from "../rules/slotsType";
 import { Slot } from "../rules/slotsType";
 import IAppointment from "../rules/appointments";
@@ -83,8 +83,34 @@ export interface IUserInteractor {
     totalPages?: number;
   }>;
   getDoctorPage(
-    id: string
-  ): Promise<{ status: boolean; message: string; doctor?: MongoDoctor }>;
+    id: string,
+    page: number,
+    limit: number
+  ): Promise<{
+    status: boolean;
+    message: string;
+    doctor?: MongoDoctor;
+    reviews?: {
+      _id: Types.ObjectId;
+      name: string;
+      email: string;
+      averageRating: number;
+      totalReviews: number;
+      latestReviews: Review[];
+    };
+  }>;
+  fetchMoreReviews(id: string,page:number,limit:number): Promise<{
+    status: boolean;
+    message: string;
+    reviews?: {
+      _id: Types.ObjectId;
+      name: string;
+      email: string;
+      averageRating: number;
+      totalReviews: number;
+      latestReviews: Review[];
+    };
+  }>;
   getAvailableDate(
     id: string
   ): Promise<{ status: boolean; message: string; dates?: string[] }>;
@@ -160,4 +186,9 @@ export interface IUserInteractor {
   getDoctorBySearch(
     searchKey: string
   ): Promise<{ status: boolean; message: string; doctors?: MongoDoctor[] }>;
+  getAppointmentDetail(id: string): Promise<{
+    status: boolean;
+    message: string;
+    appointmentDetail?: IAppointment;
+  }>;
 }

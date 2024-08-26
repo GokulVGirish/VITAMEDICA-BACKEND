@@ -1,5 +1,5 @@
 import IAppointment from "../rules/appointments";
-import { MongoDoctor } from "../rules/doctor";
+import { MongoDoctor, Review } from "../rules/doctor";
 import { DoctorSlots } from "../rules/slotsType";
 import { User } from "../rules/user"
 import { MongoUser } from "../rules/user"
@@ -97,7 +97,7 @@ interface IUserRepository {
     appointmentId: Types.ObjectId,
     amount: string,
     cancelledBy: string,
-    reason:string
+    reason: string
   ): Promise<boolean>;
   getAppointment(appoinmentId: string): Promise<IAppointment | null>;
   addReview(
@@ -112,6 +112,18 @@ interface IUserRepository {
     skip: number,
     limit: number
   ): Promise<{ doctors?: MongoDoctor[]; totalPages?: number }>;
-  getDoctorBySearch(searchKey:RegExp):Promise<MongoDoctor[]|null>
+  getDoctorBySearch(searchKey: RegExp): Promise<MongoDoctor[] | null>;
+  fetchDoctorRating(
+    id: string,
+    page: number,
+    limit: number
+  ): Promise<{
+    _id: Types.ObjectId;
+    name: string;
+    email: string;
+    averageRating: number;
+    totalReviews: number;
+    latestReviews: Review[];
+  }>;
 }
 export default IUserRepository

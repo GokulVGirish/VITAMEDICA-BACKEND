@@ -31,6 +31,7 @@ doctorSearchBookingRouter.get(
   "/:id/profile",
   controller.getDoctorPage.bind(controller)
 );
+doctorSearchBookingRouter.get("/:id/profile/reviews",controller.fetchMoreReviews.bind(controller))
 doctorSearchBookingRouter.get(
   "/:doctorId/availability",
   authMiddleware,

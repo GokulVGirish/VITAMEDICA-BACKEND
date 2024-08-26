@@ -110,6 +110,26 @@ class UserAppointmentControllers {
       throw error;
     }
   }
+  async getAppointmentDetail(req:Request,res:Response,next:NextFunction){
+    try{
+          const appointmentId = req.params.appointmentId;
+          const response=await this.interactor.getAppointmentDetail(appointmentId)
+          if(response.status) return res.status(200).json({success:true,message:response.message,data:response.appointmentDetail})
+            return res
+              .status(500)
+              .json({
+                success: false,
+                message: response.message,
+              });
+
+
+    }
+    catch(error){
+      console.log(error)
+      next(error)
+    }
+
+  }
   async cancelAppointment(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = (req as userDataRequest).userData._id;

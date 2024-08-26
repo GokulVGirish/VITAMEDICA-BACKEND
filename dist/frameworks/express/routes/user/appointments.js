@@ -24,4 +24,5 @@ appointmentRouter.post("/lock-slot", jwt_verify_1.default, (0, role_Authenticate
 appointmentRouter.get("/", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.getAppointments.bind(controller));
 appointmentRouter.put("/:appointmentId/cancel", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.cancelAppointment.bind(controller));
 appointmentRouter.put(`/:appointmentId/review`, jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.addReview.bind(controller));
+appointmentRouter.get("/:appointmentId/detail", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.getAppointmentDetail.bind(controller));
 exports.default = appointmentRouter;

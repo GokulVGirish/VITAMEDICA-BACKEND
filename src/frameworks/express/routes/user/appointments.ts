@@ -59,4 +59,5 @@ appointmentRouter.put(
   getUser,
   controller.addReview.bind(controller)
 );
+appointmentRouter.get("/:appointmentId/detail",authMiddleware,verifyRole("user"),getUser,controller.getAppointmentDetail.bind(controller))
 export default appointmentRouter

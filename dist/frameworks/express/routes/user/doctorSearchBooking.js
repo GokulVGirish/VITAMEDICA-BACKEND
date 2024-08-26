@@ -22,6 +22,7 @@ doctorSearchBookingRouter.get("/list", controller.getDoctorList.bind(controller)
 doctorSearchBookingRouter.get("/category", controller.getDoctorsByDepartment.bind(controller));
 doctorSearchBookingRouter.get("/search", controller.getDoctorBySearch.bind(controller));
 doctorSearchBookingRouter.get("/:id/profile", controller.getDoctorPage.bind(controller));
+doctorSearchBookingRouter.get("/:id/profile/reviews", controller.fetchMoreReviews.bind(controller));
 doctorSearchBookingRouter.get("/:doctorId/availability", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.getAvailableDate.bind(controller));
 doctorSearchBookingRouter.get("/:doctorId/slots", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.getTimeSlots.bind(controller));
 exports.default = doctorSearchBookingRouter;

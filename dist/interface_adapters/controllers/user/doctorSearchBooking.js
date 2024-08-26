@@ -30,7 +30,9 @@ class DoctorSearchBookingControllers {
     async getDoctorPage(req, res, next) {
         try {
             const { id } = req.params;
-            const response = await this.interactor.getDoctorPage(id);
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 3;
+            const response = await this.interactor.getDoctorPage(id, page, limit);
             if (response.status) {
                 res
                     .status(200)
@@ -38,6 +40,7 @@ class DoctorSearchBookingControllers {
                     success: true,
                     message: response.message,
                     doctor: response.doctor,
+                    reviews: response.reviews
                 });
             }
             else {
@@ -46,6 +49,30 @@ class DoctorSearchBookingControllers {
         }
         catch (error) {
             console.log(error);
+        }
+    }
+    async fetchMoreReviews(req, res, next) {
+        try {
+            const { id } = req.params;
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 3;
+            const response = await this.interactor.fetchMoreReviews(id, page, limit);
+            if (response.status) {
+                res.status(200).json({
+                    success: true,
+                    message: response.message,
+                    reviews: response.reviews,
+                });
+            }
+            else {
+                res
+                    .status(500)
+                    .json({ success: false, message: response.message });
+            }
+        }
+        catch (error) {
+            console.log(error);
+            throw error;
         }
     }
     async getAvailableDate(req, res, next) {

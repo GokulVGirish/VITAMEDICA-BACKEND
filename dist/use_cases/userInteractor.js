@@ -369,7 +369,7 @@ class UserInteractor {
             throw error;
         }
     }
-    async getDoctorPage(id) {
+    async getDoctorPage(id, page, limit) {
         try {
             const response = await this.Repository.getDoctor(id);
             if (!response)
@@ -384,7 +384,21 @@ class UserInteractor {
                 });
                 response.image = url;
             }
-            return { status: true, message: "Sucessful", doctor: response };
+            const result = await this.Repository.fetchDoctorRating(id, page, limit);
+            return { status: true, message: "Sucessful", doctor: response, reviews: result };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async fetchMoreReviews(id, page, limit) {
+        try {
+            const result = await this.Repository.fetchDoctorRating(id, page, limit);
+            return {
+                status: true,
+                message: "Sucessful",
+                reviews: result,
+            };
         }
         catch (error) {
             throw error;
@@ -592,6 +606,41 @@ class UserInteractor {
         }
         catch (error) { }
         throw console_1.error;
+    }
+    async getAppointmentDetail(id) {
+        try {
+            const response = await this.Repository.getAppointment(id);
+            if (response && "docImage" in response && response.docImage) {
+                const command2 = new client_s3_1.GetObjectCommand({
+                    Bucket: awsS3_1.default.BUCKET_NAME,
+                    Key: response.docImage,
+                });
+                const url = await getSignedUrl(s3, command2, {
+                    expiresIn: 3600,
+                });
+                response.docImage = url;
+            }
+            if (response?.status === "completed" && "prescription" in response && response.prescription) {
+                const command2 = new client_s3_1.GetObjectCommand({
+                    Bucket: awsS3_1.default.BUCKET_NAME,
+                    Key: response.prescription,
+                });
+                const url = await getSignedUrl(s3, command2, {
+                    expiresIn: 3600,
+                });
+                response.prescription = url;
+            }
+            if (response)
+                return {
+                    status: true,
+                    message: "success",
+                    appointmentDetail: response,
+                };
+            return { status: false, message: "something went wrong" };
+        }
+        catch (error) {
+            throw error;
+        }
     }
 }
 exports.default = UserInteractor;

@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from "express";
-import { IAdminInteractor } from "../../../entities/iuse_cases/iAdminInteractor";
+import IAdminUserManagement from "../../../entities/iuse_cases/admin/iUserManagement";
 
 class AdminUserManagementControllers {
-  constructor(private readonly interactor: IAdminInteractor) {}
+  constructor(private readonly interactor: IAdminUserManagement) {}
   async getUsers(req: Request, res: Response, next: NextFunction) {
     try {
       const response = await this.interactor.getUsers();
@@ -38,6 +38,18 @@ class AdminUserManagementControllers {
     } catch (error) {
       console.log(error);
       next(error);
+    }
+  }
+  async getUserProfile(req:Request,res:Response,next:NextFunction){
+    try{
+      const id=req.params.id
+      const response=await this.interactor.getUserProfile(id)
+
+    }
+    catch(error){
+      console.log(error)
+      next(error)
+      
     }
   }
 }

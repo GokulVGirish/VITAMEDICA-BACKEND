@@ -4,6 +4,7 @@ import doctorRouter from "./doctor/doctorRouter";
 import { Application } from "express";
 
 const routes:Function=(app:Application)=>{
+    
     app.use("/api/users",userRouter)
     app.use("/api/admin",adminRouter)
     app.use("/api/doctors", doctorRouter);

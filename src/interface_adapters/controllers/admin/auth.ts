@@ -1,8 +1,8 @@
-import { IAdminInteractor } from "../../../entities/iuse_cases/iAdminInteractor";
+import IAdminAuthInteractor from "../../../entities/iuse_cases/admin/iAuth";
 import { Request, Response, NextFunction } from "express";
 
 class AdminAuthControllers {
-  constructor(private readonly interactor: IAdminInteractor) {}
+  constructor(private readonly interactor: IAdminAuthInteractor) {}
   async login(req: Request, res: Response, next: NextFunction) {
     try {
       const { email, password } = req.body;

@@ -1,10 +1,10 @@
-import { IAdminInteractor } from "../../../entities/iuse_cases/iAdminInteractor";
-import { Request, Response, NextFunction } from "express";
+import IAdminDoctorManagementInteractor from "../../../entities/iuse_cases/admin/iDoctorManagement";
+import { Request, Response, NextFunction, response } from "express";
 
 
 
 class AdminDoctorManagementControllers {
-  constructor(private readonly interactor: IAdminInteractor) {}
+  constructor(private readonly interactor: IAdminDoctorManagementInteractor) {}
 
   async getUnverifiedDoctors(req: Request, res: Response, next: NextFunction) {
     try {
@@ -90,6 +90,24 @@ class AdminDoctorManagementControllers {
       console.log(error);
       next(error);
     }
+  }
+  async getDoctorProfile(req:Request,res:Response,next:NextFunction){
+    try{
+      const id=req.params.id
+      const page=parseInt(req.query.page as string)||1
+      const limit=parseInt(req.query.limit as string)||1
+    
+      const response=await this.interactor.getDoctorProfile(id,page,limit)
+     
+      if(response.status)return res.status(200).json({success:true,message:response.message,data:response.data})
+        return res.status(500).json({success:false,message:response.message})
+
+    }
+    catch(error){
+      console.log(error)
+      next(error)
+    }
+
   }
 }
 export default AdminDoctorManagementControllers

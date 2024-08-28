@@ -2,11 +2,12 @@ import { IUserInteractor } from "../../../entities/iuse_cases/iuserInteractor";
 import { Request, Response, NextFunction } from "express";
 import userDataRequest from "../../../frameworks/express/middlewares/user";
 import { Types } from "mongoose";
+import IUserAppointmentInteractor from "../../../entities/iuse_cases/user/iAppointments";
 
 
 
 class UserAppointmentControllers {
-  constructor(private readonly interactor: IUserInteractor) {}
+  constructor(private readonly interactor: IUserAppointmentInteractor) {}
   async razorPayOrder(req: Request, res: Response, next: NextFunction) {
     try {
       console.log("inside");

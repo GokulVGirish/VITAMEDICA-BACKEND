@@ -330,19 +330,16 @@ class UserInteractor implements IUserInteractor {
       console.log("user",user)
       console.log("response 2",respose)
       
-        if(respose.success){
-            return {
+        if(respose.success)return {
                 status:true,
                 message:"updated sucessfully",
-                data:user||undefined
-            }
-        }else{
-              return {
+                data:user||undefined}
+        else return {
                 status: false,
                 message: "Error updating",
               };
 
-        }
+        
 
     } catch (error) {
       console.log(error);

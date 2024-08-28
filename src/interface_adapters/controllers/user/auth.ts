@@ -1,12 +1,12 @@
-import { IUserInteractor } from "../../../entities/iuse_cases/iuserInteractor";
 import { Request,Response,NextFunction } from "express";
 import { CustomRequestType } from "../../../frameworks/express/middlewares/role-Authenticate";
+import IuserAuthInteractor from "../../../entities/iuse_cases/user/iAuth";
 
 
 
 
 class UserAuthControllers {
-  constructor(private readonly interactor: IUserInteractor) {}
+  constructor(private readonly interactor: IuserAuthInteractor) {}
   async otpSignup(req: Request, res: Response, next: NextFunction) {
     try {
       const body = req.body;

@@ -17,7 +17,7 @@ class DoctorSlotsControllers {
         }
         catch (error) {
             console.log(error);
-            throw error;
+            next(error);
         }
     }
     async getAvailableDates(req, res, next) {

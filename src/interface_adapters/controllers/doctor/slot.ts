@@ -1,10 +1,10 @@
-import { IDoctorInteractor } from "../../../entities/iuse_cases/iDoctorInteractor";
+import IDoctorSlotInteractor from "../../../entities/iuse_cases/doctor/iSlot";
 import { doctorDataRequest } from "../../../frameworks/express/middlewares/doctor";
 import { Request, Response, NextFunction } from "express";
 
 
 class DoctorSlotsControllers {
-  constructor(private readonly interactor: IDoctorInteractor) {}
+  constructor(private readonly interactor: IDoctorSlotInteractor) {}
 
   async addSlots(req: Request, res: Response, next: NextFunction) {
     try {
@@ -17,7 +17,7 @@ class DoctorSlotsControllers {
       }
     } catch (error) {
       console.log(error);
-      throw error;
+    next(error)
     }
   }
   async getAvailableDates(req: Request, res: Response, next: NextFunction) {

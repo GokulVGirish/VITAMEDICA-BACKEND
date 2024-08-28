@@ -101,5 +101,20 @@ class AdminDoctorManagementControllers {
             next(error);
         }
     }
+    async getDoctorProfile(req, res, next) {
+        try {
+            const id = req.params.id;
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 1;
+            const response = await this.interactor.getDoctorProfile(id, page, limit);
+            if (response.status)
+                return res.status(200).json({ success: true, message: response.message, data: response.data });
+            return res.status(500).json({ success: false, message: response.message });
+        }
+        catch (error) {
+            console.log(error);
+            next(error);
+        }
+    }
 }
 exports.default = AdminDoctorManagementControllers;

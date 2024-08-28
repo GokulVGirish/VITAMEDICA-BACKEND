@@ -1,9 +1,10 @@
+import IAdminDashboardInteractor from "../../../entities/iuse_cases/admin/iDashboard";
 import { IAdminInteractor } from "../../../entities/iuse_cases/iAdminInteractor";
 import { Request, Response, NextFunction, response } from "express";
 
 
 class AdminDashboardControllers {
-  constructor(private readonly interactor: IAdminInteractor) { }
+  constructor(private readonly interactor: IAdminDashboardInteractor) { }
   async getCurrentDayReport(req:Request,res:Response,next:NextFunction){
     try{
         const response=await this.interactor.getCurrentDayReport()

@@ -1,12 +1,12 @@
-import { IDoctorInteractor } from "../../../entities/iuse_cases/iDoctorInteractor";
 import { Request, Response, NextFunction } from "express";
 import { CustomRequestType } from "../../../frameworks/express/middlewares/role-Authenticate";
+import IDoctorAuthInteractor from "../../../entities/iuse_cases/doctor/iAuth";
 
 
 
 
 class DoctorAuthControllers {
-  constructor(private readonly interactor: IDoctorInteractor) {}
+  constructor(private readonly interactor: IDoctorAuthInteractor) {}
   async otpSignup(req: Request, res: Response, next: NextFunction) {
     try {
       const data = req.body;

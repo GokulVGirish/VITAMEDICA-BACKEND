@@ -1,18 +1,14 @@
 import express from "express";
 import AdminDashboardControllers from "../../../../interface_adapters/controllers/admin/dash";
-import AdminInteractor from "../../../../use_cases/adminInteractor";
 import AdminRepository from "../../../../interface_adapters/repositories/adminRepository";
-import JwtService from "../../../services/jwt-generate";
 import authMiddleware from "../../middlewares/jwt-verify";
 import verifyRole from "../../middlewares/role-Authenticate";
-import authRouter from "./auth";
+import AdminDashboardInteractor from "../../../../use_cases/admin/dashboard";
 
-const jwtservices = new JwtService(
-  process.env.ACCESS_TOCKEN_SECRET as string,
-  process.env.REFRESH_TOCKEN_SECRET as string
-);
+
+
 const repository = new AdminRepository();
-const interactor = new AdminInteractor(repository, jwtservices);
+const interactor = new AdminDashboardInteractor(repository);
 const controller = new AdminDashboardControllers(interactor);
 const dashRouter = express.Router();
 dashRouter.get('/today',authMiddleware,verifyRole("admin"),controller.getCurrentDayReport.bind(controller))

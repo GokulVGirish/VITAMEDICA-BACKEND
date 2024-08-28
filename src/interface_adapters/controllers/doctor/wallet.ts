@@ -1,9 +1,9 @@
-import { IDoctorInteractor } from "../../../entities/iuse_cases/iDoctorInteractor";
 import { Request, Response, NextFunction } from "express";
 import { doctorDataRequest } from "../../../frameworks/express/middlewares/doctor";
+import IDoctorWalletInteractor from "../../../entities/iuse_cases/doctor/iwallet";
 
 class DoctorWalletControllers {
-  constructor(private readonly interactor: IDoctorInteractor) {}
+  constructor(private readonly interactor: IDoctorWalletInteractor) {}
   async getWalletDetails(req: Request, res: Response, next: NextFunction) {
     try {
       const page = parseInt(req.query.page as string) || 1;

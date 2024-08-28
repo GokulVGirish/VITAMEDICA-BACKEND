@@ -357,5 +357,55 @@ class AdminInteractor {
             throw error;
         }
     }
+    async fetchAppointments(page, limit) {
+        try {
+            const result = await this.repository.fetchAppointments(page, limit);
+            return { success: true, message: "Sucess", data: result };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async fetchAppointmentDetail(id) {
+        try {
+            const result = await this.repository.fetchAppointmentDetail(id);
+            if (result) {
+                if ("docImage" in result && result.docImage) {
+                    const command = new client_s3_1.GetObjectCommand({
+                        Bucket: awsS3_1.default.BUCKET_NAME,
+                        Key: result.docImage,
+                    });
+                    const url = await getSignedUrl(s3, command, {
+                        expiresIn: 3600,
+                    });
+                    result.docImage = url;
+                }
+                if ("userImage" in result && result.userImage) {
+                    const command = new client_s3_1.GetObjectCommand({
+                        Bucket: awsS3_1.default.BUCKET_NAME,
+                        Key: result.userImage,
+                    });
+                    const url = await getSignedUrl(s3, command, {
+                        expiresIn: 3600,
+                    });
+                    result.userImage = url;
+                }
+                if (result.status === "completed") {
+                    const command = new client_s3_1.GetObjectCommand({
+                        Bucket: awsS3_1.default.BUCKET_NAME,
+                        Key: result.prescription,
+                    });
+                    const url = await getSignedUrl(s3, command, {
+                        expiresIn: 3600,
+                    });
+                    result.prescription = url;
+                }
+            }
+            return { success: true, message: "Success", data: result };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
 }
 exports.default = AdminInteractor;

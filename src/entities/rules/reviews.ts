@@ -8,3 +8,13 @@ export interface Review {
   createdAt: Date;
   updatedAt: Date;
 }
+export interface AllReviewsStats{
+  
+    _id: Types.ObjectId;
+    name: string;
+    email: string;
+    averageRating: number;
+    totalReviews: number;
+    latestReviews: Review[];
+  
+}

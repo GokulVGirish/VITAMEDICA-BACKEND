@@ -45,5 +45,15 @@ class AdminUserManagementControllers {
             next(error);
         }
     }
+    async getUserProfile(req, res, next) {
+        try {
+            const id = req.params.id;
+            const response = await this.interactor.getUserProfile(id);
+        }
+        catch (error) {
+            console.log(error);
+            next(error);
+        }
+    }
 }
 exports.default = AdminUserManagementControllers;

@@ -10,6 +10,7 @@ const UserSchema_1 = __importDefault(require("../../frameworks/mongoose/models/U
 const RejectedDoctor_1 = __importDefault(require("../../frameworks/mongoose/models/RejectedDoctor"));
 const dates_1 = require("../../frameworks/services/dates");
 const AppointmentSchema_1 = __importDefault(require("../../frameworks/mongoose/models/AppointmentSchema"));
+const mongoose_1 = __importDefault(require("mongoose"));
 class AdminRepository {
     async getAdmin(email) {
         const admin = await AdminSchema_1.default.findOne({ email: email });
@@ -528,6 +529,289 @@ class AdminRepository {
         try {
             const result = await UserSchema_1.default.countDocuments({});
             return result;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async fetchAppointments(page, limit) {
+        try {
+            const skip = (page - 1) * limit;
+            const result = await AppointmentSchema_1.default.aggregate([
+                {
+                    $facet: {
+                        data: [
+                            {
+                                $sort: {
+                                    createdAt: -1,
+                                },
+                            },
+                            {
+                                $lookup: {
+                                    from: "doctors",
+                                    localField: "docId",
+                                    foreignField: "_id",
+                                    as: "doctorInfo",
+                                },
+                            },
+                            {
+                                $unwind: "$doctorInfo",
+                            },
+                            {
+                                $lookup: {
+                                    from: "users",
+                                    localField: "userId",
+                                    foreignField: "_id",
+                                    as: "userInfo",
+                                },
+                            },
+                            {
+                                $unwind: "$userInfo",
+                            },
+                            {
+                                $lookup: {
+                                    from: "departments",
+                                    localField: "doctorInfo.department",
+                                    foreignField: "_id",
+                                    as: "departmentInfo",
+                                },
+                            },
+                            {
+                                $unwind: "$departmentInfo",
+                            },
+                            {
+                                $project: {
+                                    _id: 1,
+                                    date: 1,
+                                    start: 1,
+                                    end: 1,
+                                    amount: 1,
+                                    status: 1,
+                                    docName: "$doctorInfo.name",
+                                    department: "$departmentInfo.name",
+                                    userName: "$userInfo.name",
+                                },
+                            },
+                            {
+                                $skip: skip,
+                            },
+                            {
+                                $limit: limit,
+                            },
+                        ],
+                        totalCount: [
+                            {
+                                $count: "count",
+                            },
+                        ],
+                    },
+                },
+                {
+                    $unwind: "$totalCount"
+                },
+                {
+                    $project: {
+                        data: 1,
+                        totalCount: "$totalCount.count"
+                    }
+                }
+            ]);
+            console.log("result", result);
+            return result;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async fetchAppointmentDetail(id) {
+        try {
+            const result = await AppointmentSchema_1.default.aggregate([
+                {
+                    $match: {
+                        _id: new mongoose_1.default.Types.ObjectId(id),
+                    },
+                },
+                {
+                    $lookup: {
+                        from: "doctors",
+                        localField: "docId",
+                        foreignField: "_id",
+                        as: "docInfo",
+                    },
+                },
+                {
+                    $unwind: "$docInfo",
+                },
+                {
+                    $lookup: {
+                        from: "users",
+                        localField: "userId",
+                        foreignField: "_id",
+                        as: "userInfo",
+                    },
+                },
+                {
+                    $unwind: "$userInfo",
+                },
+                {
+                    $lookup: {
+                        from: "departments",
+                        localField: "docInfo.department",
+                        foreignField: "_id",
+                        as: "departmentInfo",
+                    },
+                },
+                {
+                    $unwind: "$departmentInfo"
+                },
+                {
+                    $project: {
+                        _id: 1,
+                        amount: 1,
+                        fees: 1,
+                        docName: "$docInfo.name",
+                        userName: "$userInfo.name",
+                        userAge: "$userInfo.dob",
+                        userBlood: "$userInfo.bloodGroup",
+                        status: 1,
+                        date: 1,
+                        createdAt: 1,
+                        start: 1,
+                        end: 1,
+                        prescription: 1,
+                        department: "$departmentInfo.name",
+                        docImage: "$docInfo.image",
+                        userImage: "$userInfo.image"
+                    },
+                },
+            ]);
+            console.log("result", result);
+            return result[0];
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getDoctorProfile(id, page, limit) {
+        try {
+            const skip = (page - 1) * limit;
+            const result = await DoctorSchema_1.default.aggregate([
+                {
+                    $match: {
+                        _id: new mongoose_1.default.Types.ObjectId(id),
+                    },
+                },
+                {
+                    $lookup: {
+                        from: "departments",
+                        localField: "department",
+                        foreignField: "_id",
+                        as: "departmentInfo",
+                    },
+                },
+                {
+                    $unwind: "$departmentInfo",
+                },
+                {
+                    $set: {
+                        reviews: {
+                            $ifNull: ["$reviews", []],
+                        },
+                    },
+                },
+                {
+                    $addFields: {
+                        totalReviews: { $size: "$reviews" },
+                        averageRating: { $avg: "$reviews.rating" },
+                    },
+                },
+                {
+                    $unwind: {
+                        path: "$reviews",
+                        preserveNullAndEmptyArrays: true,
+                    },
+                },
+                {
+                    $sort: {
+                        "reviews.createdAt": -1,
+                    },
+                },
+                {
+                    $group: {
+                        _id: "$_id",
+                        name: { $first: "$name" },
+                        email: { $first: "$email" },
+                        phone: { $first: "$phone" },
+                        gender: { $first: "$gender" },
+                        image: { $first: "$image" },
+                        department: { $first: "$departmentInfo" },
+                        documentsUploaded: { $first: "$documentsUploaded" },
+                        documents: { $first: "$documents" },
+                        wallet: { $first: "$wallet" },
+                        degree: { $first: "$degree" },
+                        fees: { $first: "$fees" },
+                        complete: { $first: "$complete" },
+                        description: { $first: "$description" },
+                        status: { $first: "$status" },
+                        isBlocked: { $first: "$isBlocked" },
+                        totalReviews: { $first: "$totalReviews" },
+                        averageRating: { $first: "$averageRating" },
+                        reviews: { $push: "$reviews" },
+                    },
+                },
+                {
+                    $project: {
+                        _id: 1,
+                        name: 1,
+                        email: 1,
+                        phone: 1,
+                        gender: 1,
+                        image: 1,
+                        department: "$department.name",
+                        documentsUploaded: 1,
+                        documents: 1,
+                        degree: 1,
+                        fees: 1,
+                        description: 1,
+                        isBlocked: 1,
+                        reviews: {
+                            $slice: ["$reviews", skip, limit]
+                        },
+                        totalReviews: 1,
+                        averageRating: 1,
+                    },
+                },
+            ]);
+            return result[0];
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getUserProfile(id) {
+        try {
+            const result = await UserSchema_1.default.aggregate([
+                {
+                    $match: {
+                        _id: new mongoose_1.default.Types.ObjectId(id),
+                    },
+                },
+                {
+                    $project: {
+                        _id: 1,
+                        name: 1,
+                        email: 1,
+                        phone: 1,
+                        dob: 1,
+                        gender: 1,
+                        address: 1,
+                        bloodGroup: 1,
+                        register: 1,
+                        isBlocked: 1
+                    }
+                }
+            ]);
+            console.log("resultyy", result);
         }
         catch (error) {
             throw error;

@@ -1,15 +1,15 @@
-import { IUserInteractor } from "../../../entities/iuse_cases/iuserInteractor";
 import userDataRequest from "../../../frameworks/express/middlewares/user";
 import { Request, Response, NextFunction } from "express";
 import { Types } from "mongoose";
 import { MulterFile } from "../../../entities/rules/multerFile";
+import IUserProfileInteractor from "../../../entities/iuse_cases/user/iProfile";
 
 
 
 
 class UserProfileControllers {
 
-  constructor(private readonly interactor: IUserInteractor) {}
+  constructor(private readonly interactor: IUserProfileInteractor) {}
 
   async profile(req: Request, res: Response, next: NextFunction) {
     try {

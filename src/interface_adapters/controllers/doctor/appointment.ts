@@ -1,12 +1,12 @@
-import { IDoctorInteractor } from "../../../entities/iuse_cases/iDoctorInteractor";
 import { Request, Response, NextFunction } from "express";
 import { doctorDataRequest } from "../../../frameworks/express/middlewares/doctor";
 import { MulterFile } from "../../../entities/rules/multerFile";
+import IDoctorAppointmentInteractor from "../../../entities/iuse_cases/doctor/iAppointment";
 
 
 
 class DoctorAppointmentControllers {
-  constructor(private readonly interactor: IDoctorInteractor) {}
+  constructor(private readonly interactor: IDoctorAppointmentInteractor) {}
   async todaysAppointments(req: Request, res: Response, next: NextFunction) {
     try {
       const docId = (req as doctorDataRequest).doctorData._id;

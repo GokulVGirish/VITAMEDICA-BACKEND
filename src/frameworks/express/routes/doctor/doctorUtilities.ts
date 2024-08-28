@@ -1,20 +1,16 @@
 import express from "express";
-import DoctorExtraControllers from "../../../../interface_adapters/controllers/doctor/doctorExtra";
-import DoctorInteractor from "../../../../use_cases/doctorInteractor";
+import DoctorExtraControllers from "../../../../interface_adapters/controllers/doctor/doctorUtilities";
 import DoctorRepository from "../../../../interface_adapters/repositories/doctorRepository";
-import Mailer from "../../../services/mailer";
-import JwtService from "../../../services/jwt-generate";
 import authMiddleware from "../../middlewares/jwt-verify";
 import verifyRole from "../../middlewares/role-Authenticate";
 import { getDoctor } from "../../middlewares/doctor";
 import upload from "../../../services/multer";
-const mailer = new Mailer();
-const jwtService = new JwtService(
-  process.env.ACCESS_TOCKEN_SECRET as string,
-  process.env.REFRESH_TOCKEN_SECRET as string
-);
+import DoctorUtilityInteractor from "../../../../use_cases/doctor/doctorUtilities";
+import AwsS3 from "../../../services/awsS3";
+
+const awss3=new AwsS3()
 const repository = new DoctorRepository();
-const interactor = new DoctorInteractor(repository, mailer, jwtService);
+const interactor = new DoctorUtilityInteractor(repository,awss3);
 const controller = new DoctorExtraControllers(interactor);
 const doctorUtilitiesRouter = express.Router();
 

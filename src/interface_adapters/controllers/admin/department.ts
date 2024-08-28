@@ -1,9 +1,9 @@
-import { IAdminInteractor } from "../../../entities/iuse_cases/iAdminInteractor";
+import IAdminDepartmentInteractor from "../../../entities/iuse_cases/admin/iDepartment";
 import { Request, Response, NextFunction } from "express";
 
 
 class AdminDepartmentControllers {
-  constructor(private readonly interactor: IAdminInteractor) {}
+  constructor(private readonly interactor: IAdminDepartmentInteractor) {}
   async getDepartments(req: Request, res: Response, next: NextFunction) {
     try {
       const response = await this.interactor.getDepartments();

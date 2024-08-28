@@ -3,7 +3,7 @@ import IAdminRepository from "../../entities/irepositories/iAdminRepository"
 import { MongoAdmin } from "../../entities/rules/admin"
 import MongoDepartment from "../../entities/rules/departments"
 import { MongoDoctor } from "../../entities/rules/doctor"
-import { MongoUser } from "../../entities/rules/user"
+import { MongoUser, User } from "../../entities/rules/user"
 import adminModel from "../../frameworks/mongoose/models/AdminSchema"
 import departmentModel from "../../frameworks/mongoose/models/departmentSchema"
 import doctorModel from "../../frameworks/mongoose/models/DoctorSchema"
@@ -11,6 +11,8 @@ import userModel from "../../frameworks/mongoose/models/UserSchema"
 import rejectedDoctorModel from "../../frameworks/mongoose/models/RejectedDoctor"
 import { getCurrentMonthDates, getCurrentWeekDates } from "../../frameworks/services/dates"
 import appointmentModel from "../../frameworks/mongoose/models/AppointmentSchema"
+import IAppointment from "../../entities/rules/appointments"
+import mongoose, { mongo } from "mongoose"
 
 class AdminRepository implements IAdminRepository {
   async getAdmin(email: string): Promise<MongoAdmin | null> {
@@ -567,6 +569,299 @@ class AdminRepository implements IAdminRepository {
           throw error;
         }
     
+      
+  }
+  async fetchAppointments(page:number,limit:number): Promise<IAppointment[] | []> {
+    try{
+      const skip=(page-1)*limit
+      const result = await appointmentModel.aggregate([
+        {
+          $facet: {
+            data: [
+              {
+                $sort: {
+                  createdAt: -1,
+                },
+              },
+              {
+                $lookup: {
+                  from: "doctors",
+                  localField: "docId",
+                  foreignField: "_id",
+                  as: "doctorInfo",
+                },
+              },
+              {
+                $unwind: "$doctorInfo",
+              },
+              {
+                $lookup: {
+                  from: "users",
+                  localField: "userId",
+                  foreignField: "_id",
+                  as: "userInfo",
+                },
+              },
+              {
+                $unwind: "$userInfo",
+              },
+              {
+                $lookup: {
+                  from: "departments",
+                  localField: "doctorInfo.department",
+                  foreignField: "_id",
+                  as: "departmentInfo",
+                },
+              },
+              {
+                $unwind: "$departmentInfo",
+              },
+
+              {
+                $project: {
+                  _id: 1,
+                  date: 1,
+                  start: 1,
+                  end: 1,
+                  amount: 1,
+                  status:1,
+                  docName: "$doctorInfo.name",
+                  department: "$departmentInfo.name",
+                  userName: "$userInfo.name",
+                },
+              },
+              {
+                $skip: skip,
+              },
+              {
+                $limit: limit,
+              },
+            ],
+            totalCount: [
+              {
+                $count: "count",
+              },
+            ],
+          },
+        },
+        {
+          $unwind:"$totalCount"
+        },
+        {
+          $project:{
+            data:1,
+            totalCount:"$totalCount.count"
+          }
+        }
+      ]);
+      console.log("result",result)
+      return result
+
+    }
+    catch(error){
+      throw error
+    }
+      
+  }
+  async fetchAppointmentDetail(id: string): Promise<IAppointment> {
+      try{
+        const result = await appointmentModel.aggregate([
+          {
+            $match: {
+              _id: new mongoose.Types.ObjectId(id),
+            },
+          },
+          {
+            $lookup: {
+              from: "doctors",
+              localField: "docId",
+              foreignField: "_id",
+              as: "docInfo",
+            },
+          },
+          {
+            $unwind: "$docInfo",
+          },
+          {
+            $lookup: {
+              from: "users",
+              localField: "userId",
+              foreignField: "_id",
+              as: "userInfo",
+            },
+          },
+          {
+            $unwind: "$userInfo",
+          },
+          {
+            $lookup: {
+              from: "departments",
+              localField: "docInfo.department",
+              foreignField: "_id",
+              as: "departmentInfo",
+            },
+          },
+          {
+            $unwind:"$departmentInfo"
+
+          },
+          {
+            $project: {
+              _id: 1,
+              amount: 1,
+              fees: 1,
+              docName: "$docInfo.name",
+              userName:"$userInfo.name",
+              userAge:"$userInfo.dob",
+              userBlood:"$userInfo.bloodGroup",
+              status:1,
+              date:1,
+              createdAt:1,
+              start:1,
+              end:1,
+              prescription:1,
+              department: "$departmentInfo.name",
+              docImage:"$docInfo.image",
+              userImage:"$userInfo.image"
+            },
+          },
+        ]);
+
+        console.log("result",result)
+        return result[0]
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async getDoctorProfile(id: string, page: number, limit: number): Promise<MongoDoctor> {
+      try{
+        const skip=(page-1)*limit
+        const result = await doctorModel.aggregate([
+          {
+            $match: {
+              _id: new mongoose.Types.ObjectId(id),
+            },
+          },
+          {
+            $lookup: {
+              from: "departments",
+              localField: "department",
+              foreignField: "_id",
+              as: "departmentInfo",
+            },
+          },
+          {
+            $unwind: "$departmentInfo",
+          },
+          {
+            $set: {
+              reviews: {
+                $ifNull: ["$reviews", []],
+              },
+            },
+          },
+          {
+            $addFields: {
+              totalReviews: { $size: "$reviews" },
+              averageRating: { $avg: "$reviews.rating" },
+            },
+          },
+          {
+            $unwind: {
+              path: "$reviews",
+              preserveNullAndEmptyArrays: true,
+            },
+          },
+          {
+            $sort: {
+              "reviews.createdAt": -1,
+            },
+          },
+          {
+            $group: {
+              _id: "$_id",
+              name: { $first: "$name" },
+              email: { $first: "$email" },
+              phone: { $first: "$phone" },
+              gender: { $first: "$gender" },
+              image: { $first: "$image" },
+              department: { $first: "$departmentInfo" },
+              documentsUploaded: { $first: "$documentsUploaded" },
+              documents: { $first: "$documents" },
+              wallet: { $first: "$wallet" },
+              degree: { $first: "$degree" },
+              fees: { $first: "$fees" },
+              complete: { $first: "$complete" },
+              description: { $first: "$description" },
+              status: { $first: "$status" },
+              isBlocked: { $first: "$isBlocked" },
+              totalReviews: { $first: "$totalReviews" },
+              averageRating: { $first: "$averageRating" },
+              reviews: { $push: "$reviews" },
+            },
+          },
+          {
+            $project: {
+              _id: 1,
+              name: 1,
+              email: 1,
+              phone: 1,
+              gender: 1,
+              image: 1,
+              department:"$department.name",
+              documentsUploaded: 1,
+              documents: 1,
+              degree: 1,
+              fees: 1,
+              description: 1,
+              isBlocked: 1,
+              reviews: {
+                $slice:["$reviews",skip,limit]
+              },
+              totalReviews: 1,
+              averageRating: 1,
+            },
+          },
+        ]);
+      
+      return result[0]
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async getUserProfile(id: string): Promise<User | null> {
+    try{
+      const result = await userModel.aggregate([
+        {
+          $match: {
+            _id: new mongoose.Types.ObjectId(id),
+          },
+        },
+        {
+          $project:{
+            _id:1,
+            name:1,
+            email:1,
+            phone:1,
+            dob:1,
+            gender:1,
+            address:1,
+            bloodGroup:1,
+            register:1,
+            isBlocked:1
+          }
+        }
+      ]);
+      console.log("resultyy",result)
+
+    }
+    catch(error){
+      throw error
+    }
       
   }
 }

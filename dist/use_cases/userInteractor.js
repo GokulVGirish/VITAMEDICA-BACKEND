@@ -251,19 +251,17 @@ class UserInteractor {
             }
             console.log("user", user);
             console.log("response 2", respose);
-            if (respose.success) {
+            if (respose.success)
                 return {
                     status: true,
                     message: "updated sucessfully",
                     data: user || undefined
                 };
-            }
-            else {
+            else
                 return {
                     status: false,
                     message: "Error updating",
                 };
-            }
         }
         catch (error) {
             console.log(error);

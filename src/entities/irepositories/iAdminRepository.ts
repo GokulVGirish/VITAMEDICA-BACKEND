@@ -2,8 +2,9 @@ import { promises } from "dns";
 import { MongoAdmin } from "../rules/admin"
 import MongoDepartment from "../rules/departments"
 import { MongoDoctor } from "../rules/doctor";
-import { MongoUser } from "../rules/user";
+import { MongoUser, User } from "../rules/user";
 import { Types } from "mongoose";
+import IAppointment from "../rules/appointments";
 export interface IAdminRepository {
   getAdmin(email: string): Promise<MongoAdmin | null>;
   getDepartments(): Promise<{
@@ -43,8 +44,16 @@ export interface IAdminRepository {
     appointmentsCount: number;
     cancellationsCount: number;
   }>;
-  getUnverifiedDoctorsCount():Promise<number>
-  getUsersCount():Promise<number>
-  getDoctorsCount():Promise<number>
+  getUnverifiedDoctorsCount(): Promise<number>;
+  getUsersCount(): Promise<number>;
+  getDoctorsCount(): Promise<number>;
+  fetchAppointments(page: number, limit: number): Promise<IAppointment[] | []>;
+  fetchAppointmentDetail(id: string): Promise<IAppointment>;
+  getDoctorProfile(
+    id: string,
+    page: number,
+    limit: number
+  ): Promise<MongoDoctor>;
+  getUserProfile(id: string):Promise<User|null>
 }
 export default IAdminRepository

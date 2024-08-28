@@ -11,6 +11,7 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 import s3Config from "../entities/services/awsS3";
 import { Types } from "mongoose";
 import { io } from "../frameworks/express/app";
+import IAppointment from "../entities/rules/appointments";
 
 const s3=new S3Client({
     region:s3Config.BUCKET_REGION,
@@ -413,6 +414,61 @@ class AdminInteractor implements IAdminInteractor {
            message: "success",
            revenue: revenue,
          };
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async fetchAppointments(page: number, limit: number): Promise<{ success: boolean; message: string; data?: IAppointment[]; }> {
+      try{
+        const result=await this.repository.fetchAppointments(page,limit)
+        return {success:true,message:"Sucess",data:result}
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async fetchAppointmentDetail(id: string): Promise<{ success: boolean; message: string; data?: IAppointment; }> {
+      try{
+        const result=await this.repository.fetchAppointmentDetail(id)
+        if(result){
+          if("docImage" in result && result.docImage){
+            const command = new GetObjectCommand({
+              Bucket: s3Config.BUCKET_NAME,
+              Key: result.docImage as string,
+            });
+            const url = await getSignedUrl(s3, command, {
+              expiresIn: 3600,
+            });
+           result.docImage=url
+
+          }
+          if("userImage" in result && result.userImage){
+             const command = new GetObjectCommand({
+               Bucket: s3Config.BUCKET_NAME,
+               Key: result.userImage as string,
+             });
+             const url = await getSignedUrl(s3, command, {
+               expiresIn: 3600,
+             });
+             result.userImage = url;
+
+          }
+          if(result.status==="completed"){
+             const command = new GetObjectCommand({
+               Bucket: s3Config.BUCKET_NAME,
+               Key: result.prescription as string,
+             });
+             const url = await getSignedUrl(s3, command, {
+               expiresIn: 3600,
+             });
+             result.prescription = url;
+
+          }
+        }
+        return {success:true,message:"Success",data:result}
 
       }
       catch(error){

@@ -1,9 +1,10 @@
 import { IUserInteractor } from "../../../entities/iuse_cases/iuserInteractor";
 import { Request, Response, NextFunction } from "express";
+import IDoctorBookingInteractor from "../../../entities/iuse_cases/user/iDoctorBooking";
 
 
 class DoctorSearchBookingControllers {
-  constructor(private readonly interactor: IUserInteractor) {}
+  constructor(private readonly interactor: IDoctorBookingInteractor) {}
   async getDoctorList(req: Request, res: Response, next: NextFunction) {
     try {
       const page = parseInt(req.query.page as string) || 1;
@@ -46,6 +47,7 @@ class DoctorSearchBookingControllers {
       }
     } catch (error) {
       console.log(error);
+      next(error)
     }
   }
   async fetchMoreReviews(req:Request,res:Response,next:NextFunction){

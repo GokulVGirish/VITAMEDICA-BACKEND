@@ -1,11 +1,11 @@
-import { IUserInteractor } from "../../../entities/iuse_cases/iuserInteractor";
 import { Request, Response, NextFunction } from "express";
 import userDataRequest from "../../../frameworks/express/middlewares/user";
 import { Types } from "mongoose";
+import IUserWalletInteractor from "../../../entities/iuse_cases/user/iWallet";
 
 
  class UserWalletControllers {
-   constructor(private readonly interactor: IUserInteractor) {}
+   constructor(private readonly interactor: IUserWalletInteractor) {}
    async getWalletInfo(req: Request, res: Response, next: NextFunction) {
      try {
        const page = parseInt(req.query.page as string) || 1;

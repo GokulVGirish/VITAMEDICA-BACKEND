@@ -1,10 +1,11 @@
 import { IDoctorInteractor } from "../../../entities/iuse_cases/iDoctorInteractor";
 import { Request, Response, NextFunction } from "express";
 import { doctorDataRequest } from "../../../frameworks/express/middlewares/doctor";
+import IDoctorUtilityInteractor from "../../../entities/iuse_cases/doctor/iDoctorUtilities";
 
 
 class DoctorExtraControllers {
-  constructor(private readonly interactor: IDoctorInteractor) {}
+  constructor(private readonly interactor: IDoctorUtilityInteractor) {}
   async getDepartments(req: Request, res: Response, next: NextFunction) {
     try {
       const response = await this.interactor.getDepartments();

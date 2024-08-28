@@ -1,21 +1,18 @@
 import express from "express"
 import UserProfileControllers from "../../../../interface_adapters/controllers/user/profile";
-import UserInteractor from "../../../../use_cases/userInteractor";
 import UserRepository from "../../../../interface_adapters/repositories/userRepository";
 import Mailer from "../../../services/mailer";
-import JwtService from "../../../services/jwt-generate";
 import authMiddleware from "../../middlewares/jwt-verify";
 import { getUser } from "../../middlewares/user";
 import upload from "../../../services/multer";
 import verifyRole from "../../middlewares/role-Authenticate";
+import ProfileInteractor from "../../../../use_cases/user/profile";
+import AwsS3 from "../../../services/awsS3";
 
 const respository = new UserRepository();
+const awsS3=new AwsS3()
 const mailer = new Mailer();
-const jwtservices = new JwtService(
-  process.env.ACCESS_TOCKEN_SECRET as string,
-  process.env.REFRESH_TOCKEN_SECRET as string
-);
-const interactor = new UserInteractor(respository, mailer, jwtservices);
+const interactor = new ProfileInteractor(respository, mailer,awsS3);
 const controller = new UserProfileControllers(interactor);
 const profileRouter=express.Router()
 profileRouter.get(

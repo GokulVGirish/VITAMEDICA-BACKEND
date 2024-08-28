@@ -1,0 +1,20 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const appointments_1 = __importDefault(require("../../../../interface_adapters/controllers/admin/appointments"));
+const adminRepository_1 = __importDefault(require("../../../../interface_adapters/repositories/adminRepository"));
+const jwt_verify_1 = __importDefault(require("../../middlewares/jwt-verify"));
+const role_Authenticate_1 = __importDefault(require("../../middlewares/role-Authenticate"));
+const appointments_2 = __importDefault(require("../../../../use_cases/admin/appointments"));
+const awsS3_1 = __importDefault(require("../../../services/awsS3"));
+const awsS3 = new awsS3_1.default();
+const repository = new adminRepository_1.default();
+const interactor = new appointments_2.default(repository, awsS3);
+const controller = new appointments_1.default(interactor);
+const appointmentRouter = express_1.default.Router();
+appointmentRouter.get("/", jwt_verify_1.default, (0, role_Authenticate_1.default)("admin"), controller.fetchAppointmentList.bind(controller));
+appointmentRouter.get("/:id", jwt_verify_1.default, (0, role_Authenticate_1.default)("admin"), controller.fetchAppointmentDetail.bind(controller));
+exports.default = appointmentRouter;

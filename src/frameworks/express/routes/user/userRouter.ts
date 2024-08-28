@@ -2,7 +2,7 @@ import express from "express"
 
 import authRouter from "./auth"
 import profileRouter from "./profile"
-import doctorSearchBookingRouter from "./doctorSearchBooking"
+import doctorSearchBookingRouter from "./doctorBooking"
 import appointmentRouter from "./appointments"
 import walletRouter from "./wallet"
 

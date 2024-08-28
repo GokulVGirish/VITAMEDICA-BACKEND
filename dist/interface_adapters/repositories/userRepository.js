@@ -692,11 +692,10 @@ class UserRepository {
                         as: "userDetails",
                     },
                 },
-                // Unwind userDetails array to simplify the user data structure
                 {
                     $unwind: {
                         path: "$userDetails",
-                        preserveNullAndEmptyArrays: true, // This ensures that reviews without user details are not dropped
+                        preserveNullAndEmptyArrays: true,
                     },
                 },
                 {
@@ -707,10 +706,10 @@ class UserRepository {
                 {
                     $group: {
                         _id: "$_id",
-                        name: { $first: "$name" }, // Include doctor's name if needed
-                        email: { $first: "$email" }, // Include doctor's email if needed
-                        averageRating: { $avg: "$reviews.rating" }, // Calculate average rating
-                        totalReviews: { $sum: 1 }, // Calculate total number of reviews
+                        name: { $first: "$name" },
+                        email: { $first: "$email" },
+                        averageRating: { $avg: "$reviews.rating" },
+                        totalReviews: { $sum: 1 },
                         reviews: {
                             $push: {
                                 rating: "$reviews.rating",

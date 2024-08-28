@@ -1,3 +1,4 @@
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -8,6 +9,13 @@ ACCESS_KEY:string
 SECRET_KEY:string
 
 }
+export interface IawsS3{
+  getObjectCommandS3(key:string):GetObjectCommand
+  getSignedUrlS3(command:GetObjectCommand,expiresIn:number):any
+  putObjectCommandS3(key:string,image:Buffer,contentType:string):void
+   deleteObjectCommandS3(key:string):void
+}
+
 const s3Config: s3ConfigType = {
   BUCKET_NAME: process.env.BUCKET_NAME as string,
   BUCKET_REGION: process.env.BUCKET_REGION as string,
@@ -15,4 +23,6 @@ const s3Config: s3ConfigType = {
   SECRET_KEY: process.env.SECRET_KEY as string,
 };
 export default s3Config
+
+
 

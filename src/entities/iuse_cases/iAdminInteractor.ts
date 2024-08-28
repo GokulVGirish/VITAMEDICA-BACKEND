@@ -2,6 +2,7 @@ import { Types } from "mongoose";
 import MongoDepartment from "../rules/departments"
 import { MongoDoctor } from "../rules/doctor";
 import { MongoUser } from "../rules/user"
+import IAppointment from "../rules/appointments";
 export interface IAdminInteractor {
   adminLogin(
     email: string,
@@ -70,4 +71,11 @@ export interface IAdminInteractor {
     message: string;
     revenue?: { label: string; totalRevenue: number }[];
   }>;
+  fetchAppointments(
+    page: number,
+    limit: number
+  ): Promise<{ success: boolean; message: string; data?: IAppointment[] }>;
+  fetchAppointmentDetail(
+    id: string
+  ): Promise<{ success: boolean; message: string; data?: IAppointment}>;
 }

@@ -1,18 +1,14 @@
 import express from "express";
 import AdminDoctorManagementControllers from "../../../../interface_adapters/controllers/admin/doctorManagement";
-import AdminInteractor from "../../../../use_cases/adminInteractor";
 import AdminRepository from "../../../../interface_adapters/repositories/adminRepository";
-import JwtService from "../../../services/jwt-generate";
 import authMiddleware from "../../middlewares/jwt-verify";
 import verifyRole from "../../middlewares/role-Authenticate";
+import AdminDoctorManagementInteractor from "../../../../use_cases/admin/doctorManagement";
+import AwsS3 from "../../../services/awsS3";
 
-
-const jwtservices = new JwtService(
-  process.env.ACCESS_TOCKEN_SECRET as string,
-  process.env.REFRESH_TOCKEN_SECRET as string
-);
+const awsS3 = new AwsS3();
 const repository = new AdminRepository();
-const interactor = new AdminInteractor(repository, jwtservices);
+const interactor = new AdminDoctorManagementInteractor(repository,awsS3);
 const controller = new AdminDoctorManagementControllers(interactor);
 const doctorManagementRouter = express.Router();
 
@@ -34,6 +30,7 @@ doctorManagementRouter.put(
   verifyRole("admin"),
   controller.verifyDoctor.bind(controller)
 );
+doctorManagementRouter.get("/:id/profile",authMiddleware,verifyRole("admin"),controller.getDoctorProfile.bind(controller))
 doctorManagementRouter.get(
   "/",
   authMiddleware,

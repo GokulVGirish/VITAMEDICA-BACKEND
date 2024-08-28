@@ -2,13 +2,14 @@ import { IDoctorInteractor } from "../../../entities/iuse_cases/iDoctorInteracto
 import { Request, Response, NextFunction } from "express";
 import { doctorDataRequest } from "../../../frameworks/express/middlewares/doctor";
 import { MulterFile } from "../../../entities/rules/multerFile";
+import IDoctorProfileInteractor from "../../../entities/iuse_cases/doctor/iProfile";
 
 
 
 
 
 class DoctorProfileControllers {
-  constructor(private readonly interactor: IDoctorInteractor) {}
+  constructor(private readonly interactor: IDoctorProfileInteractor) {}
   async getProfile(req: Request, res: Response, next: NextFunction) {
     try {
       (req as doctorDataRequest).doctorData.password = "**********";

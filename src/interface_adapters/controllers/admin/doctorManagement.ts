@@ -109,5 +109,22 @@ class AdminDoctorManagementControllers {
     }
 
   }
+  async getDoctorAppointments(req:Request,res:Response,next:NextFunction){
+    try{
+   
+      const page=parseInt(req.query.page as string)||1
+      const limit=parseInt(req.query.limit as string)||10
+      const id=req.params.id
+      const response=await this.interactor.getDoctorAppointments(id,page,limit)
+      if(response.status)return res.status(200).json({success:true,message:response.message,data:response.data})
+        return res.status(404).json({success:false,message:response.message})
+
+    }
+    catch(error){
+      console.log(error)
+      next(error)
+    }
+
+  }
 }
 export default AdminDoctorManagementControllers

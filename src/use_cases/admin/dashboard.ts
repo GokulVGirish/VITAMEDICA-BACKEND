@@ -18,18 +18,16 @@ class AdminDashboardInteractor implements IAdminDashboardInteractor {
     try {
       const revenue = await this.repository.getTodaysRevenue();
       const appointCount = await this.repository.getTodaysAppointmentCount();
-      const unverifiedDoctors =
-        await this.repository.getUnverifiedDoctorsCount();
       const users = await this.repository.getUsersCount();
-      const doctors = await this.repository.getDoctorsCount();
+      const doctorCounts=await this.repository.getDoctorCount()
 
       return {
         success: true,
         message: "success",
         revenue,
         count: appointCount,
-        unverifiedDocs: unverifiedDoctors,
-        doctors,
+        unverifiedDocs: doctorCounts.unverifiedDoctorCount,
+        doctors:doctorCounts.doctorCount,
         users,
       };
     } catch (error) {

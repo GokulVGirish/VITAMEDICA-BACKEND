@@ -1,3 +1,4 @@
+import IAppointment from "../../rules/appointments";
 import { MongoDoctor } from "../../rules/doctor";
 
 
@@ -15,6 +16,7 @@ interface IAdminDoctorManagementInteractor {
     reason: string
   ): Promise<{ success: boolean; message: string }>;
   getDoctorProfile(id:string,page:number,limit:number):Promise<{status:boolean,message:string,data?:MongoDoctor}>
+  getDoctorAppointments(id:string,page:number,limit:number):Promise<{status:boolean,message:string,data?:IAppointment[]}>
   
 }
 export default IAdminDoctorManagementInteractor

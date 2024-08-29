@@ -49,4 +49,11 @@ doctorManagementRouter.delete(
   verifyRole("admin"),
   controller.rejectDoctor.bind(controller)
 );
+doctorManagementRouter.get(
+  "/:id/appointments",
+  authMiddleware,
+  verifyRole("admin"),
+  controller.getDoctorAppointments.bind(controller)
+
+);
 export default doctorManagementRouter

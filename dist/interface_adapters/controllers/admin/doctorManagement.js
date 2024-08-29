@@ -116,5 +116,20 @@ class AdminDoctorManagementControllers {
             next(error);
         }
     }
+    async getDoctorAppointments(req, res, next) {
+        try {
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 10;
+            const id = req.params.id;
+            const response = await this.interactor.getDoctorAppointments(id, page, limit);
+            if (response.status)
+                return res.status(200).json({ success: true, message: response.message, data: response.data });
+            return res.status(404).json({ success: false, message: response.message });
+        }
+        catch (error) {
+            console.log(error);
+            next(error);
+        }
+    }
 }
 exports.default = AdminDoctorManagementControllers;

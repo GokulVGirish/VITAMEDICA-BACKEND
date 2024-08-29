@@ -22,4 +22,5 @@ doctorManagementRouter.get("/:id/profile", jwt_verify_1.default, (0, role_Authen
 doctorManagementRouter.get("/", jwt_verify_1.default, (0, role_Authenticate_1.default)("admin"), controller.getDoctors.bind(controller));
 doctorManagementRouter.put("/:id/:status", jwt_verify_1.default, (0, role_Authenticate_1.default)("admin"), controller.doctorBlockUnblock.bind(controller));
 doctorManagementRouter.delete("/:id/reject", jwt_verify_1.default, (0, role_Authenticate_1.default)("admin"), controller.rejectDoctor.bind(controller));
+doctorManagementRouter.get("/:id/appointments", jwt_verify_1.default, (0, role_Authenticate_1.default)("admin"), controller.getDoctorAppointments.bind(controller));
 exports.default = doctorManagementRouter;

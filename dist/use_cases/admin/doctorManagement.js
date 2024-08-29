@@ -150,5 +150,16 @@ class AdminDoctorManagementInteractor {
             throw error;
         }
     }
+    async getDoctorAppointments(id, page, limit) {
+        try {
+            const result = await this.repository.getDoctorAppointments(id, page, limit);
+            if (result?.length === 0)
+                return { status: false, message: "No data found" };
+            return { status: true, message: "Success", data: result };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
 }
 exports.default = AdminDoctorManagementInteractor;

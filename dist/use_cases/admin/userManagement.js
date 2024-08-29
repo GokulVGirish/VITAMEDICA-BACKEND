@@ -2,8 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const app_1 = require("../../frameworks/express/app");
 class AdminUserManagementInteractor {
-    constructor(repository) {
+    constructor(repository, AwsS3) {
         this.repository = repository;
+        this.AwsS3 = AwsS3;
     }
     async getUsers() {
         try {
@@ -56,6 +57,25 @@ class AdminUserManagementInteractor {
     async getUserProfile(id) {
         try {
             const result = await this.repository.getUserProfile(id);
+            if (!result)
+                return { status: false, message: "Couldnt fetch data" };
+            if (result.image) {
+                const command = this.AwsS3.getObjectCommandS3(result.image);
+                const url = await this.AwsS3.getSignedUrlS3(command, 3600);
+                result.image = url;
+            }
+            return { status: true, message: "Success", data: result };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getUserAppointments(id, page, limit) {
+        try {
+            const result = await this.repository.getUserAppointments(id, page, limit);
+            if (result.length === 0)
+                return { status: false, message: "Couldnt fetch data" };
+            return { status: true, message: "Success", data: result };
         }
         catch (error) {
             throw error;

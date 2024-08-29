@@ -4,10 +4,13 @@ import authMiddleware from "../../middlewares/jwt-verify";
 import verifyRole from "../../middlewares/role-Authenticate";
 import AdminUserManagementControllers from "../../../../interface_adapters/controllers/admin/userManagement";
 import AdminUserManagementInteractor from "../../../../use_cases/admin/userManagement";
+import AwsS3 from "../../../services/awsS3";
+import { markAsUntransferable } from "worker_threads";
 
 
 const repository = new AdminRepository();
-const interactor = new AdminUserManagementInteractor(repository);
+const awsS3=new AwsS3()
+const interactor = new AdminUserManagementInteractor(repository,awsS3);
 const controller = new AdminUserManagementControllers(interactor);
 const userManagementRouter = express.Router();
 userManagementRouter.get(
@@ -23,4 +26,6 @@ userManagementRouter.put(
   controller.blockUnblockUser.bind(controller)
 );
 userManagementRouter.get("/:id/profile",authMiddleware,verifyRole("admin"),controller.getUserProfile.bind(controller))
+userManagementRouter.get("/:id/appointments",authMiddleware,verifyRole("admin"),controller.getUserAppointments.bind(controller))
+
 export default userManagementRouter

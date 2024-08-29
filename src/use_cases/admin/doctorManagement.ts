@@ -1,5 +1,6 @@
 import IAdminRepository from "../../entities/irepositories/iAdminRepository";
 import IAdminDoctorManagementInteractor from "../../entities/iuse_cases/admin/iDoctorManagement";
+import IAppointment from "../../entities/rules/appointments";
 import { MongoDoctor } from "../../entities/rules/doctor";
 import { IawsS3 } from "../../entities/services/awsS3";
 import { io } from "../../frameworks/express/app";
@@ -201,6 +202,17 @@ class AdminDoctorManagementInteractor
           if (result) return { status: true, message: "success", data: result };
           return {status:false,message:"Internal Server Error"}
   
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async getDoctorAppointments(id: string, page: number, limit: number): Promise<{ status: boolean; message: string; data?: IAppointment[]; }> {
+      try{
+        const result=await this.repository.getDoctorAppointments(id,page,limit)
+        if(result?.length===0) return {status:false,message:"No data found"}
+        return {status:true,message:"Success",data:result!}
+
       }
       catch(error){
         throw error

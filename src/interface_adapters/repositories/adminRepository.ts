@@ -13,6 +13,7 @@ import { getCurrentMonthDates, getCurrentWeekDates } from "../../frameworks/serv
 import appointmentModel from "../../frameworks/mongoose/models/AppointmentSchema"
 import IAppointment from "../../entities/rules/appointments"
 import mongoose, { mongo } from "mongoose"
+import { userInfo } from "os"
 
 class AdminRepository implements IAdminRepository {
   async getAdmin(email: string): Promise<MongoAdmin | null> {
@@ -238,20 +239,20 @@ class AdminRepository implements IAdminRepository {
         },
       ]);
 
-      // Correct mapping for day names
+      
       const dayNames = [
-        "Sunday", // 1 -> Sunday
-        "Monday", // 2 -> Monday
-        "Tuesday", // 3 -> Tuesday
-        "Wednesday", // 4 -> Wednesday
-        "Thursday", // 5 -> Thursday
-        "Friday", // 6 -> Friday
-        "Saturday", // 7 -> Saturday
+        "Sunday",
+        "Monday", 
+        "Tuesday", 
+        "Wednesday", 
+        "Thursday", 
+        "Friday", 
+        "Saturday", 
       ];
 
-      // Ensure correct labels
+    
       const formattedWeeklyRevenue = weeklyRevenue.map((item) => ({
-        label: dayNames[item._id - 1], // Adjust using dayNames array index
+        label: dayNames[item._id - 1], 
         totalRevenue: item.totalRevenue,
       }));
 
@@ -314,8 +315,8 @@ class AdminRepository implements IAdminRepository {
     { label: string; totalRevenue: number }[]
   > {
     try {
-      const startOfYear = new Date(new Date().getFullYear(), 0, 1); // January 1st of the current year
-      const endOfYear = new Date(new Date().getFullYear(), 11, 31, 23, 59, 59); // December 31st of the current year
+      const startOfYear = new Date(new Date().getFullYear(), 0, 1); 
+      const endOfYear = new Date(new Date().getFullYear(), 11, 31, 23, 59, 59); 
 
       const monthlyRevenue = await appointmentModel.aggregate([
         {
@@ -324,16 +325,16 @@ class AdminRepository implements IAdminRepository {
               $gte: startOfYear,
               $lte: endOfYear,
             },
-            paymentStatus: "captured", // Consider only successful payments
+            paymentStatus: "captured", 
           },
         },
-        // Create a new field for the month of the year (1=January, 2=February, ..., 12=December)
+    
         {
           $addFields: {
             month: { $month: "$date" },
           },
         },
-        // Calculate net revenue (amount - fees) and group by month
+
         {
           $group: {
             _id: "$month",
@@ -344,13 +345,13 @@ class AdminRepository implements IAdminRepository {
             },
           },
         },
-        // Sort results by month
+      
         {
           $sort: { _id: 1 },
         },
       ]);
 
-      // Map the results to a more readable format (month names instead of numbers)
+      
       const monthNames = [
         "January",
         "February",
@@ -542,25 +543,7 @@ class AdminRepository implements IAdminRepository {
       throw error;
     }
   }
-  async getDoctorsCount(): Promise<number> {
-      try{
-        const result=(await doctorModel.countDocuments({status:"Verified"}))
-        return result
-
-      }
-      catch(error){
-        throw error
-      }
-  }
-  async getUnverifiedDoctorsCount(): Promise<number> {  
-     try {
-    const result = await doctorModel.countDocuments({ status: "Pending" });
-    return result;
-  } catch (error) {
-    throw error;
-  }
-      
-  }
+ 
   async getUsersCount(): Promise<number> {
         try {
           const result = await userModel.countDocuments({});
@@ -569,6 +552,53 @@ class AdminRepository implements IAdminRepository {
           throw error;
         }
     
+      
+  }
+  async getDoctorCount(): Promise<{ doctorCount: number; unverifiedDoctorCount: number; }> {
+    try{
+      const result = await doctorModel.aggregate([
+        {
+          $facet: {
+            doctorCount: [
+              {
+                $match: { status: "Verified" },
+              },
+              {
+                $count: "count",
+              },
+            ],
+            unverifiedDoctorCount: [
+              {
+                $match: { status: "Pending" },
+              },
+              {
+                $count: "count",
+              },
+            ],
+          },
+        },
+        {
+          $unwind: "$doctorCount",
+        },
+        {
+          $unwind: "$unverifiedDoctorCount",
+        },
+        {
+          $project: {
+            _id: 1,
+            doctorCount: "$doctorCount.count",
+            unverifiedDoctorCount: "$unverifiedDoctorCount.count",
+          },
+        },
+      ]);
+      
+      return result[0]
+
+    }
+    catch(error){
+      throw error
+    }
+
       
   }
   async fetchAppointments(page:number,limit:number): Promise<IAppointment[] | []> {
@@ -852,17 +882,151 @@ class AdminRepository implements IAdminRepository {
             address:1,
             bloodGroup:1,
             register:1,
+            image:1,
             isBlocked:1
           }
         }
       ]);
-      console.log("resultyy",result)
+     
+      return result[0]
 
     }
     catch(error){
       throw error
     }
       
+  }
+  async getDoctorAppointments(id: string, page: number, limit: number): Promise<IAppointment[] | null> {
+      try{
+        const skip=(page-1)*limit
+      
+        const result = await appointmentModel.aggregate([
+          {
+            $match: {
+              docId: new mongoose.Types.ObjectId(id),
+            },
+          },
+          {
+            $facet: {
+              data: [
+                {
+                  $sort: {
+                    createdAt: -1,
+                  },
+                },
+                {
+                  $lookup: {
+                    from: "users",
+                    localField: "userId",
+                    foreignField: "_id",
+                    as: "userInfo",
+                  },
+                },
+                {
+                  $unwind: "$userInfo",
+                },
+                {
+                  $skip: skip,
+                },
+                {
+                  $limit: limit,
+                },
+                {
+                  $project: {
+                    _id: 1,
+                    date: 1,
+                    start: 1,
+                    end: 1,
+                    createdAt: 1,
+                    fees: 1,
+                    status: 1,
+                    userName: "$userInfo.name",
+                  },
+                },
+              ],
+              totalCount: [{ $count: "count" }],
+            },
+          },
+          {
+            $unwind:"$totalCount"
+          }
+        ]);
+  
+        return result[0]
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async getUserAppointments(id: string, page: number, limit: number): Promise<IAppointment[]> {
+      try{
+        const skip=(page-1)*limit
+        console.log("skip",skip)
+        const result = await appointmentModel.aggregate([
+          {
+            $match: {
+              userId: new mongoose.Types.ObjectId(id),
+            },
+          },
+          {
+            $facet: {
+              data: [
+                {
+                  $sort: { createdAt: -1 },
+                },
+                {
+                  $lookup: {
+                    from: "doctors",
+                    localField: "docId",
+                    foreignField: "_id",
+                    as: "doctorInfo",
+                  },
+                },
+                {
+                  $unwind: "$doctorInfo",
+                },
+                {
+                  $skip: skip,
+                },
+                {
+                  $limit: limit,
+                },
+                {
+                  $project: {
+                    _id: 1,
+                    date: 1,
+                    start: 1,
+                    end: 1,
+                    createdAt: 1,
+                    fees: 1,
+                    status: 1,
+                    doctorName: "$doctorInfo.name",
+                  },
+                },
+              ],
+              totalCount:[{$count:"count"}]
+            },
+          },
+          {
+            $unwind:"$totalCount"
+          },
+          {
+            $project:{
+              data:"$data",
+              count:"$totalCount.count"
+            }
+
+          }
+        ]);
+        console.log("result",result)
+        return result[0]
+        
+
+      }
+      catch(error){
+        throw error
+      }
   }
 }
 export default AdminRepository

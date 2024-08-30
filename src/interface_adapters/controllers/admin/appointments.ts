@@ -9,9 +9,12 @@ class AdminAppointmentsControllers {
 
     async fetchAppointmentList(req:Request,res:Response,next:NextFunction){
         try{
+          
             const page = parseInt(req.query.page as string)||1;
             const limit=parseInt(req.query.limit as string)||10
-            const response=await this.Interactor.fetchAppointments(page,limit)
+            const startDate=req.query.startDate
+            const endDate=req.query.endDate
+            const response=await this.Interactor.fetchAppointments(page,limit,startDate as string,endDate as string)
             if(response.success) return res.status(200).json({success:true,message:response.message,data:response.data})
                 return res.status(500).json({success:false,message:"Something Went Wrong"})
 

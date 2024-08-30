@@ -42,10 +42,15 @@ export interface IAdminRepository {
     appointmentsCount: number;
     cancellationsCount: number;
   }>;
- 
+
   getUsersCount(): Promise<number>;
 
-  fetchAppointments(page: number, limit: number): Promise<IAppointment[] | []>;
+  fetchAppointments(
+    page: number,
+    limit: number,
+    startDate: string,
+    endDate: string
+  ): Promise<IAppointment[] | []>;
   fetchAppointmentDetail(id: string): Promise<IAppointment>;
   getDoctorProfile(
     id: string,
@@ -63,6 +68,9 @@ export interface IAdminRepository {
     page: number,
     limit: number
   ): Promise<IAppointment[]>;
-  getDoctorCount():Promise<{doctorCount:number,unverifiedDoctorCount:number}>
+  getDoctorCount(): Promise<{
+    doctorCount: number;
+    unverifiedDoctorCount: number;
+  }>;
 }
 export default IAdminRepository

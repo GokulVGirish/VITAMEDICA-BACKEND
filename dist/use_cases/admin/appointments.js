@@ -5,9 +5,9 @@ class AdminAppointmentsInteractor {
         this.repository = repository;
         this.AwsS3 = AwsS3;
     }
-    async fetchAppointments(page, limit) {
+    async fetchAppointments(page, limit, startDate, endDate) {
         try {
-            const result = await this.repository.fetchAppointments(page, limit);
+            const result = await this.repository.fetchAppointments(page, limit, startDate, endDate);
             return { success: true, message: "Sucess", data: result };
         }
         catch (error) {

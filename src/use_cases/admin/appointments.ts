@@ -8,10 +8,12 @@ class AdminAppointmentsInteractor {
   constructor(private readonly repository: IAdminRepository,private readonly AwsS3:IawsS3) {}
   async fetchAppointments(
     page: number,
-    limit: number
+    limit: number,
+    startDate:string,
+    endDate:string
   ): Promise<{ success: boolean; message: string; data?: IAppointment[] }> {
     try {
-      const result = await this.repository.fetchAppointments(page, limit);
+      const result = await this.repository.fetchAppointments(page, limit,startDate,endDate);
       return { success: true, message: "Sucess", data: result };
     } catch (error) {
       throw error;

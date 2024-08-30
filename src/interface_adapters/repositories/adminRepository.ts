@@ -601,16 +601,30 @@ class AdminRepository implements IAdminRepository {
 
       
   }
-  async fetchAppointments(page:number,limit:number): Promise<IAppointment[] | []> {
+  async fetchAppointments(page:number,limit:number,startDate:string,endDate:string): Promise<IAppointment[] | []> {
     try{
       const skip=(page-1)*limit
+      let sortCondition:1|-1=-1
+      let matchCondition:any={}
+      if(startDate && endDate){
+         matchCondition.date = {
+           $gte: new Date(startDate),
+           $lte: new Date(endDate),
+         };
+         sortCondition=1
+      }
+    
+
       const result = await appointmentModel.aggregate([
         {
           $facet: {
             data: [
               {
+                $match:matchCondition
+              },
+              {
                 $sort: {
-                  createdAt: -1,
+                  createdAt: sortCondition,
                 },
               },
               {
@@ -668,6 +682,10 @@ class AdminRepository implements IAdminRepository {
               },
             ],
             totalCount: [
+              {
+                $match:matchCondition
+
+              },
               {
                 $count: "count",
               },
@@ -757,7 +775,6 @@ class AdminRepository implements IAdminRepository {
           },
         ]);
 
-        console.log("result",result)
         return result[0]
 
       }

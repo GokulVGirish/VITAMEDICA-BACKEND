@@ -553,16 +553,28 @@ class AdminRepository {
             throw error;
         }
     }
-    async fetchAppointments(page, limit) {
+    async fetchAppointments(page, limit, startDate, endDate) {
         try {
             const skip = (page - 1) * limit;
+            let sortCondition = -1;
+            let matchCondition = {};
+            if (startDate && endDate) {
+                matchCondition.date = {
+                    $gte: new Date(startDate),
+                    $lte: new Date(endDate),
+                };
+                sortCondition = 1;
+            }
             const result = await AppointmentSchema_1.default.aggregate([
                 {
                     $facet: {
                         data: [
                             {
+                                $match: matchCondition
+                            },
+                            {
                                 $sort: {
-                                    createdAt: -1,
+                                    createdAt: sortCondition,
                                 },
                             },
                             {
@@ -619,6 +631,9 @@ class AdminRepository {
                             },
                         ],
                         totalCount: [
+                            {
+                                $match: matchCondition
+                            },
                             {
                                 $count: "count",
                             },
@@ -704,7 +719,6 @@ class AdminRepository {
                     },
                 },
             ]);
-            console.log("result", result);
             return result[0];
         }
         catch (error) {

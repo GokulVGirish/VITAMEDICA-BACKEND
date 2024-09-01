@@ -23,4 +23,8 @@ doctorSearchBookingRouter.get("/:id/profile", controller.getDoctorPage.bind(cont
 doctorSearchBookingRouter.get("/:id/profile/reviews", controller.fetchMoreReviews.bind(controller));
 doctorSearchBookingRouter.get("/:doctorId/availability", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.getAvailableDate.bind(controller));
 doctorSearchBookingRouter.get("/:doctorId/slots", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.getTimeSlots.bind(controller));
+doctorSearchBookingRouter.get("/favorites", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.fetchFavoriteDoctors.bind(controller));
+doctorSearchBookingRouter.delete("/favorites/:id", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.removeDoctorFavorites.bind(controller));
+doctorSearchBookingRouter.post("/favorites/:id", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.addDoctorFavorites.bind(controller));
+doctorSearchBookingRouter.get("/favorites/list", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.favoriteDoctorsList.bind(controller));
 exports.default = doctorSearchBookingRouter;

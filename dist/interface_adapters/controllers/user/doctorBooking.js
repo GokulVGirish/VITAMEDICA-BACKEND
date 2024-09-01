@@ -159,5 +159,64 @@ class DoctorSearchBookingControllers {
             next(error);
         }
     }
+    async fetchFavoriteDoctors(req, res, next) {
+        try {
+            const id = req.userData._id;
+            const response = await this.interactor.fetchFavoriteDoctors(id);
+            if (response.success)
+                return res.status(200).json({ success: true, message: response.message, favorites: response.favorites });
+            return res.status(404).json({ success: false, message: response.message });
+        }
+        catch (error) {
+            console.log(error);
+            throw error;
+        }
+    }
+    async removeDoctorFavorites(req, res, next) {
+        try {
+            const userId = req.userData._id;
+            const docId = req.params.id;
+            const response = await this.interactor.removeDoctorFavorites(userId, docId);
+            if (response)
+                return res.status(200).json({ success: true });
+            else
+                return res.status(500).json({ success: false });
+        }
+        catch (error) {
+            console.log(error);
+            next(error);
+        }
+    }
+    async addDoctorFavorites(req, res, next) {
+        try {
+            const userId = req.userData._id;
+            const docId = req.params.id;
+            const response = await this.interactor.addDoctorFavorites(userId, docId);
+            if (response)
+                return res.status(200).json({ success: true });
+            else
+                return res.status(500).json({ success: false });
+        }
+        catch (error) {
+            console.log(error);
+            next(error);
+        }
+    }
+    async favoriteDoctorsList(req, res, next) {
+        try {
+            const userId = req.userData._id;
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 6;
+            const skip = (page - 1) * limit;
+            const response = await this.interactor.getFavoriteDoctorsList(userId, skip, limit);
+            if (response.status)
+                return res.status(200).json({ success: true, message: response.message, doctors: response.doctors, totalCount: response.totalPages });
+            return res.status(404).json({ success: false, message: response.message });
+        }
+        catch (error) {
+            console.log(error);
+            next(error);
+        }
+    }
 }
 exports.default = DoctorSearchBookingControllers;

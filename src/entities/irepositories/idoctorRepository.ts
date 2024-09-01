@@ -108,19 +108,26 @@ export interface IDoctorRepository {
     prescription: string
   ): Promise<boolean>;
   resetPassword(email: string, password: string): Promise<boolean>;
-  getYearlyRevenue(
+  getTodaysRevenue(id: Types.ObjectId): Promise<{
+    revenue: number;
+    count?: { appointmentsCount: number; cancellationsCount: number };
+  }>;
+  getWeeklyReport(
     id: Types.ObjectId
-  ): Promise<{ _id: number; totalRevenue: number }[]>;
-  getMonthlyRevenue(id: Types.ObjectId): Promise<{
-    month: string; 
-    totalRevenue: number;
-  }[]>;
-  getWeeklyAppointmentCount(id:Types.ObjectId):Promise<{
-    appointmentsCount: number,
-    cancellationsCount: number,
-  }>
-  getMonthlyAppointmentCount(id:Types.ObjectId):Promise<{
-    appointmentsCount: number,
-    cancellationsCount: number,
-  }>
+  ): Promise<{
+    count?: { appointmentsCount: number; cancellationsCount: number };
+    revenue?: { label: string; totalRevenue: number }[];
+  }>;
+  getMonthlyReport(
+    id: Types.ObjectId
+  ): Promise<{
+    count?: { appointmentsCount: number; cancellationsCount: number };
+    revenue?: { label: string; totalRevenue: number }[];
+  }>;
+  getYearlyReport(
+    id: Types.ObjectId
+  ): Promise<{
+    count?: { appointmentsCount: number; cancellationsCount: number };
+    revenue?: { label: number; totalRevenue: number }[];
+  }>;
 }

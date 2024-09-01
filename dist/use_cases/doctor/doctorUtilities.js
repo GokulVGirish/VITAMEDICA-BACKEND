@@ -40,20 +40,45 @@ class DoctorUtilityInteractor {
             throw error;
         }
     }
-    async getYearlyRevenue(id) {
+    async getTodaysRevenue(id) {
         try {
-            const result = await this.Repository.getYearlyRevenue(id);
-            const monthlyRevenue = await this.Repository.getMonthlyRevenue(id);
-            const weeklyAppointmentCount = await this.Repository.getWeeklyAppointmentCount(id);
-            const monthlyAppointmentCount = await this.Repository.getMonthlyAppointmentCount(id);
-            return {
-                status: true,
-                message: "success",
-                dataYearly: result,
-                dataMonthly: monthlyRevenue,
-                weeklyCount: weeklyAppointmentCount,
-                monthlyCount: monthlyAppointmentCount,
-            };
+            const result = await this.Repository.getTodaysRevenue(id);
+            if (result)
+                return { status: true, message: "Success", data: result };
+            return { status: false, message: "No data found" };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getWeeklyReport(id) {
+        try {
+            const result = await this.Repository.getWeeklyReport(id);
+            if (result)
+                return { success: true, message: "Success", data: result };
+            return { success: false, message: "Couldnt find data" };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getMonthlyReport(id) {
+        try {
+            const result = await this.Repository.getMonthlyReport(id);
+            if (result)
+                return { success: true, message: "Success", data: result };
+            return { success: false, message: "Couldnt find data" };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getYearlyReport(id) {
+        try {
+            const response = await this.Repository.getYearlyReport(id);
+            if (response)
+                return { success: true, message: "Success", data: response };
+            return { success: false, message: "Couldnt find data" };
         }
         catch (error) {
             throw error;

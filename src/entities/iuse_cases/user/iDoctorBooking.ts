@@ -70,5 +70,26 @@ interface IDoctorBookingInteractor {
   getDoctorBySearch(
     searchKey: string
   ): Promise<{ status: boolean; message: string; doctors?: MongoDoctor[] }>;
+  fetchFavoriteDoctors(id: Types.ObjectId): Promise<{
+    success: boolean;
+    message: string;
+    favorites?: [Types.ObjectId];
+  }>;
+  removeDoctorFavorites(
+    userId: Types.ObjectId,
+    docId: string
+  ): Promise<boolean>;
+  addDoctorFavorites(userId: Types.ObjectId, docId: string): Promise<boolean>;
+  getFavoriteDoctorsList(
+    userId:Types.ObjectId,
+    skip: number,
+    limit: number
+  ): Promise<{
+    status: boolean;
+    message: string;
+    errorCode?: string;
+    doctors?: MongoDoctor[];
+    totalPages?: number;
+  }>;
 }
 export default IDoctorBookingInteractor

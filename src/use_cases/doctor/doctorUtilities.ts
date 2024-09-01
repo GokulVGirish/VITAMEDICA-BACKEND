@@ -8,7 +8,10 @@ import { IawsS3 } from "../../entities/services/awsS3";
 
 
 class DoctorUtilityInteractor implements IDoctorUtilityInteractor {
-  constructor(private readonly Repository: IDoctorRepository,private readonly AwsS3:IawsS3) {}
+  constructor(
+    private readonly Repository: IDoctorRepository,
+    private readonly AwsS3: IawsS3
+  ) {}
   async getDepartments(): Promise<{
     status: boolean;
     departments?: MongoDepartment[];
@@ -46,11 +49,27 @@ class DoctorUtilityInteractor implements IDoctorUtilityInteractor {
       const aadharBackKey = `${folderName}/aadharBack-${docId}.${
         file4.mimetype.split("/")[1]
       }`;
-      await this.AwsS3.putObjectCommandS3(certificateImageKey,file1.buffer,file1.mimetype);
-      await this.AwsS3.putObjectCommandS3(qualificationImageKey,file2.buffer,file2.mimetype);
-      await this.AwsS3.putObjectCommandS3(aadharFrontKey,file3.buffer,file3.mimetype);
-      await this.AwsS3.putObjectCommandS3(aadharBackKey,file4.buffer,file4.mimetype);
-     await this.Repository.documentsUpdate(
+      await this.AwsS3.putObjectCommandS3(
+        certificateImageKey,
+        file1.buffer,
+        file1.mimetype
+      );
+      await this.AwsS3.putObjectCommandS3(
+        qualificationImageKey,
+        file2.buffer,
+        file2.mimetype
+      );
+      await this.AwsS3.putObjectCommandS3(
+        aadharFrontKey,
+        file3.buffer,
+        file3.mimetype
+      );
+      await this.AwsS3.putObjectCommandS3(
+        aadharBackKey,
+        file4.buffer,
+        file4.mimetype
+      );
+      await this.Repository.documentsUpdate(
         docId,
         certificateImageKey,
         qualificationImageKey,
@@ -65,36 +84,61 @@ class DoctorUtilityInteractor implements IDoctorUtilityInteractor {
     }
   }
 
-  async getYearlyRevenue(id: Types.ObjectId): Promise<{
+  async getTodaysRevenue(
+    id: Types.ObjectId
+  ): Promise<{
     status: boolean;
     message: string;
-    dataYearly?: { _id: number; totalRevenue: number }[];
-    dataMonthly?: {
-      month: string;
-      totalRevenue: number;
-    }[];
-    weeklyCount?: { appointmentsCount: number; cancellationsCount: number };
-    monthlyCount?: { appointmentsCount: number; cancellationsCount: number };
+    data?: {
+      revenue: number;
+      count?: { appointmentsCount: number; cancellationsCount: number };
+    };
   }> {
     try {
-      const result = await this.Repository.getYearlyRevenue(id);
-      const monthlyRevenue = await this.Repository.getMonthlyRevenue(id);
-      const weeklyAppointmentCount =
-        await this.Repository.getWeeklyAppointmentCount(id);
-      const monthlyAppointmentCount =
-        await this.Repository.getMonthlyAppointmentCount(id);
-
-      return {
-        status: true,
-        message: "success",
-        dataYearly: result,
-        dataMonthly: monthlyRevenue,
-        weeklyCount: weeklyAppointmentCount,
-        monthlyCount: monthlyAppointmentCount,
-      };
+      const result = await this.Repository.getTodaysRevenue(id);
+      if (result) return { status: true, message: "Success", data: result };
+      return { status: false, message: "No data found" };
     } catch (error) {
       throw error;
     }
+  }
+  async getWeeklyReport(id: Types.ObjectId): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      count?: { appointmentsCount: number; cancellationsCount: number };
+      revenue?: { label: string; totalRevenue: number }[];
+    };
+  }> {
+    try {
+      const result = await this.Repository.getWeeklyReport(id);
+      if (result) return { success: true, message: "Success",data:result };
+      return {success:false,message:"Couldnt find data"}
+    } catch (error) {
+      throw error;
+    }
+  }
+  async getMonthlyReport(id: Types.ObjectId): Promise<{ success: boolean; message: string; data?: { count?: { appointmentsCount: number; cancellationsCount: number; }; revenue?: { label: string; totalRevenue: number; }[]; }; }> {
+      try{
+        const result=await this.Repository.getMonthlyReport(id)
+        if(result) return {success:true,message:"Success",data:result}
+        return {success:false,message:"Couldnt find data"}
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async getYearlyReport(id: Types.ObjectId): Promise<{ success: boolean; message: string; data?: { count?: { appointmentsCount: number; cancellationsCount: number; }; revenue?: { label: number; totalRevenue: number; }[]; }; }> {
+      try{
+        const response=await this.Repository.getYearlyReport(id)
+      if (response) return { success: true, message: "Success", data: response };
+      return { success: false, message: "Couldnt find data" };
+
+      }
+      catch(error){
+        throw error
+      }
   }
 }
 export default DoctorUtilityInteractor

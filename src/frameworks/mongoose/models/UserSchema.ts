@@ -59,6 +59,12 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+   favorites: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Doctor",
+    },
+  ],
   wallet: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "UserWallet",

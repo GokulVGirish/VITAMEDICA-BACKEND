@@ -125,5 +125,20 @@ interface IUserRepository {
     totalReviews: number;
     latestReviews: Review[];
   }>;
+  fetchFavoriteDoctors(id: Types.ObjectId): Promise<[Types.ObjectId]>;
+  removeDoctorFavorites(
+    userId: Types.ObjectId,
+    docId: string
+  ): Promise<boolean>;
+  addDoctorFavorites(userId: Types.ObjectId, docId: string): Promise<boolean>;
+  getFavoriteDoctorsList(
+    userId: Types.ObjectId,
+    skip: number,
+    limit: number
+  ): Promise<{
+    status:boolean;
+    doctors?: MongoDoctor[];
+    totalPages?: number;
+  }>;
 }
 export default IUserRepository

@@ -16,16 +16,37 @@ interface IDoctorUtilityInteractor {
     file3: MulterFile,
     file4: MulterFile
   ): Promise<{ status: boolean }>;
-  getYearlyRevenue(id: Types.ObjectId): Promise<{
+  getTodaysRevenue(id: Types.ObjectId): Promise<{
     status: boolean;
     message: string;
-    dataYearly?: { _id: number; totalRevenue: number }[];
-    dataMonthly?: {
-      month: string;
-      totalRevenue: number;
-    }[];
-    weeklyCount?: { appointmentsCount: number; cancellationsCount: number };
-    monthlyCount?: { appointmentsCount: number; cancellationsCount: number };
+    data?: {
+      revenue: number;
+      count?: { appointmentsCount: number; cancellationsCount: number };
+    };
+  }>;
+  getWeeklyReport(id: Types.ObjectId): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      count?: { appointmentsCount: number; cancellationsCount: number };
+      revenue?: { label: string; totalRevenue: number }[];
+    };
+  }>;
+  getMonthlyReport(id: Types.ObjectId): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      count?: { appointmentsCount: number; cancellationsCount: number };
+      revenue?: { label: string; totalRevenue: number }[];
+    };
+  }>;
+  getYearlyReport(id: Types.ObjectId): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      count?: { appointmentsCount: number; cancellationsCount: number };
+      revenue?: { label: number; totalRevenue: number }[];
+    };
   }>;
 }
 export default IDoctorUtilityInteractor

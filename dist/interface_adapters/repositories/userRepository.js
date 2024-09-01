@@ -238,9 +238,11 @@ class UserRepository {
         try {
             const response = await DoctorSchema_1.default
                 .find({
-                $and: [{ name: { $regex: searchKey } },
+                $and: [
+                    { name: { $regex: searchKey } },
                     { status: "Verified" },
-                    { complete: true }]
+                    { complete: true },
+                ],
             })
                 .lean()
                 .populate({ path: "department", select: "name" })
@@ -549,7 +551,7 @@ class UserRepository {
                     docId: docId,
                     amount: amount,
                     cancelledBy,
-                    reason
+                    reason,
                 });
                 if (result)
                     return true;
@@ -636,16 +638,17 @@ class UserRepository {
                     $project: {
                         _id: 0,
                         date: 1,
-                        start: 1, end: 1,
+                        start: 1,
+                        end: 1,
                         amount: 1,
                         prescription: 1,
                         createdAt: 1,
                         docName: "$docInfo.name",
                         docImage: "$docInfo.image",
                         status: 1,
-                        docDegree: "$docInfo.degree"
-                    }
-                }
+                        docDegree: "$docInfo.degree",
+                    },
+                },
             ]);
             return appointment[0];
         }
@@ -732,6 +735,144 @@ class UserRepository {
                 },
             ]);
             return result[0];
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async fetchFavoriteDoctors(id) {
+        try {
+            const result = await UserSchema_1.default.aggregate([
+                {
+                    $match: { _id: new mongoose_1.default.Types.ObjectId(id) },
+                },
+                {
+                    $set: {
+                        favorites: { $ifNull: ["$favorites", []] },
+                    },
+                },
+            ]);
+            return result[0].favorites;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async removeDoctorFavorites(userId, docId) {
+        try {
+            const result = await UserSchema_1.default.updateOne({ _id: userId }, { $pull: { favorites: new mongoose_1.default.Types.ObjectId(docId) } });
+            return result.modifiedCount > 0;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async addDoctorFavorites(userId, docId) {
+        try {
+            const result = await UserSchema_1.default.updateOne({ _id: userId }, { $addToSet: { favorites: new mongoose_1.default.Types.ObjectId(docId) } });
+            return result.modifiedCount > 0;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getFavoriteDoctorsList(userId, skip, limit) {
+        try {
+            const favoriteDoctors = await UserSchema_1.default.aggregate([
+                {
+                    $match: {
+                        _id: new mongoose_1.default.Types.ObjectId(userId)
+                    }
+                },
+                {
+                    $set: {
+                        favorites: {
+                            $ifNull: ["$favorites", []]
+                        }
+                    }
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        favorites: 1
+                    }
+                }
+            ]);
+            const favorites = favoriteDoctors[0].favorites;
+            if (favorites.length === 0)
+                return { status: false };
+            const doctors = await DoctorSchema_1.default.aggregate([
+                {
+                    $match: {
+                        _id: { $in: favorites },
+                    },
+                },
+                {
+                    $facet: {
+                        data: [
+                            {
+                                $set: {
+                                    reviews: { $ifNull: ["$reviews", []] },
+                                },
+                            },
+                            {
+                                $addFields: {
+                                    averageRating: {
+                                        $avg: "$reviews.rating",
+                                    },
+                                    totalReviews: {
+                                        $size: "$reviews",
+                                    },
+                                },
+                            },
+                            {
+                                $lookup: {
+                                    from: "departments",
+                                    localField: "department",
+                                    foreignField: "_id",
+                                    as: "departmentInfo",
+                                },
+                            },
+                            {
+                                $unwind: "$departmentInfo",
+                            },
+                            {
+                                $project: {
+                                    _id: 1,
+                                    name: 1,
+                                    department: { name: "$departmentInfo.name" },
+                                    image: 1,
+                                    degree: 1,
+                                    fees: 1,
+                                    averageRating: 1,
+                                    totalReviews: 1,
+                                },
+                            },
+                            {
+                                $skip: skip,
+                            },
+                            {
+                                $limit: limit,
+                            },
+                        ],
+                        count: [
+                            {
+                                $count: "count",
+                            },
+                        ],
+                    },
+                },
+                {
+                    $unwind: "$count",
+                },
+                {
+                    $project: {
+                        data: 1,
+                        count: "$count.count",
+                    },
+                },
+            ]);
+            return { status: true, doctors: doctors[0].data, totalPages: doctors[0].count };
         }
         catch (error) {
             throw error;

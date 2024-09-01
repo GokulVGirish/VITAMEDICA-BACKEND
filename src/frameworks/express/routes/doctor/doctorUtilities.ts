@@ -26,5 +26,9 @@ doctorUtilitiesRouter.post(
   upload.array("images"),
   controller.uploadDocuments.bind(controller)
 );
-doctorUtilitiesRouter.get("/dash/data",authMiddleware,verifyRole("doctor"),getDoctor,controller.getYearlyRevenue.bind(controller));
+doctorUtilitiesRouter.get("/dash/today",authMiddleware,verifyRole("doctor"),getDoctor,controller.getTodaysRevenue.bind(controller));
+doctorUtilitiesRouter.get("/dash/weekly",authMiddleware,verifyRole("doctor"),getDoctor,controller.getWeeklyRevenue.bind(controller))
+doctorUtilitiesRouter.get("/dash/monthly",authMiddleware,verifyRole("doctor"),getDoctor,controller.getMonthlyRevenue.bind(controller))
+doctorUtilitiesRouter.get("/dash/yearly",authMiddleware,verifyRole("doctor"),getDoctor,controller.getYearlyRevenue.bind(controller))
+
 export default doctorUtilitiesRouter;

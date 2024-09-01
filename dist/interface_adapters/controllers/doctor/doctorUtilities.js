@@ -51,13 +51,67 @@ class DoctorExtraControllers {
             next(error);
         }
     }
+    async getTodaysRevenue(req, res, next) {
+        try {
+            const id = req.doctorData._id;
+            const response = await this.interactor.getTodaysRevenue(id);
+            if (response.status)
+                return res.status(200).json({ success: true, message: response.message, data: response.data });
+            return res.status(404).json({ success: false, message: response.message });
+        }
+        catch (error) {
+            console.log(error);
+            next(error);
+        }
+    }
+    async getWeeklyRevenue(req, res, next) {
+        try {
+            const id = req.doctorData._id;
+            const response = await this.interactor.getWeeklyReport(id);
+            if (response.success)
+                return res
+                    .status(200)
+                    .json({
+                    success: true,
+                    message: response.message,
+                    data: response.data,
+                });
+            return res
+                .status(404)
+                .json({ success: false, message: response.message });
+        }
+        catch (error) {
+            console.log(error);
+            next(error);
+        }
+    }
+    async getMonthlyRevenue(req, res, next) {
+        try {
+            const id = req.doctorData._id;
+            const response = await this.interactor.getMonthlyReport(id);
+            if (response.success)
+                return res.status(200).json({
+                    success: true,
+                    message: response.message,
+                    data: response.data,
+                });
+            return res.status(404).json({ success: false, message: response.message });
+        }
+        catch (error) {
+            console.log(error);
+            next(error);
+        }
+    }
     async getYearlyRevenue(req, res, next) {
         try {
             const id = req.doctorData._id;
-            const response = await this.interactor.getYearlyRevenue(id);
-            if (response.status)
-                return res.status(200).json({ success: true, message: response.message, dataYearly: response.dataYearly, dataMonthly: response.dataMonthly, weeklyCount: response.weeklyCount, monthlyCount: response.monthlyCount });
-            return res.status(404).json({ success: false, message: response.message });
+            const response = await this.interactor.getYearlyReport(id);
+            if (response.success)
+                return res.status(200).json({ success: true, message: response.message, data: response.data,
+                });
+            return res
+                .status(404)
+                .json({ success: false, message: response.message });
         }
         catch (error) {
             console.log(error);

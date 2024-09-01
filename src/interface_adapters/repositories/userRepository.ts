@@ -14,6 +14,7 @@ import doctorWalletModal from "../../frameworks/mongoose/models/DoctorWalletSche
 import IUserWallet from "../../entities/rules/userWalletType";
 import userWalletModal from "../../frameworks/mongoose/models/UserWalletSchema";
 import cancelledAppointmentsModel from "../../frameworks/mongoose/models/cancelledAppointmentSchema";
+import { count } from "console";
 
 const moment = require("moment");
 
@@ -178,57 +179,54 @@ class UserRepository implements IUserRepository {
     limit: number
   ): Promise<{ doctors?: MongoDoctor[]; totalPages?: number }> {
     try {
- const result = await doctorModel.aggregate([
+      const result = await doctorModel.aggregate([
+        {
+          $match: { status: "Verified", complete: true },
+        },
 
-   {
-     $match: { status: "Verified", complete: true },
-   },
-  
-   {
-     $set: {
-       reviews: { $ifNull: ["$reviews", []] },
-     },
-   },
+        {
+          $set: {
+            reviews: { $ifNull: ["$reviews", []] },
+          },
+        },
 
-   {
-     $addFields: {
-       averageRating: { $avg: "$reviews.rating" },
-       totalReviews: { $size: "$reviews" },
-     },
-   },
+        {
+          $addFields: {
+            averageRating: { $avg: "$reviews.rating" },
+            totalReviews: { $size: "$reviews" },
+          },
+        },
 
-   {
-     $lookup: {
-       from: "departments",
-       localField: "department",
-       foreignField: "_id",
-       as: "department",
-     },
-   },
+        {
+          $lookup: {
+            from: "departments",
+            localField: "department",
+            foreignField: "_id",
+            as: "department",
+          },
+        },
 
-   {
-     $unwind: "$department",
-   },
-   
-   {
-     $project: {
-       _id: 1,
-       name: 1,
-       department: { name: 1 },
-       image: 1,
-       degree: 1,
-       fees: 1,
-       averageRating: 1,
-       totalReviews: 1,
-     },
-   },
+        {
+          $unwind: "$department",
+        },
 
-   { $skip: skip },
-   { $limit: limit },
- ]);
-   
-       
-        
+        {
+          $project: {
+            _id: 1,
+            name: 1,
+            department: { name: 1 },
+            image: 1,
+            degree: 1,
+            fees: 1,
+            averageRating: 1,
+            totalReviews: 1,
+          },
+        },
+
+        { $skip: skip },
+        { $limit: limit },
+      ]);
+
       const totalDoctors = await doctorModel.countDocuments({
         status: "Verified",
         complete: true,
@@ -265,23 +263,22 @@ class UserRepository implements IUserRepository {
     }
   }
   async getDoctorBySearch(searchKey: RegExp): Promise<MongoDoctor[] | null> {
-      try{
-
-        const response = await doctorModel
-          .find({
-          $and:[  {name: { $regex: searchKey }},
-            {status: "Verified"},
-           { complete: true}]
-          })
-          .lean()
-          .populate({ path: "department", select: "name" })
-          .select("_id name department image degree fees");
-          return response
-
-      }
-      catch(error){
-        throw error
-      }
+    try {
+      const response = await doctorModel
+        .find({
+          $and: [
+            { name: { $regex: searchKey } },
+            { status: "Verified" },
+            { complete: true },
+          ],
+        })
+        .lean()
+        .populate({ path: "department", select: "name" })
+        .select("_id name department image degree fees");
+      return response;
+    } catch (error) {
+      throw error;
+    }
   }
   async getDoctor(id: string): Promise<MongoDoctor | null> {
     try {
@@ -662,7 +659,7 @@ class UserRepository implements IUserRepository {
     appointmentId: Types.ObjectId,
     amount: string,
     cancelledBy: string,
-    reason:string
+    reason: string
   ): Promise<boolean> {
     try {
       try {
@@ -671,7 +668,7 @@ class UserRepository implements IUserRepository {
           docId: docId,
           amount: amount,
           cancelledBy,
-          reason
+          reason,
         });
         if (result) return true;
         else return false;
@@ -732,51 +729,51 @@ class UserRepository implements IUserRepository {
   }
   async getAppointment(appoinmentId: string): Promise<IAppointment | null> {
     try {
-    const appointment = await appointmentModel.aggregate([
-      {
-        $match: {
-          _id: new mongoose.Types.ObjectId(appoinmentId),
+      const appointment = await appointmentModel.aggregate([
+        {
+          $match: {
+            _id: new mongoose.Types.ObjectId(appoinmentId),
+          },
         },
-      },
-      {
-        $lookup: {
-          localField: "docId",
-          foreignField: "_id",
-          from: "doctors",
-          as: "docInfo",
+        {
+          $lookup: {
+            localField: "docId",
+            foreignField: "_id",
+            from: "doctors",
+            as: "docInfo",
+          },
         },
-      },
-      {
-        $unwind: "$docInfo",
-      },
-      {
-        $lookup: {
-          localField: "docInfo.department",
-          foreignField: "_id",
-          from: "departments",
-          as: "depatmentInfo",
+        {
+          $unwind: "$docInfo",
         },
-      },
-      {
-        $unwind: "$depatmentInfo",
-      },
-      {
-        $project:{
-          _id:0,
-          date:1,
-          start:1,end:1,
-          amount:1,
-          prescription:1,
-          createdAt:1,
-          docName:"$docInfo.name",
-          docImage:"$docInfo.image",
-          status:1,
-          docDegree:"$docInfo.degree"
-
-        }
-      }
-    ]);
-        return appointment[0] as IAppointment
+        {
+          $lookup: {
+            localField: "docInfo.department",
+            foreignField: "_id",
+            from: "departments",
+            as: "depatmentInfo",
+          },
+        },
+        {
+          $unwind: "$depatmentInfo",
+        },
+        {
+          $project: {
+            _id: 0,
+            date: 1,
+            start: 1,
+            end: 1,
+            amount: 1,
+            prescription: 1,
+            createdAt: 1,
+            docName: "$docInfo.name",
+            docImage: "$docInfo.image",
+            status: 1,
+            docDegree: "$docInfo.degree",
+          },
+        },
+      ]);
+      return appointment[0] as IAppointment;
     } catch (error) {
       throw error;
     }
@@ -808,67 +805,217 @@ class UserRepository implements IUserRepository {
       throw error;
     }
   }
-  async fetchDoctorRating(id: string,page:number,limit:number): Promise<{ _id: Types.ObjectId; name: string; email: string; averageRating: number; totalReviews: number; latestReviews: Review[]; }> {
-    console.log("id",id,page,limit)
-     const skipReviews = (page - 1) * limit;
-      try{
-        const result = await doctorModel.aggregate([
-          {
-            $match: {
-              _id: new mongoose.Types.ObjectId(id),
-            },
+  async fetchDoctorRating(
+    id: string,
+    page: number,
+    limit: number
+  ): Promise<{
+    _id: Types.ObjectId;
+    name: string;
+    email: string;
+    averageRating: number;
+    totalReviews: number;
+    latestReviews: Review[];
+  }> {
+    console.log("id", id, page, limit);
+    const skipReviews = (page - 1) * limit;
+    try {
+      const result = await doctorModel.aggregate([
+        {
+          $match: {
+            _id: new mongoose.Types.ObjectId(id),
           },
-          {
-            $unwind: "$reviews",
+        },
+        {
+          $unwind: "$reviews",
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "reviews.userId",
+            foreignField: "_id",
+            as: "userDetails",
           },
-          {
-            $lookup: {
-              from: "users",
-              localField: "reviews.userId",
-              foreignField: "_id",
-              as: "userDetails",
-            },
+        },
+        {
+          $unwind: {
+            path: "$userDetails",
+            preserveNullAndEmptyArrays: true,
           },
-          {
-            $unwind: {
-              path: "$userDetails",
-              preserveNullAndEmptyArrays: true, 
-            },
+        },
+        {
+          $sort: {
+            "reviews.createdAt": -1,
           },
-          {
-            $sort: {
-              "reviews.createdAt": -1,
-            },
-          },
-          {
-            $group: {
-              _id: "$_id",
-              name: { $first: "$name" },
-              email: { $first: "$email" }, 
-              averageRating: { $avg: "$reviews.rating" }, 
-              totalReviews: { $sum: 1 }, 
-              reviews: {
-                $push: {
-                  rating: "$reviews.rating",
-                  comment: "$reviews.comment",
-                  createdAt: "$reviews.createdAt",
-                  userId: "$reviews.userId",
-                  userName: "$userDetails.name", 
-                },
+        },
+        {
+          $group: {
+            _id: "$_id",
+            name: { $first: "$name" },
+            email: { $first: "$email" },
+            averageRating: { $avg: "$reviews.rating" },
+            totalReviews: { $sum: 1 },
+            reviews: {
+              $push: {
+                rating: "$reviews.rating",
+                comment: "$reviews.comment",
+                createdAt: "$reviews.createdAt",
+                userId: "$reviews.userId",
+                userName: "$userDetails.name",
               },
             },
           },
+        },
+        {
+          $project: {
+            _id: 1,
+            name: 1,
+            averageRating: 1,
+            totalReviews: 1,
+            reviews: { $slice: ["$reviews", skipReviews, limit] },
+          },
+        },
+      ]);
+      return result[0];
+    } catch (error) {
+      throw error;
+    }
+  }
+  async fetchFavoriteDoctors(id: Types.ObjectId): Promise<[Types.ObjectId]> {
+    try {
+      const result = await userModel.aggregate([
+        {
+          $match: { _id: new mongoose.Types.ObjectId(id) },
+        },
+        {
+          $set: {
+            favorites: { $ifNull: ["$favorites", []] },
+          },
+        },
+      ]);
+      return result[0].favorites;
+    } catch (error) {
+      throw error;
+    }
+  }
+  async removeDoctorFavorites(
+    userId: Types.ObjectId,
+    docId: string
+  ): Promise<boolean> {
+    try {
+      const result =await userModel.updateOne({_id:userId},{$pull:{favorites:new mongoose.Types.ObjectId(docId)}});
+      return result.modifiedCount>0
+    } catch (error) {
+      throw error;
+    }
+  }
+  async addDoctorFavorites(userId: Types.ObjectId, docId: string): Promise<boolean> {
+      try{
+        
+        const result=await userModel.updateOne({_id:userId},{$addToSet:{favorites:new mongoose.Types.ObjectId(docId)}})
+        return result.modifiedCount>0
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async getFavoriteDoctorsList(userId: Types.ObjectId, skip: number, limit: number): Promise<{status:boolean; doctors?: MongoDoctor[]; totalPages?: number; }> {
+      try{
+        const favoriteDoctors=await userModel.aggregate([
+          {
+            $match:{
+              _id:new mongoose.Types.ObjectId(userId)
+            }
+          },
+          {
+            $set:{
+              favorites:{
+                $ifNull:["$favorites",[]]
+              }
+            }
+          },
+          {
+            $project:{
+              _id:0,
+              favorites:1
+            }
+          }
+        ])
+        const favorites=favoriteDoctors[0].favorites
+        if(favorites.length===0)return {status:false}
+        const doctors = await doctorModel.aggregate([
+          {
+            $match: {
+              _id: { $in: favorites },
+            },
+          },
+          {
+            $facet: {
+              data: [
+                {
+                  $set: {
+                    reviews: { $ifNull: ["$reviews", []] },
+                  },
+                },
+                {
+                  $addFields: {
+                    averageRating: {
+                      $avg: "$reviews.rating",
+                    },
+                    totalReviews: {
+                      $size: "$reviews",
+                    },
+                  },
+                },
+                {
+                  $lookup: {
+                    from: "departments",
+                    localField: "department",
+                    foreignField: "_id",
+                    as: "departmentInfo",
+                  },
+                },
+                {
+                  $unwind: "$departmentInfo",
+                },
+                {
+                  $project: {
+                    _id: 1,
+                    name: 1,
+                    department: { name: "$departmentInfo.name" },
+                    image: 1,
+                    degree: 1,
+                    fees: 1,
+                    averageRating: 1,
+                    totalReviews: 1,
+                  },
+                },
+                {
+                  $skip: skip,
+                },
+                {
+                  $limit: limit,
+                },
+              ],
+              count: [
+                {
+                  $count: "count",
+                },
+              ],
+            },
+          },
+          {
+            $unwind: "$count",
+          },
           {
             $project: {
-              _id: 1,
-              name: 1,
-              averageRating: 1,
-              totalReviews: 1,
-              reviews: { $slice: ["$reviews", skipReviews, limit] },
+              data: 1,
+              count: "$count.count",
             },
           },
         ]);
-        return result[0]
+      return {status:true,doctors:doctors[0].data,totalPages:doctors[0].count}
 
       }
       catch(error){

@@ -1,5 +1,5 @@
 import { IDoctorInteractor } from "../../../entities/iuse_cases/iDoctorInteractor";
-import { Request, Response, NextFunction } from "express";
+import e, { Request, Response, NextFunction } from "express";
 import { doctorDataRequest } from "../../../frameworks/express/middlewares/doctor";
 import IDoctorUtilityInteractor from "../../../entities/iuse_cases/doctor/iDoctorUtilities";
 
@@ -56,12 +56,13 @@ class DoctorExtraControllers {
       next(error);
     }
   }
-async getYearlyRevenue(req:Request,res:Response,next:NextFunction){
+async getTodaysRevenue(req:Request,res:Response,next:NextFunction){
   try{
     const id=(req as doctorDataRequest).doctorData._id
-    const response=await this.interactor.getYearlyRevenue(id)
-    if(response.status)return res.status(200).json({success:true,message:response.message,dataYearly:response.dataYearly,dataMonthly:response.dataMonthly,weeklyCount:response.weeklyCount,monthlyCount:response.monthlyCount})
-      return  res.status(404).json({success:false,message:response.message})
+    const response=await this.interactor.getTodaysRevenue(id)
+    if(response.status) return res.status(200).json({success:true,message:response.message,data:response.data})
+      return res.status(404).json({success:false,message:response.message})
+  
 
   }
   catch(error){
@@ -69,6 +70,68 @@ async getYearlyRevenue(req:Request,res:Response,next:NextFunction){
     next(error)
 
   }
+}
+async getWeeklyRevenue(req:Request,res:Response,next:NextFunction){
+  try{
+     const id = (req as doctorDataRequest).doctorData._id;
+     const response=await this.interactor.getWeeklyReport(id)
+      if (response.success)
+        return res
+          .status(200)
+          .json({
+            success: true,
+            message: response.message,
+            data: response.data,
+          });
+      return res
+        .status(404)
+        .json({ success: false, message: response.message });
+
+  }
+  catch(error){
+    console.log(error)
+    next(error)
+  }
+
+}
+async getMonthlyRevenue(req:Request,res:Response,next:NextFunction){
+  try{
+     const id = (req as doctorDataRequest).doctorData._id;
+     const response=await this.interactor.getMonthlyReport(id)
+     if (response.success)
+       return res.status(200).json({
+         success: true,
+         message: response.message,
+         data: response.data,
+       });
+     return res.status(404).json({ success: false, message: response.message });
+
+
+  }
+  catch(error){
+    console.log(error)
+    next(error)
+  }
+
+}
+async getYearlyRevenue(req:Request,res:Response,next:NextFunction){
+  try{
+         const id = (req as doctorDataRequest).doctorData._id;
+     const response=await this.interactor.getYearlyReport(id)
+          if (response.success) return res.status(200).json({success: true,message: response.message,data:response.data,
+            });
+
+          return res
+            .status(404)
+            .json({ success: false, message: response.message });
+
+
+  }
+  catch(error){
+    console.log(error)
+    next(error)
+  }
+
 }
 }
 export default DoctorExtraControllers

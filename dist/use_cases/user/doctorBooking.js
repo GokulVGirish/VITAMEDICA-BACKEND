@@ -137,5 +137,58 @@ class DoctorBookingInteractor {
             throw error;
         }
     }
+    async fetchFavoriteDoctors(id) {
+        try {
+            const result = await this.Repository.fetchFavoriteDoctors(id);
+            if (result)
+                return { success: true, message: "Fetch success", favorites: result };
+            return { success: false, message: "Failed to find" };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async removeDoctorFavorites(userId, docId) {
+        try {
+            const response = await this.Repository.removeDoctorFavorites(userId, docId);
+            return response;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async addDoctorFavorites(userId, docId) {
+        try {
+            const response = await this.Repository.addDoctorFavorites(userId, docId);
+            return response;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getFavoriteDoctorsList(userId, skip, limit) {
+        try {
+            const result = await this.Repository.getFavoriteDoctorsList(userId, skip, limit);
+            if (result.status) {
+                for (let doctor of result.doctors) {
+                    if ("image" in doctor && doctor.image) {
+                        const command = this.AwsS3.getObjectCommandS3(doctor.image);
+                        const url = await this.AwsS3.getSignedUrlS3(command, 3600);
+                        doctor.image = url;
+                    }
+                }
+                return {
+                    status: true,
+                    message: "Success",
+                    doctors: result.doctors,
+                    totalPages: result.totalPages,
+                };
+            }
+            return { status: false, message: "No favorite doctors" };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
 }
 exports.default = DoctorBookingInteractor;

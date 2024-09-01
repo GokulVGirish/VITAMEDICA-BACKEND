@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -6,7 +29,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const TempDoctor_1 = __importDefault(require("../../frameworks/mongoose/models/TempDoctor"));
 const departmentSchema_1 = __importDefault(require("../../frameworks/mongoose/models/departmentSchema"));
 const DoctorSchema_1 = __importDefault(require("../../frameworks/mongoose/models/DoctorSchema"));
-const mongoose_1 = require("mongoose");
+const mongoose_1 = __importStar(require("mongoose"));
 const RejectedDoctor_1 = __importDefault(require("../../frameworks/mongoose/models/RejectedDoctor"));
 const DoctorSlotsSchema_1 = __importDefault(require("../../frameworks/mongoose/models/DoctorSlotsSchema"));
 const DoctorWalletSchema_1 = __importDefault(require("../../frameworks/mongoose/models/DoctorWalletSchema"));
@@ -545,189 +568,267 @@ class DoctorRepository {
             throw error;
         }
     }
-    async getYearlyRevenue(id) {
+    async getTodaysRevenue(id) {
         try {
-            const revenue = await DoctorWalletSchema_1.default.aggregate([
-                {
-                    $match: { doctorId: id },
-                },
-                {
-                    $unwind: "$transactions",
-                },
+            const startOfDay = new Date();
+            startOfDay.setHours(0, 0, 0, 0);
+            const endOfDay = new Date();
+            endOfDay.setHours(23, 59, 59, 999);
+            const result = await AppointmentSchema_1.default.aggregate([
                 {
                     $match: {
-                        "transactions.type": "credit",
-                    },
+                        docId: new mongoose_1.default.Types.ObjectId(id),
+                        createdAt: {
+                            $gte: startOfDay,
+                            $lte: endOfDay,
+                        }
+                    }
                 },
                 {
                     $group: {
-                        _id: {
-                            $year: "$transactions.date",
-                        },
-                        totalRevenue: { $sum: "$transactions.amount" },
-                    },
-                },
-                { $sort: { _id: 1 } },
-            ]);
-            return revenue;
-        }
-        catch (error) {
-            throw error;
-        }
-    }
-    async getMonthlyRevenue(id) {
-        const currentYear = new Date().getFullYear();
-        try {
-            const revenue = await DoctorWalletSchema_1.default.aggregate([
-                {
-                    $match: {
-                        doctorId: id,
-                    },
-                },
-                {
-                    $unwind: "$transactions",
-                },
-                {
-                    $match: {
-                        "transactions.date": {
-                            $gte: new Date(`${currentYear}-01-01`),
-                            $lt: new Date(`${currentYear + 1}-01-01`),
-                        },
-                        "transactions.type": "credit",
-                    },
-                },
-                {
-                    $group: {
-                        _id: {
-                            year: { $year: "$transactions.date" },
-                            month: { $month: "$transactions.date" },
-                        },
-                        totalRevenue: { $sum: "$transactions.amount" },
-                    },
-                },
-                {
-                    $sort: {
-                        "_id.month": 1,
-                    },
+                        _id: null,
+                        revenue: { $sum: { $toDouble: "$fees" } },
+                        bookedCount: { $sum: 1 },
+                        cancelledCount: { $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] } }
+                    }
                 },
                 {
                     $project: {
                         _id: 0,
-                        month: {
-                            $arrayElemAt: [
-                                [
-                                    "January",
-                                    "February",
-                                    "March",
-                                    "April",
-                                    "May",
-                                    "June",
-                                    "July",
-                                    "August",
-                                    "September",
-                                    "October",
-                                    "November",
-                                    "December",
-                                ],
-                                { $subtract: ["$_id.month", 1] },
-                            ],
-                        },
-                        totalRevenue: 1,
-                    },
-                },
+                        revenue: 1,
+                        count: {
+                            appointmentsCount: "$bookedCount",
+                            cancellationsCount: "$cancelledCount"
+                        }
+                    }
+                }
             ]);
-            return revenue;
+            return result[0];
         }
         catch (error) {
             throw error;
         }
     }
-    async getWeeklyAppointmentCount(id) {
+    async getWeeklyReport(id) {
         try {
             const { startOfWeek, endOfWeek } = (0, dates_1.getCurrentWeekDates)();
-            console.log(id);
             const result = await AppointmentSchema_1.default.aggregate([
                 {
                     $match: {
-                        docId: id,
-                        date: {
+                        docId: new mongoose_1.default.Types.ObjectId(id),
+                        createdAt: {
                             $gte: startOfWeek,
                             $lte: endOfWeek,
                         },
                     },
                 },
                 {
-                    $group: {
-                        _id: "$status",
-                        count: { $sum: 1 },
+                    $facet: {
+                        data: [
+                            {
+                                $addFields: {
+                                    dayOfWeek: { $dayOfWeek: "$createdAt" },
+                                },
+                            },
+                            {
+                                $group: {
+                                    _id: "$dayOfWeek",
+                                    totalRevenue: {
+                                        $sum: {
+                                            $toDouble: "$fees",
+                                        },
+                                    },
+                                },
+                            },
+                            {
+                                $sort: { _id: 1 },
+                            },
+                        ],
+                        count: [
+                            {
+                                $group: {
+                                    _id: null,
+                                    bookedCount: { $sum: 1 },
+                                    cancelledCount: {
+                                        $sum: {
+                                            $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0]
+                                        }
+                                    }
+                                }
+                            }
+                        ]
                     },
                 },
                 {
-                    $project: {
-                        _id: 0,
-                        status: "$_id",
-                        count: 1,
-                    },
+                    $unwind: "$count"
                 },
+                {
+                    $project: {
+                        revenue: "$data",
+                        count: { appointmentsCount: "$count.bookedCount", cancellationsCount: "$count.cancelledCount" }
+                    }
+                }
             ]);
-            const stats = {
-                appointmentsCount: 0,
-                cancellationsCount: 0,
-            };
-            result?.forEach((entry) => {
-                if (entry.status === "completed" || entry.status === "pending") {
-                    stats.appointmentsCount += entry.count;
-                }
-                else if (entry.status === "cancelled") {
-                    stats.cancellationsCount = entry.count;
-                }
-            });
-            return stats;
+            console.log("result", result);
+            const finalData = result[0];
+            if (finalData) {
+                const dayNames = [
+                    "Sunday",
+                    "Monday",
+                    "Tuesday",
+                    "Wednesday",
+                    "Thursday",
+                    "Friday",
+                    "Saturday",
+                ];
+                const formattedWeeklyRevenue = finalData?.revenue?.map((item) => ({
+                    label: dayNames[item._id - 1],
+                    totalRevenue: item.totalRevenue,
+                }));
+                finalData.revenue = formattedWeeklyRevenue;
+            }
+            return finalData;
         }
         catch (error) {
             throw error;
         }
     }
-    async getMonthlyAppointmentCount(id) {
+    async getMonthlyReport(id) {
         try {
-            const { startOfMonth, endOfMonth } = (0, dates_1.getCurrentMonthDates)();
+            const startOfYear = new Date(new Date().getFullYear(), 0, 1);
+            const endOfYear = new Date(new Date().getFullYear(), 11, 31, 23, 59, 59);
             const result = await AppointmentSchema_1.default.aggregate([
                 {
                     $match: {
-                        docId: id,
-                        date: {
-                            $gte: startOfMonth,
-                            $lte: endOfMonth,
+                        docId: new mongoose_1.default.Types.ObjectId(id),
+                        createdAt: {
+                            $gte: startOfYear,
+                            $lte: endOfYear,
                         },
                     },
                 },
                 {
-                    $group: {
-                        _id: "$status",
-                        count: { $sum: 1 },
+                    $facet: {
+                        data: [
+                            {
+                                $addFields: {
+                                    month: { $month: "$createdAt" },
+                                },
+                            },
+                            {
+                                $group: {
+                                    _id: "$month",
+                                    totalRevenue: {
+                                        $sum: { $toDouble: "$fees" },
+                                    },
+                                },
+                            },
+                            {
+                                $sort: { _id: 1 },
+                            },
+                        ],
+                        count: [
+                            {
+                                $group: {
+                                    _id: null,
+                                    bookedCount: { $sum: 1 },
+                                    cancelledCount: {
+                                        $sum: {
+                                            $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0]
+                                        }
+                                    }
+                                }
+                            }
+                        ]
                     },
                 },
                 {
+                    $unwind: "$count"
+                },
+                {
                     $project: {
-                        _id: 0,
-                        status: "$_id",
-                        count: 1,
+                        revenue: "$data",
+                        count: { appointmentsCount: "$count.bookedCount", cancellationsCount: "$count.cancelledCount" }
+                    }
+                }
+            ]);
+            const finalData = result[0];
+            if (finalData) {
+                const monthNames = [
+                    "January",
+                    "February",
+                    "March",
+                    "April",
+                    "May",
+                    "June",
+                    "July",
+                    "August",
+                    "September",
+                    "October",
+                    "November",
+                    "December",
+                ];
+                const formattedMonthlyRevenue = finalData?.revenue.map((item) => ({
+                    label: monthNames[item._id - 1],
+                    totalRevenue: item.totalRevenue,
+                }));
+                finalData.revenue = formattedMonthlyRevenue;
+            }
+            return finalData;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getYearlyReport(id) {
+        try {
+            const result = await AppointmentSchema_1.default.aggregate([
+                {
+                    $match: { docId: new mongoose_1.default.Types.ObjectId(id) },
+                },
+                {
+                    $facet: {
+                        data: [
+                            {
+                                $group: {
+                                    _id: { label: { $year: "$createdAt" } },
+                                    totalRevenue: { $sum: { $toDouble: "$fees" } },
+                                },
+                            },
+                            {
+                                $project: {
+                                    label: "$_id.label",
+                                    _id: 0,
+                                    totalRevenue: 1,
+                                },
+                            },
+                            {
+                                $sort: { label: 1 },
+                            },
+                        ],
+                        count: [
+                            {
+                                $group: {
+                                    _id: null,
+                                    bookedCount: { $sum: 1 },
+                                    cancelledCount: { $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] } }
+                                }
+                            }
+                        ]
                     },
                 },
+                {
+                    $unwind: "$count"
+                },
+                {
+                    $project: {
+                        revenue: "$data",
+                        count: { appointmentsCount: "$count.bookedCount", cancellationsCount: "$count.cancelledCount" }
+                    }
+                }
             ]);
-            const stats = {
-                appointmentsCount: 0,
-                cancellationsCount: 0,
-            };
-            result?.forEach((entry) => {
-                if (entry.status === "completed" || entry.status === "pending") {
-                    stats.appointmentsCount += entry.count;
-                }
-                else if (entry.status === "cancelled") {
-                    stats.cancellationsCount = entry.count;
-                }
-            });
-            return stats;
+            console.log("result haii", result);
+            return result[0];
         }
         catch (error) {
             throw error;

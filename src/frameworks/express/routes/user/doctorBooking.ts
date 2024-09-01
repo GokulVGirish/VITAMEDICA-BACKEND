@@ -40,6 +40,10 @@ doctorSearchBookingRouter.get(
   getUser,
   controller.getTimeSlots.bind(controller)
 );
+doctorSearchBookingRouter.get("/favorites",authMiddleware,verifyRole("user"),getUser,controller.fetchFavoriteDoctors.bind(controller))
+doctorSearchBookingRouter.delete("/favorites/:id",authMiddleware,verifyRole("user"),getUser,controller.removeDoctorFavorites.bind(controller));
+doctorSearchBookingRouter.post("/favorites/:id",authMiddleware,verifyRole("user"),getUser,controller.addDoctorFavorites.bind(controller))
+doctorSearchBookingRouter.get("/favorites/list",authMiddleware,verifyRole("user"),getUser,controller.favoriteDoctorsList.bind(controller))
 
 
 export default doctorSearchBookingRouter

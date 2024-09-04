@@ -60,12 +60,15 @@ class DoctorProfileInteractor implements IDoctorProfileInteractor {
     data?: MongoDoctor;
   }> {
     try {
+      
       const response = await this.Repository.profileUpdate(userId, {
         name: data.name,
         phone: data.phone,
         description: data.description,
         fees: data.fees,
         degree: data.degree,
+        accountNumber: data.bankDetails.accountNumber,
+        ifsc:data.bankDetails.ifsc
       });
       if (!response) return { status: false, message: "internal server error" };
       const result = await this.Repository.getDoctor(email);

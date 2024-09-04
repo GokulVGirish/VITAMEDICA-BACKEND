@@ -51,6 +51,8 @@ class DoctorProfileInteractor {
                 description: data.description,
                 fees: data.fees,
                 degree: data.degree,
+                accountNumber: data.bankDetails.accountNumber,
+                ifsc: data.bankDetails.ifsc
             });
             if (!response)
                 return { status: false, message: "internal server error" };

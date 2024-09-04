@@ -5,6 +5,7 @@ import { User } from "../rules/user"
 import { MongoUser } from "../rules/user"
 import { Types } from "mongoose"
 import IUserWallet from "../rules/userWalletType";
+import { promises } from "dns";
 
 interface IUserRepository {
   tempOtpUser(data: User): Promise<{ userId: Types.ObjectId }>;
@@ -140,5 +141,6 @@ interface IUserRepository {
     doctors?: MongoDoctor[];
     totalPages?: number;
   }>;
+  addUserReviewToAppointment(appointmentId:string,rating:number,description?:string):Promise<boolean>
 }
 export default IUserRepository

@@ -37,6 +37,8 @@ export interface IDoctorRepository {
       description: string;
       fees: string;
       degree: string;
+      accountNumber: string;
+      ifsc: string;
     }
   ): Promise<boolean>;
   getRejectedDoctor(email: string): Promise<RejectedDoctor | null>;
@@ -80,11 +82,11 @@ export interface IDoctorRepository {
   }>;
   doctorWalletUpdate(
     docId: Types.ObjectId,
-    appointmentId: Types.ObjectId,
     amount: string,
     type: string,
     reason: string,
-    paymentMethod: string
+    paymentMethod: string,
+    appointmentId?: Types.ObjectId
   ): Promise<boolean>;
   userWalletUpdate(
     userId: Types.ObjectId,
@@ -112,22 +114,17 @@ export interface IDoctorRepository {
     revenue: number;
     count?: { appointmentsCount: number; cancellationsCount: number };
   }>;
-  getWeeklyReport(
-    id: Types.ObjectId
-  ): Promise<{
+  getWeeklyReport(id: Types.ObjectId): Promise<{
     count?: { appointmentsCount: number; cancellationsCount: number };
     revenue?: { label: string; totalRevenue: number }[];
   }>;
-  getMonthlyReport(
-    id: Types.ObjectId
-  ): Promise<{
+  getMonthlyReport(id: Types.ObjectId): Promise<{
     count?: { appointmentsCount: number; cancellationsCount: number };
     revenue?: { label: string; totalRevenue: number }[];
   }>;
-  getYearlyReport(
-    id: Types.ObjectId
-  ): Promise<{
+  getYearlyReport(id: Types.ObjectId): Promise<{
     count?: { appointmentsCount: number; cancellationsCount: number };
     revenue?: { label: number; totalRevenue: number }[];
   }>;
+  withdrawalRecord(id:Types.ObjectId,amount:string):Promise<boolean>
 }

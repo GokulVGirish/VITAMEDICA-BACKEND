@@ -52,6 +52,18 @@ const documentSubSchema = new Schema(
   },
   { _id: false }
 );
+const bankDetailsSchema=new Schema({
+
+    accountNumber:{
+      type:String
+    },
+    ifsc:{
+      type:String
+    }
+
+},{
+  _id:false
+})
 
 const doctorSchema = new Schema<MongoDoctor>({
   name: {
@@ -74,11 +86,12 @@ const doctorSchema = new Schema<MongoDoctor>({
     type: String,
     default: null,
   },
-  department: {
+  department: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: "Department",
     required: true,
-  },
+  }
+],
   password: {
     type: String,
     required: true,
@@ -122,6 +135,12 @@ const doctorSchema = new Schema<MongoDoctor>({
     type: Boolean,
     default: false,
   },
+  bankDetails:{
+    type:bankDetailsSchema,
+    default:null
+
+  },
+
   reviews:[ReviewSchema]
 });
 

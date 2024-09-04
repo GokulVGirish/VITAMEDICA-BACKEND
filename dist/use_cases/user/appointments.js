@@ -155,7 +155,8 @@ class UserAppointmentsInteractor {
     async addReview(appointmentId, userId, docId, rating, description) {
         try {
             const response = await this.Repository.addReview(appointmentId, userId, docId, rating, description);
-            if (response)
+            const appointmentUpdated = await this.Repository.addUserReviewToAppointment(appointmentId, rating, description);
+            if (response && appointmentUpdated)
                 return { status: true, message: "review added sucessfully" };
             return { status: false, message: "Internal server Error" };
         }

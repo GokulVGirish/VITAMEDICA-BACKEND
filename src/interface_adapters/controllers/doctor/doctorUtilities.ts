@@ -1,5 +1,4 @@
-import { IDoctorInteractor } from "../../../entities/iuse_cases/iDoctorInteractor";
-import e, { Request, Response, NextFunction } from "express";
+import  { Request, Response, NextFunction } from "express";
 import { doctorDataRequest } from "../../../frameworks/express/middlewares/doctor";
 import IDoctorUtilityInteractor from "../../../entities/iuse_cases/doctor/iDoctorUtilities";
 

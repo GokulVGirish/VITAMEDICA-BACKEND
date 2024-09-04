@@ -21,10 +21,12 @@ const otpDoctorSchema = new mongoose_1.default.Schema({
         type: String,
         required: true,
     },
-    department: {
-        type: String,
-        required: true,
-    },
+    department: [{
+            type: mongoose_1.default.Schema.Types.ObjectId,
+            ref: "Department",
+            required: true,
+        }
+    ],
     password: {
         type: String,
         required: true,

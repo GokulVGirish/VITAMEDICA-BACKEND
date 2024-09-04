@@ -25,8 +25,8 @@ authRouter.post(
 authRouter.get(
   "/token/verify",
   authMiddleware,
-  getUser,
   verifyRole("user"),
+  getUser,
   controller.verifyToken.bind(controller)
 );
 authRouter.post("/login", controller.login.bind(controller));

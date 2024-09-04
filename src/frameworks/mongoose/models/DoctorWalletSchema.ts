@@ -21,7 +21,6 @@ const DoctorwalletSchema = new mongoose.Schema({
       appointment: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Appointment",
-        required:true
       },
       amount: {
         type: Number,
@@ -33,7 +32,7 @@ const DoctorwalletSchema = new mongoose.Schema({
       },
       type: {
         type: String,
-        enum: ["credit", "debit"],
+        enum: ["credit", "debit","withdraw"],
         required: true,
       },
       reason:{

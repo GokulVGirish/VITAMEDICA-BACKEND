@@ -17,9 +17,7 @@ export const initializeSocket = (server: HttpServer) => {
 
   io.on("connection", (socket) => {
     console.log(`A new user has connected: ${socket.id}`);
-
     const token=socket.handshake.auth.token
-    console.log("out token",token)
     if(token){
       const decodedToken=verifyAccessToken(token)
       const userId =(decodedToken as CustomJwtPayload)?.userId

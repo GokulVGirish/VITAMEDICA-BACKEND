@@ -13,7 +13,7 @@ export interface OtpDoctor {
   email: string;
   phone: string ;
   gender: string;
-  department: string;
+  department: [string];
   password: string;
   otp?: string;
   createdAt?: Date;
@@ -28,7 +28,7 @@ export interface Doctor {
   email: string;
   phone: string;
   gender: string;
-  department: ObjectId;
+  department: [ObjectId];
   image: string | null;
   password: string;
   description: string | null;
@@ -47,6 +47,15 @@ export interface Doctor {
   complete: boolean;
   wallet: null | Types.ObjectId;
   reviews: Review[];
+
+  bankDetails: {
+    accountNumber: {
+      type: String;
+    };
+    ifsc: {
+      type: String;
+    };
+  }|null
 }
 
 export interface MongoDoctor extends Doctor, Document {

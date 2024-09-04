@@ -20,5 +20,17 @@ class DoctorWalletInteractor {
             throw error;
         }
     }
+    async withdrawFromWallet(docId, amount) {
+        try {
+            const response = await this.Repository.doctorWalletUpdate(docId, amount, "withdraw", "withdrawal done", "razorpay");
+            const withdrawalRedord = await this.Repository.withdrawalRecord(docId, amount);
+            if (response && withdrawalRedord)
+                return true;
+            return false;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
 }
 exports.default = DoctorWalletInteractor;

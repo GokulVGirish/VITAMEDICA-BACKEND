@@ -27,7 +27,7 @@ class AdminDashboardInteractor implements IAdminDashboardInteractor {
         revenue,
         count: appointCount,
         unverifiedDocs: doctorCounts.unverifiedDoctorCount,
-        doctors:doctorCounts.doctorCount,
+        doctors: doctorCounts.doctorCount,
         users,
       };
     } catch (error) {

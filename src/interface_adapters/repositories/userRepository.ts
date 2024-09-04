@@ -183,55 +183,88 @@ class UserRepository implements IUserRepository {
         {
           $match: { status: "Verified", complete: true },
         },
-
         {
-          $set: {
-            reviews: { $ifNull: ["$reviews", []] },
-          },
-        },
-
-        {
+          $facet: {
+            doctors: [
+              {
+                $set: {
+                  reviews: { $ifNull: ["$reviews", []] },
+                },
+              },
+              {
+                $addFields: {
+                  averageRating: { $avg: "$reviews.rating" },
+                  totalReviews: { $size: "$reviews" },
+                },
+              },
+                {
           $addFields: {
-            averageRating: { $avg: "$reviews.rating" },
-            totalReviews: { $size: "$reviews" },
+            
+            averageRating: { $round: ["$averageRating", 1] },
           },
         },
-
-        {
-          $lookup: {
-            from: "departments",
-            localField: "department",
-            foreignField: "_id",
-            as: "department",
+              {
+                $lookup: {
+                  from: "departments",
+                  localField: "department",
+                  foreignField: "_id",
+                  as: "department",
+                },
+              },
+              {
+                $unwind: "$department",
+              },
+              {
+                $group: {
+                  _id: "$_id",
+                  name: { $first: "$name" },
+                  image: { $first: "$image" },
+                  degree: { $first: "$degree" },
+                  fees: { $first: "$fees" },
+                  averageRating: { $first: "$averageRating" },
+                  totalReviews: { $first: "$totalReviews" },
+                  department: { $push: "$department.name" },
+                },
+              },
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  department: 1,
+                  image: 1,
+                  degree: 1,
+                  fees: 1,
+                  averageRating: 1,
+                  totalReviews: 1,
+                },
+              },
+              {
+                $sort: { _id: 1 },
+              },
+              { $skip: skip },
+              { $limit: limit },
+            ],
+            count:[
+              {
+                $count:"count"
+              }
+            ]
           },
         },
-
         {
-          $unwind: "$department",
+          $unwind:"$count"
         },
-
         {
-          $project: {
-            _id: 1,
-            name: 1,
-            department: { name: 1 },
-            image: 1,
-            degree: 1,
-            fees: 1,
-            averageRating: 1,
-            totalReviews: 1,
-          },
-        },
-
-        { $skip: skip },
-        { $limit: limit },
+          $project:{
+            doctors:1,
+            count:"$count.count"
+          }
+        }
       ]);
+      console.log("result",result[0].doctors)
 
-      const totalDoctors = await doctorModel.countDocuments({
-        status: "Verified",
-        complete: true,
-      });
-      return { doctors: result, totalPages: Math.ceil(totalDoctors / limit) };
+    
+      return { doctors: result[0].doctors, totalPages: Math.ceil(result[0].count / limit) };
     } catch (error) {
       throw error;
     }
@@ -242,21 +275,91 @@ class UserRepository implements IUserRepository {
     limit: number
   ): Promise<{ doctors?: MongoDoctor[]; totalPages?: number }> {
     try {
-      const result = await doctorModel
-        .find({ status: "Verified", complete: true, department: category })
-        .skip(skip)
-        .limit(limit)
-        .lean()
-        .populate({ path: "department", select: "name" })
-        .select("_id name department image degree fees");
-      const totalDoctors = await doctorModel.countDocuments({
-        status: "Verified",
-        complete: true,
-        department: category,
-      });
+  
+      const newResult = await doctorModel.aggregate([
+        {
+          $match: {
+            status: "Verified",
+            complete: true,
+            department: { $in: [new mongoose.Types.ObjectId(category)] },
+          },
+        },
+        {
+          $facet: {
+            doctors: [
+              {
+                $set: {
+                  reviews: {
+                    $ifNull: ["$reviews", []],
+                  },
+                },
+              },
+              {
+                $addFields: {
+                  averageRating: { $avg: "$reviews.rating" },
+                  totalReviews: { $size: "$reviews" },
+                },
+              },
+
+              {
+                $lookup: {
+                  from: "departments",
+                  localField: "department",
+                  foreignField: "_id",
+                  as: "departmentInfo",
+                },
+              },
+              {
+                $unwind: "$departmentInfo",
+              },
+              {
+                $group: {
+                  _id: "$_id",
+                  name: { $first: "$name" },
+                  image: { $first: "$image" },
+                  degree: { $first: "$degree" },
+                  fees: { $first: "$fees" },
+                  averageRating: { $first: "$averageRating" },
+                  totalReviews: { $first: "$totalReviews" },
+                  department: { $push: "$departmentInfo.name" },
+                },
+              },
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  department: 1,
+                  image: 1,
+                  degree: 1,
+                  fees: 1,
+                  averageRating: 1,
+                  totalReviews: 1,
+                },
+              },
+              {
+                $sort: { _id: 1 },
+              },
+              { $skip: skip },
+              { $limit: limit },
+            ],
+            count:[{$count:"count"}]
+          },
+        },
+        {
+          $unwind:"$count"
+        },
+        {
+          $project:{
+            doctors:1,
+            count:"$count.count"
+          }
+        }
+      ]);
+   
       return {
-        doctors: result,
-        totalPages: Math.ceil(totalDoctors / limit),
+        doctors:newResult[0].doctors,
+      
+        totalPages: Math.ceil(newResult[0].count / limit),
       };
     } catch (error) {
       throw error;
@@ -282,12 +385,38 @@ class UserRepository implements IUserRepository {
   }
   async getDoctor(id: string): Promise<MongoDoctor | null> {
     try {
-      const result = await doctorModel
-        .findOne({ _id: id })
-        .lean()
-        .populate({ path: "department", select: "name" })
-        .select("_id name department image degree fees description");
-      return result;
+      const result = await doctorModel.aggregate([
+        {
+          $match: {
+            _id: new mongoose.Types.ObjectId(id),
+          },
+        },
+        {
+          $lookup:{
+            from:"departments",
+            localField:"department",
+            foreignField:"_id",
+            as:"departmentInfo"
+          }
+        },
+        {
+          $unwind:"$departmentInfo"
+        },
+        {
+          $group:{
+            _id:"$_id",
+            name:{$first:"$name"},
+            department:{$push:"$departmentInfo.name"},
+            image:{$first:"$image"},
+            degree:{$first:"$degree"},
+            fees:{$first:'$fees'},
+            description:{$first:'$description'}
+          }
+        }
+      ]);
+      console.log("departmentInfo",result)
+
+      return result[0];
     } catch (error) {
       throw error;
     }
@@ -867,6 +996,11 @@ class UserRepository implements IUserRepository {
           },
         },
         {
+          $addFields: {
+            averageRating: { $round: ["$averageRating",1] },
+          },
+        },
+        {
           $project: {
             _id: 1,
             name: 1,
@@ -980,16 +1114,35 @@ class UserRepository implements IUserRepository {
                   $unwind: "$departmentInfo",
                 },
                 {
+                  $group: {
+                    _id: "$_id",
+                    name: { $first: "$name" },
+                    image: { $first: "$image" },
+                    degree: { $first: "$degree" },
+                    fees: { $first: "$fees" },
+                    averageRating: { $first: "$averageRating" },
+                    totalReviews: { $first: "$totalReviews" },
+                    department: { $push: "$departmentInfo.name" },
+                  },
+                },
+                {
                   $project: {
                     _id: 1,
                     name: 1,
-                    department: { name: "$departmentInfo.name" },
+                    department: 1,
                     image: 1,
                     degree: 1,
                     fees: 1,
                     averageRating: 1,
                     totalReviews: 1,
                   },
+                },
+                {
+                  $sort:{
+                    _id:1
+
+                  }
+
                 },
                 {
                   $skip: skip,
@@ -1016,6 +1169,19 @@ class UserRepository implements IUserRepository {
           },
         ]);
       return {status:true,doctors:doctors[0].data,totalPages:doctors[0].count}
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async addUserReviewToAppointment(appointmentId: string, rating: number, description?: string): Promise<boolean> {
+      try{
+        const result=await appointmentModel.updateOne({_id:appointmentId},{$set:{review:{
+          rating:rating,
+          description:description||""
+        }}})
+        return result.modifiedCount>0
 
       }
       catch(error){

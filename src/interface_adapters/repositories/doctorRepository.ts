@@ -20,6 +20,7 @@ import userWalletModal from "../../frameworks/mongoose/models/UserWalletSchema";
 import userModel from "../../frameworks/mongoose/models/UserSchema";
 import { getCurrentMonthDates, getCurrentWeekDates } from "../../frameworks/services/dates";
 import { count } from "console";
+import withdrawalModel from "../../frameworks/mongoose/models/WithdrawalSchema";
 
 class DoctorRepository implements IDoctorRepository {
   async doctorExists(email: string): Promise<null | MongoDoctor> {
@@ -187,9 +188,12 @@ class DoctorRepository implements IDoctorRepository {
       description: string;
       fees: string;
       degree: string;
+      accountNumber: string;
+      ifsc: string;
     }
   ): Promise<boolean> {
     try {
+      console.log("data", data.accountNumber);
       const result = await doctorModel.updateOne(
         { _id: id },
         {
@@ -200,6 +204,8 @@ class DoctorRepository implements IDoctorRepository {
             fees: data.fees,
             degree: data.degree,
             complete: true,
+            "bankDetails.accountNumber": data.accountNumber,
+            "bankDetails.ifsc": data.ifsc,
           },
         }
       );
@@ -472,42 +478,62 @@ class DoctorRepository implements IDoctorRepository {
   }
   async doctorWalletUpdate(
     docId: Types.ObjectId,
-    appointmentId: Types.ObjectId,
     amount: string,
     type: string,
     reason: string,
-    paymentMethod: string
+    paymentMethod: string,
+    appointmentId?: Types.ObjectId
   ): Promise<boolean> {
     const amountNum = Number(amount);
     try {
-      const result = await doctorWalletModal.findOneAndUpdate(
-        { doctorId: docId },
-        {
-          $inc: {
-            balance: type === "credit" ? amountNum : -amountNum,
-            transactionCount: 1,
-          },
-          $push: {
-            transactions: {
-              appointment: appointmentId,
-              amount: amountNum,
-              type: type,
-              reason: reason,
-              paymentMethod,
-            },
-          },
-        },
-        {
-          new: true,
-          upsert: true,
-          setDefaultsOnInsert: true,
-        }
-      );
-      if (result) return true;
-      else return false;
+       const update = {
+         $inc: {
+           balance: type === "credit" ? amountNum : -amountNum,
+           transactionCount: 1,
+         },
+         $push: {
+           transactions: {
+             amount: amountNum,
+             type: type,
+             reason: reason,
+             paymentMethod,
+           },
+         },
+       };
+
+       if (appointmentId) {
+         (update.$push.transactions as any).appointment = appointmentId;
+       }
+
+       const result = await doctorWalletModal.findOneAndUpdate(
+         { doctorId: docId },
+         update,
+         {
+           new: true,
+           upsert: true,
+           setDefaultsOnInsert: true,
+         }
+       );
+    return !!result
+     
     } catch (error) {
       throw error;
     }
+  }
+  async withdrawalRecord(id: Types.ObjectId, amount: string): Promise<boolean> {
+    const  numAmount=Number(amount)
+
+      try{
+        const result = await withdrawalModel.create({
+          doctorId:id,
+          amount: numAmount,
+        });
+        return !!result
+
+      }
+      catch(error){
+        throw error
+      }
   }
   async userWalletUpdate(
     userId: Types.ObjectId,
@@ -598,6 +624,7 @@ class DoctorRepository implements IDoctorRepository {
             start: 1,
             docId: 1,
             end: 1,
+            review: 1,
             status: 1,
             userId: "$userInfo._id",
             userName: "$userInfo.name",
@@ -630,294 +657,299 @@ class DoctorRepository implements IDoctorRepository {
       throw error;
     }
   }
-  async getTodaysRevenue(id:Types.ObjectId): Promise<{ revenue: number; count?: { appointmentsCount: number; cancellationsCount: number; } }> {
-      try{
-       
-          const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0); 
+  async getTodaysRevenue(id: Types.ObjectId): Promise<{
+    revenue: number;
+    count?: { appointmentsCount: number; cancellationsCount: number };
+  }> {
+    try {
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
 
-  const endOfDay = new Date();
-  endOfDay.setHours(23, 59, 59, 999);
-        const result=await appointmentModel.aggregate([
-          {
-            $match:{
-              docId:new mongoose.Types.ObjectId(id),
-              createdAt: {
-            $gte: startOfDay,
-          $lte: endOfDay,
-           }
-            }
+      const endOfDay = new Date();
+      endOfDay.setHours(23, 59, 59, 999);
+      const result = await appointmentModel.aggregate([
+        {
+          $match: {
+            docId: new mongoose.Types.ObjectId(id),
+            createdAt: {
+              $gte: startOfDay,
+              $lte: endOfDay,
+            },
           },
-          {
-            $group:{
-              _id:null,
-              revenue:{$sum:{$toDouble:"$fees"}},
-              bookedCount:{$sum:1},
-              cancelledCount:{$sum:{$cond:[{$eq:["$status","cancelled"]},1,0]}}
-
-            }
+        },
+        {
+          $group: {
+            _id: null,
+            revenue: { $sum: { $toDouble: "$fees" } },
+            bookedCount: { $sum: 1 },
+            cancelledCount: {
+              $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] },
+            },
           },
-          {
-            $project:{
-              _id:0,
-              revenue:1,
-              count:{
-                appointmentsCount:"$bookedCount",
-                cancellationsCount:"$cancelledCount"
-              }
-            }
-          }
-        ])
-       
-        return result[0]
+        },
+        {
+          $project: {
+            _id: 0,
+            revenue: 1,
+            count: {
+              appointmentsCount: "$bookedCount",
+              cancellationsCount: "$cancelledCount",
+            },
+          },
+        },
+      ]);
 
-      }
-      catch(error){
-        throw error
-      }
+      return result[0];
+    } catch (error) {
+      throw error;
+    }
   }
-  async getWeeklyReport(id: Types.ObjectId): Promise<{ count?: { appointmentsCount: number; cancellationsCount: number; }; revenue?: { label: string; totalRevenue: number; }[]; }> {
-      try{
-        const {startOfWeek,endOfWeek}=getCurrentWeekDates()
-        const result = await appointmentModel.aggregate([
-          {
-            $match: {
-              docId: new mongoose.Types.ObjectId(id),
-              createdAt: {
-                $gte: startOfWeek,
-                $lte: endOfWeek,
-              },
+  async getWeeklyReport(id: Types.ObjectId): Promise<{
+    count?: { appointmentsCount: number; cancellationsCount: number };
+    revenue?: { label: string; totalRevenue: number }[];
+  }> {
+    try {
+      const { startOfWeek, endOfWeek } = getCurrentWeekDates();
+      const result = await appointmentModel.aggregate([
+        {
+          $match: {
+            docId: new mongoose.Types.ObjectId(id),
+            createdAt: {
+              $gte: startOfWeek,
+              $lte: endOfWeek,
             },
           },
-          {
-            $facet: {
-              data: [
-                {
-                  $addFields: {
-                    dayOfWeek: { $dayOfWeek: "$createdAt" },
-                  },
-                },
-                {
-                  $group: {
-                    _id: "$dayOfWeek",
-                    totalRevenue: {
-                      $sum: {
-                        $toDouble: "$fees",
-                      },
-                    },
-                  },
-                },
-                {
-                  $sort: { _id: 1 },
-                },
-              ],
-              count:[
-                {
-                  $group:{
-                    _id:null,
-                    bookedCount:{$sum:1},
-                    cancelledCount:{
-                      $sum:{
-                        $cond:[{$eq:["$status","cancelled"]},1,0]
-                      }
-                    }
-
-                  }
-                }
-              ]
-            },
-          },
-          {
-            $unwind:"$count"
-          },
-          {
-            $project:{
-              revenue:"$data",
-            count: { appointmentsCount:"$count.bookedCount" , cancellationsCount:"$count.cancelledCount" }
-            }
-          }
-        ]);
-        console.log("result",result)
-        const finalData=result[0]
-        if(finalData){
-           const dayNames = [
-             "Sunday",
-             "Monday",
-             "Tuesday",
-             "Wednesday",
-             "Thursday",
-             "Friday",
-             "Saturday",
-           ];
-
-           const formattedWeeklyRevenue = finalData?.revenue?.map((item:any) => ({
-             label: dayNames[item._id - 1],
-             totalRevenue: item.totalRevenue,
-           }));
-           finalData.revenue = formattedWeeklyRevenue;
-
-        }
-        return finalData as {
-          count?: { appointmentsCount: number; cancellationsCount: number };
-          revenue?: { label: string; totalRevenue: number }[];
-        };
-
-
-      }
-      catch(error){
-        throw error
-      }
-  }
-  async getMonthlyReport(id: Types.ObjectId): Promise<{ count?: { appointmentsCount: number; cancellationsCount: number; }; revenue?: { label: string; totalRevenue: number; }[]; }> {
-      try{
-        const startOfYear = new Date(new Date().getFullYear(), 0, 1); 
-      const endOfYear = new Date(new Date().getFullYear(), 11, 31, 23, 59, 59); 
-        const result = await appointmentModel.aggregate([
-          {
-            $match: {
-              docId:new mongoose.Types.ObjectId(id),
-              createdAt: {
-                $gte: startOfYear,
-                $lte: endOfYear,
-              },
-            },
-          },
-          {
-            $facet: {
-              data: [
-                {
-                  $addFields: {
-                    month: { $month: "$createdAt" },
-                  },
-                },
-                {
-                  $group: {
-                    _id: "$month",
-                    totalRevenue: {
-                      $sum: { $toDouble: "$fees" },
-                    },
-                  },
-                },
-                {
-                  $sort: { _id: 1 },
-                },
-              ],
-              count:[
-                {
-                  $group:{
-                    _id:null,
-                    bookedCount:{$sum:1},
-                    cancelledCount:{
-                      $sum:{
-                        $cond:[{$eq:["$status","cancelled"]},1,0]
-                      }
-                    }
-                  }
-                }
-              ]
-
-            },
-          },
-          {
-            $unwind:"$count"
-          },
-          {
-            $project:{
-              revenue:"$data",
-              count: { appointmentsCount: "$count.bookedCount", cancellationsCount:"$count.cancelledCount" }
-            }
-          }
-        ]);
-        const finalData=result[0]
-        if(finalData){
-                const monthNames = [
-                  "January",
-                  "February",
-                  "March",
-                  "April",
-                  "May",
-                  "June",
-                  "July",
-                  "August",
-                  "September",
-                  "October",
-                  "November",
-                  "December",
-                ];
-                const formattedMonthlyRevenue = finalData?.revenue.map((item:any) => ({
-                  label: monthNames[item._id - 1],
-                  totalRevenue: item.totalRevenue,
-                }));
-                finalData.revenue=formattedMonthlyRevenue
-
-        }
-      
-        return finalData
-
-      }
-      catch(error){
-        throw error
-      }
-  }
-  async getYearlyReport(id: Types.ObjectId): Promise<{ count?: { appointmentsCount: number; cancellationsCount: number; }; revenue?: { label: number; totalRevenue: number; }[]; }> {
-      try{
-        
-        const result = await appointmentModel.aggregate([
-          {
-            $match:{ docId:new mongoose.Types.ObjectId(id)},
-          },
-          {
-            $facet: {
-              data: [
-                {
-                  $group: {
-                    _id: { label: { $year: "$createdAt" } },
-                    totalRevenue: { $sum: { $toDouble: "$fees" } },
-                  },
-                },
-                {
-                  $project: {
-                    label: "$_id.label",
-                    _id: 0,
-                    totalRevenue: 1,
-                  },
-                },
-                {
-                  $sort: { label: 1 },
-                },
-              ],
-               count:[
+        },
+        {
+          $facet: {
+            data: [
               {
-                $group:{
-                  _id:null,
-                  bookedCount:{$sum:1},
-                  cancelledCount:{$sum:{$cond:[{$eq:["$status","cancelled"]},1,0]}}
-                }
-              }
-            ]
+                $addFields: {
+                  dayOfWeek: { $dayOfWeek: "$createdAt" },
+                },
+              },
+              {
+                $group: {
+                  _id: "$dayOfWeek",
+                  totalRevenue: {
+                    $sum: {
+                      $toDouble: "$fees",
+                    },
+                  },
+                },
+              },
+              {
+                $sort: { _id: 1 },
+              },
+            ],
+            count: [
+              {
+                $group: {
+                  _id: null,
+                  bookedCount: { $sum: 1 },
+                  cancelledCount: {
+                    $sum: {
+                      $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0],
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+        {
+          $unwind: "$count",
+        },
+        {
+          $project: {
+            revenue: "$data",
+            count: {
+              appointmentsCount: "$count.bookedCount",
+              cancellationsCount: "$count.cancelledCount",
             },
-           
           },
-          {
-            $unwind:"$count"
-          },
-          {
-            $project:{
-              revenue:"$data",
-              count:{ appointmentsCount: "$count.bookedCount", cancellationsCount: "$count.cancelledCount" }
-            }
-          }
-        ]);
-       console.log("result haii",result)
-        return result[0]
-       
+        },
+      ]);
+      console.log("result", result);
+      const finalData = result[0];
+      if (finalData) {
+        const dayNames = [
+          "Sunday",
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+        ];
 
+        const formattedWeeklyRevenue = finalData?.revenue?.map((item: any) => ({
+          label: dayNames[item._id - 1],
+          totalRevenue: item.totalRevenue,
+        }));
+        finalData.revenue = formattedWeeklyRevenue;
       }
-      catch(error){
-        throw error
-      }
+      return finalData as {
+        count?: { appointmentsCount: number; cancellationsCount: number };
+        revenue?: { label: string; totalRevenue: number }[];
+      };
+    } catch (error) {
+      throw error;
+    }
   }
-  
+  async getMonthlyReport(id: Types.ObjectId): Promise<{
+    count?: { appointmentsCount: number; cancellationsCount: number };
+    revenue?: { label: string; totalRevenue: number }[];
+  }> {
+    try {
+      const startOfYear = new Date(new Date().getFullYear(), 0, 1);
+      const endOfYear = new Date(new Date().getFullYear(), 11, 31, 23, 59, 59);
+      const result = await appointmentModel.aggregate([
+        {
+          $match: {
+            docId: new mongoose.Types.ObjectId(id),
+            createdAt: {
+              $gte: startOfYear,
+              $lte: endOfYear,
+            },
+          },
+        },
+        {
+          $facet: {
+            data: [
+              {
+                $addFields: {
+                  month: { $month: "$createdAt" },
+                },
+              },
+              {
+                $group: {
+                  _id: "$month",
+                  totalRevenue: {
+                    $sum: { $toDouble: "$fees" },
+                  },
+                },
+              },
+              {
+                $sort: { _id: 1 },
+              },
+            ],
+            count: [
+              {
+                $group: {
+                  _id: null,
+                  bookedCount: { $sum: 1 },
+                  cancelledCount: {
+                    $sum: {
+                      $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0],
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+        {
+          $unwind: "$count",
+        },
+        {
+          $project: {
+            revenue: "$data",
+            count: {
+              appointmentsCount: "$count.bookedCount",
+              cancellationsCount: "$count.cancelledCount",
+            },
+          },
+        },
+      ]);
+      const finalData = result[0];
+      if (finalData) {
+        const monthNames = [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
+        ];
+        const formattedMonthlyRevenue = finalData?.revenue.map((item: any) => ({
+          label: monthNames[item._id - 1],
+          totalRevenue: item.totalRevenue,
+        }));
+        finalData.revenue = formattedMonthlyRevenue;
+      }
 
+      return finalData;
+    } catch (error) {
+      throw error;
+    }
+  }
+  async getYearlyReport(id: Types.ObjectId): Promise<{
+    count?: { appointmentsCount: number; cancellationsCount: number };
+    revenue?: { label: number; totalRevenue: number }[];
+  }> {
+    try {
+      const result = await appointmentModel.aggregate([
+        {
+          $match: { docId: new mongoose.Types.ObjectId(id) },
+        },
+        {
+          $facet: {
+            data: [
+              {
+                $group: {
+                  _id: { label: { $year: "$createdAt" } },
+                  totalRevenue: { $sum: { $toDouble: "$fees" } },
+                },
+              },
+              {
+                $project: {
+                  label: "$_id.label",
+                  _id: 0,
+                  totalRevenue: 1,
+                },
+              },
+              {
+                $sort: { label: 1 },
+              },
+            ],
+            count: [
+              {
+                $group: {
+                  _id: null,
+                  bookedCount: { $sum: 1 },
+                  cancelledCount: {
+                    $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] },
+                  },
+                },
+              },
+            ],
+          },
+        },
+        {
+          $unwind: "$count",
+        },
+        {
+          $project: {
+            revenue: "$data",
+            count: {
+              appointmentsCount: "$count.bookedCount",
+              cancellationsCount: "$count.cancelledCount",
+            },
+          },
+        },
+      ]);
+      console.log("result haii", result);
+      return result[0];
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 export default DoctorRepository

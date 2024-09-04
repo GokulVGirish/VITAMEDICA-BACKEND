@@ -39,6 +39,7 @@ const cancelledAppointmentSchema_1 = __importDefault(require("../../frameworks/m
 const UserWalletSchema_1 = __importDefault(require("../../frameworks/mongoose/models/UserWalletSchema"));
 const UserSchema_1 = __importDefault(require("../../frameworks/mongoose/models/UserSchema"));
 const dates_1 = require("../../frameworks/services/dates");
+const WithdrawalSchema_1 = __importDefault(require("../../frameworks/mongoose/models/WithdrawalSchema"));
 class DoctorRepository {
     async doctorExists(email) {
         try {
@@ -183,6 +184,7 @@ class DoctorRepository {
     }
     async profileUpdate(id, data) {
         try {
+            console.log("data", data.accountNumber);
             const result = await DoctorSchema_1.default.updateOne({ _id: id }, {
                 $set: {
                     name: data.name,
@@ -191,6 +193,8 @@ class DoctorRepository {
                     fees: data.fees,
                     degree: data.degree,
                     complete: true,
+                    "bankDetails.accountNumber": data.accountNumber,
+                    "bankDetails.ifsc": data.ifsc,
                 },
             });
             if (result.modifiedCount > 0)
@@ -436,32 +440,45 @@ class DoctorRepository {
             throw error;
         }
     }
-    async doctorWalletUpdate(docId, appointmentId, amount, type, reason, paymentMethod) {
+    async doctorWalletUpdate(docId, amount, type, reason, paymentMethod, appointmentId) {
         const amountNum = Number(amount);
         try {
-            const result = await DoctorWalletSchema_1.default.findOneAndUpdate({ doctorId: docId }, {
+            const update = {
                 $inc: {
                     balance: type === "credit" ? amountNum : -amountNum,
                     transactionCount: 1,
                 },
                 $push: {
                     transactions: {
-                        appointment: appointmentId,
                         amount: amountNum,
                         type: type,
                         reason: reason,
                         paymentMethod,
                     },
                 },
-            }, {
+            };
+            if (appointmentId) {
+                update.$push.transactions.appointment = appointmentId;
+            }
+            const result = await DoctorWalletSchema_1.default.findOneAndUpdate({ doctorId: docId }, update, {
                 new: true,
                 upsert: true,
                 setDefaultsOnInsert: true,
             });
-            if (result)
-                return true;
-            else
-                return false;
+            return !!result;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async withdrawalRecord(id, amount) {
+        const numAmount = Number(amount);
+        try {
+            const result = await WithdrawalSchema_1.default.create({
+                doctorId: id,
+                amount: numAmount,
+            });
+            return !!result;
         }
         catch (error) {
             throw error;
@@ -540,6 +557,7 @@ class DoctorRepository {
                         start: 1,
                         docId: 1,
                         end: 1,
+                        review: 1,
                         status: 1,
                         userId: "$userInfo._id",
                         userName: "$userInfo.name",
@@ -581,16 +599,18 @@ class DoctorRepository {
                         createdAt: {
                             $gte: startOfDay,
                             $lte: endOfDay,
-                        }
-                    }
+                        },
+                    },
                 },
                 {
                     $group: {
                         _id: null,
                         revenue: { $sum: { $toDouble: "$fees" } },
                         bookedCount: { $sum: 1 },
-                        cancelledCount: { $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] } }
-                    }
+                        cancelledCount: {
+                            $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] },
+                        },
+                    },
                 },
                 {
                     $project: {
@@ -598,10 +618,10 @@ class DoctorRepository {
                         revenue: 1,
                         count: {
                             appointmentsCount: "$bookedCount",
-                            cancellationsCount: "$cancelledCount"
-                        }
-                    }
-                }
+                            cancellationsCount: "$cancelledCount",
+                        },
+                    },
+                },
             ]);
             return result[0];
         }
@@ -651,23 +671,26 @@ class DoctorRepository {
                                     bookedCount: { $sum: 1 },
                                     cancelledCount: {
                                         $sum: {
-                                            $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0]
-                                        }
-                                    }
-                                }
-                            }
-                        ]
+                                            $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0],
+                                        },
+                                    },
+                                },
+                            },
+                        ],
                     },
                 },
                 {
-                    $unwind: "$count"
+                    $unwind: "$count",
                 },
                 {
                     $project: {
                         revenue: "$data",
-                        count: { appointmentsCount: "$count.bookedCount", cancellationsCount: "$count.cancelledCount" }
-                    }
-                }
+                        count: {
+                            appointmentsCount: "$count.bookedCount",
+                            cancellationsCount: "$count.cancelledCount",
+                        },
+                    },
+                },
             ]);
             console.log("result", result);
             const finalData = result[0];
@@ -734,23 +757,26 @@ class DoctorRepository {
                                     bookedCount: { $sum: 1 },
                                     cancelledCount: {
                                         $sum: {
-                                            $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0]
-                                        }
-                                    }
-                                }
-                            }
-                        ]
+                                            $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0],
+                                        },
+                                    },
+                                },
+                            },
+                        ],
                     },
                 },
                 {
-                    $unwind: "$count"
+                    $unwind: "$count",
                 },
                 {
                     $project: {
                         revenue: "$data",
-                        count: { appointmentsCount: "$count.bookedCount", cancellationsCount: "$count.cancelledCount" }
-                    }
-                }
+                        count: {
+                            appointmentsCount: "$count.bookedCount",
+                            cancellationsCount: "$count.cancelledCount",
+                        },
+                    },
+                },
             ]);
             const finalData = result[0];
             if (finalData) {
@@ -811,21 +837,26 @@ class DoctorRepository {
                                 $group: {
                                     _id: null,
                                     bookedCount: { $sum: 1 },
-                                    cancelledCount: { $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] } }
-                                }
-                            }
-                        ]
+                                    cancelledCount: {
+                                        $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] },
+                                    },
+                                },
+                            },
+                        ],
                     },
                 },
                 {
-                    $unwind: "$count"
+                    $unwind: "$count",
                 },
                 {
                     $project: {
                         revenue: "$data",
-                        count: { appointmentsCount: "$count.bookedCount", cancellationsCount: "$count.cancelledCount" }
-                    }
-                }
+                        count: {
+                            appointmentsCount: "$count.bookedCount",
+                            cancellationsCount: "$count.cancelledCount",
+                        },
+                    },
+                },
             ]);
             console.log("result haii", result);
             return result[0];

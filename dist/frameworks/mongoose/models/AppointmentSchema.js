@@ -40,6 +40,14 @@ const AppointmentSchema = new mongoose_1.default.Schema({
         type: String,
         required: true,
     },
+    review: {
+        rating: {
+            type: Number
+        },
+        description: {
+            type: String
+        }
+    },
     paymentStatus: {
         type: String,
         enum: ["pending", "captured", "failed", "refunded", "anonymous"],

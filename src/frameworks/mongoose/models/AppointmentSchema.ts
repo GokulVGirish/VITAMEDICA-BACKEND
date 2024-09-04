@@ -37,6 +37,16 @@ const AppointmentSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    review:{
+      rating:{
+        type:Number
+      },
+      description:{
+        type:String
+
+      }
+
+    },
 
     paymentStatus: {
       type: String,

@@ -31,5 +31,20 @@ class DoctorWalletControllers {
       console.log(error);
     }
   }
+  async withdrawFromWallet(req:Request,res:Response,next:NextFunction){
+    try{
+       const docId = (req as doctorDataRequest).doctorData._id;
+       const amount=req.params.amount
+       const response=await this.interactor.withdrawFromWallet(docId,amount)
+    if(response) return res.status(200).json({success:true,message:"Withdrawal Success"})
+      return res.status(500).json({success:false,message:"Try Again After Some Time"})
+
+    }
+    catch(error){
+      console.log(error)
+      next(error)
+      
+    }
+  }
 }
 export default DoctorWalletControllers

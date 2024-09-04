@@ -12,7 +12,6 @@ const verifyRole=(theRole:string)=>{
     return (req:Request,res:Response,next:NextFunction)=>{
       
         const {role,verified}=(req as CustomRequestType).user
-          console.log("user",(req as CustomRequestType).user)
         if(theRole===role){
            if(verified)return next()
             else return res.status(403).json({message:"not yet verified"})
@@ -21,7 +20,5 @@ const verifyRole=(theRole:string)=>{
         }
 
     }
-
-   
 }
 export default verifyRole

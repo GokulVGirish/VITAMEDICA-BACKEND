@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const verifyRole = (theRole) => {
     return (req, res, next) => {
         const { role, verified } = req.user;
-        console.log("user", req.user);
         if (theRole === role) {
             if (verified)
                 return next();

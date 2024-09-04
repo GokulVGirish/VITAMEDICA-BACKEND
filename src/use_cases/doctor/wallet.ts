@@ -35,5 +35,18 @@ class DoctorWalletInteractor implements IDoctorWalletInteractor {
       throw error;
     }
   }
+  async withdrawFromWallet(docId: Types.ObjectId, amount: string): Promise<boolean> {
+      try{
+        const response=await this.Repository.doctorWalletUpdate(docId,amount,"withdraw","withdrawal done","razorpay")
+        const withdrawalRedord=await this.Repository.withdrawalRecord(docId,amount)
+        if(response && withdrawalRedord) return true
+        return false
+        
+
+      }
+      catch(error){
+        throw error
+      }
+  }
 }
 export default DoctorWalletInteractor

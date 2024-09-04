@@ -17,4 +17,5 @@ walletRouter.get(
   getDoctor,
   controller.getWalletDetails.bind(controller)
 );
+walletRouter.post("/withdraw/:amount",authMiddleware,verifyRole("doctor"),getDoctor,controller.withdrawFromWallet.bind(controller))
 export default walletRouter

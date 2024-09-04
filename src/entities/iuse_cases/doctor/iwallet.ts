@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { IDoctorWallet } from "../../rules/doctorWalletType";
 
 
@@ -14,5 +14,6 @@ interface IDoctorWalletInteractor {
     message: string;
     totalPages?: number;
   }>;
+  withdrawFromWallet(docId:mongoose.Types.ObjectId,amount:string):Promise<boolean>
 }
 export default IDoctorWalletInteractor

@@ -15,4 +15,5 @@ const interactor = new wallet_2.default(repository);
 const controller = new wallet_1.default(interactor);
 const walletRouter = express_1.default.Router();
 walletRouter.get("/", jwt_verify_1.default, (0, role_Authenticate_1.default)("doctor"), doctor_1.getDoctor, controller.getWalletDetails.bind(controller));
+walletRouter.post("/withdraw/:amount", jwt_verify_1.default, (0, role_Authenticate_1.default)("doctor"), doctor_1.getDoctor, controller.withdrawFromWallet.bind(controller));
 exports.default = walletRouter;

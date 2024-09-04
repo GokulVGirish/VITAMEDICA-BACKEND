@@ -128,6 +128,13 @@ class AdminRepository implements IAdminRepository {
             preserveNullAndEmptyArrays: true,
           },
         },
+        {
+          $group: {
+            _id: "$_id",
+            name: { $first: "$name" },
+            email:{$first:"$email"}
+          },
+        },
       ]);
 
       return { status: true, doctors: result };
@@ -556,41 +563,44 @@ class AdminRepository implements IAdminRepository {
   }
   async getDoctorCount(): Promise<{ doctorCount: number; unverifiedDoctorCount: number; }> {
     try{
-      const result = await doctorModel.aggregate([
-        {
-          $facet: {
-            doctorCount: [
-              {
-                $match: { status: "Verified" },
-              },
-              {
-                $count: "count",
-              },
-            ],
-            unverifiedDoctorCount: [
-              {
-                $match: { status: "Pending" },
-              },
-              {
-                $count: "count",
-              },
-            ],
-          },
-        },
-        {
-          $unwind: "$doctorCount",
-        },
-        {
-          $unwind: "$unverifiedDoctorCount",
-        },
-        {
-          $project: {
-            _id: 1,
-            doctorCount: "$doctorCount.count",
-            unverifiedDoctorCount: "$unverifiedDoctorCount.count",
-          },
-        },
-      ]);
+   const result = await doctorModel.aggregate([
+     {
+       $facet: {
+         doctorCount: [
+           {
+             $match: { status: "Verified" },
+           },
+           {
+             $count: "count",
+           },
+         ],
+         unverifiedDoctorCount: [
+           {
+             $match: { status: "Submitted" },
+           },
+           {
+             $count: "count",
+           },
+         ],
+       },
+     },
+     {
+       $addFields: {
+         doctorCount: { $arrayElemAt: ["$doctorCount.count", 0] },
+         unverifiedDoctorCount: {
+           $arrayElemAt: ["$unverifiedDoctorCount.count", 0],
+         },
+       },
+     },
+     {
+       $project: {
+         _id: 0,
+         doctorCount: { $ifNull: ["$doctorCount", 0] },
+         unverifiedDoctorCount: { $ifNull: ["$unverifiedDoctorCount", 0] },
+       },
+     },
+   ]);
+    
       
       return result[0]
 
@@ -767,6 +777,7 @@ class AdminRepository implements IAdminRepository {
               createdAt:1,
               start:1,
               end:1,
+              review:1,
               prescription:1,
               department: "$departmentInfo.name",
               docImage:"$docInfo.image",

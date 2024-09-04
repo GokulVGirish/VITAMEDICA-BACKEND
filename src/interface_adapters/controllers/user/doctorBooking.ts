@@ -1,4 +1,3 @@
-import { IUserInteractor } from "../../../entities/iuse_cases/iuserInteractor";
 import { Request, Response, NextFunction } from "express";
 import IDoctorBookingInteractor from "../../../entities/iuse_cases/user/iDoctorBooking";
 import userDataRequest from "../../../frameworks/express/middlewares/user";

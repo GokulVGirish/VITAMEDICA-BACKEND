@@ -68,6 +68,16 @@ const documentSubSchema = new mongoose_1.Schema({
         default: null,
     },
 }, { _id: false });
+const bankDetailsSchema = new mongoose_1.Schema({
+    accountNumber: {
+        type: String
+    },
+    ifsc: {
+        type: String
+    }
+}, {
+    _id: false
+});
 const doctorSchema = new mongoose_1.Schema({
     name: {
         type: String,
@@ -89,11 +99,12 @@ const doctorSchema = new mongoose_1.Schema({
         type: String,
         default: null,
     },
-    department: {
-        type: mongoose_1.default.Schema.Types.ObjectId,
-        ref: "Department",
-        required: true,
-    },
+    department: [{
+            type: mongoose_1.default.Schema.Types.ObjectId,
+            ref: "Department",
+            required: true,
+        }
+    ],
     password: {
         type: String,
         required: true,
@@ -135,6 +146,10 @@ const doctorSchema = new mongoose_1.Schema({
     isBlocked: {
         type: Boolean,
         default: false,
+    },
+    bankDetails: {
+        type: bankDetailsSchema,
+        default: null
     },
     reviews: [ReviewSchema]
 });

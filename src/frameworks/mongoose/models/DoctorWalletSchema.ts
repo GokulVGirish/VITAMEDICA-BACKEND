@@ -40,10 +40,6 @@ const DoctorwalletSchema = new mongoose.Schema({
         required:true
 
       },
-      paymentMethod: {
-        type: String,
-        enum: ["razorpay"],
-      },
     },
   ],
 });

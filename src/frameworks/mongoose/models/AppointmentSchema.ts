@@ -47,15 +47,21 @@ const AppointmentSchema = new mongoose.Schema(
       }
 
     },
+    paymentMethod:{
+      type:String,
+      enum:["razorpay","wallet"]
+
+    },
 
     paymentStatus: {
       type: String,
       enum: ["pending", "captured", "failed", "refunded", "anonymous"],
       default: "captured",
-      //anonymous captured failed refunded pending
+     
     },
     paymentId: {
       type: String,
+      default:null
     },
      prescription: {
       type: String,

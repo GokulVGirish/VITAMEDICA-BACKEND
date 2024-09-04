@@ -26,6 +26,7 @@ appointmentRouter.post(
   getUser,
   controller.razorPayValidate.bind(controller)
 );
+appointmentRouter.post("/book/wallet",authMiddleware,verifyRole("user"),getUser,controller.bookFromWallet.bind(controller))
 appointmentRouter.post(
   "/lock-slot",
   authMiddleware,

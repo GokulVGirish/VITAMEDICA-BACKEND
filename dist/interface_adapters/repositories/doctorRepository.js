@@ -440,7 +440,7 @@ class DoctorRepository {
             throw error;
         }
     }
-    async doctorWalletUpdate(docId, amount, type, reason, paymentMethod, appointmentId) {
+    async doctorWalletUpdate(docId, amount, type, reason, appointmentId) {
         const amountNum = Number(amount);
         try {
             const update = {
@@ -453,7 +453,6 @@ class DoctorRepository {
                         amount: amountNum,
                         type: type,
                         reason: reason,
-                        paymentMethod,
                     },
                 },
             };
@@ -484,7 +483,7 @@ class DoctorRepository {
             throw error;
         }
     }
-    async userWalletUpdate(userId, appointmentId, amount, type, reason, paymentMethod) {
+    async userWalletUpdate(userId, appointmentId, amount, type, reason) {
         const amountNum = Number(amount);
         try {
             const result = await UserWalletSchema_1.default.findOneAndUpdate({ userId }, {
@@ -498,7 +497,6 @@ class DoctorRepository {
                         amount: amountNum,
                         type: type,
                         reason: reason,
-                        paymentMethod,
                     },
                 },
             }, {

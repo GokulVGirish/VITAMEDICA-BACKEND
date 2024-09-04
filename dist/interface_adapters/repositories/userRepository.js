@@ -226,23 +226,26 @@ class UserRepository {
                         ],
                         count: [
                             {
-                                $count: "count"
-                            }
-                        ]
+                                $count: "count",
+                            },
+                        ],
                     },
                 },
                 {
-                    $unwind: "$count"
+                    $unwind: "$count",
                 },
                 {
                     $project: {
                         doctors: 1,
-                        count: "$count.count"
-                    }
-                }
+                        count: "$count.count",
+                    },
+                },
             ]);
             console.log("result", result[0].doctors);
-            return { doctors: result[0].doctors, totalPages: Math.ceil(result[0].count / limit) };
+            return {
+                doctors: result[0].doctors,
+                totalPages: Math.ceil(result[0].count / limit),
+            };
         }
         catch (error) {
             throw error;
@@ -315,18 +318,18 @@ class UserRepository {
                             { $skip: skip },
                             { $limit: limit },
                         ],
-                        count: [{ $count: "count" }]
+                        count: [{ $count: "count" }],
                     },
                 },
                 {
-                    $unwind: "$count"
+                    $unwind: "$count",
                 },
                 {
                     $project: {
                         doctors: 1,
-                        count: "$count.count"
-                    }
-                }
+                        count: "$count.count",
+                    },
+                },
             ]);
             return {
                 doctors: newResult[0].doctors,
@@ -369,11 +372,11 @@ class UserRepository {
                         from: "departments",
                         localField: "department",
                         foreignField: "_id",
-                        as: "departmentInfo"
-                    }
+                        as: "departmentInfo",
+                    },
                 },
                 {
-                    $unwind: "$departmentInfo"
+                    $unwind: "$departmentInfo",
                 },
                 {
                     $group: {
@@ -382,10 +385,10 @@ class UserRepository {
                         department: { $push: "$departmentInfo.name" },
                         image: { $first: "$image" },
                         degree: { $first: "$degree" },
-                        fees: { $first: '$fees' },
-                        description: { $first: '$description' }
-                    }
-                }
+                        fees: { $first: "$fees" },
+                        description: { $first: "$description" },
+                    },
+                },
             ]);
             console.log("departmentInfo", result);
             return result[0];
@@ -504,25 +507,28 @@ class UserRepository {
             throw error;
         }
     }
-    async createAppointment(userId, docId, date, start, end, amount, paymentId, fees) {
+    async createAppointment(userId, docId, date, start, end, amount, fees, paymentMethod, paymentId) {
         try {
-            const result = await AppointmentSchema_1.default.create({
-                docId: docId,
-                userId: userId,
-                date: date,
-                start,
-                end,
+            const query = {
+                docId,
+                userId,
+                date,
+                start, end,
                 amount,
                 fees,
-                paymentId,
-            });
+                paymentMethod
+            };
+            if (paymentMethod === "razorpay") {
+                query.paymentId = paymentId;
+            }
+            const result = await AppointmentSchema_1.default.create(query);
             return result;
         }
         catch (error) {
             throw error;
         }
     }
-    async doctorWalletUpdate(docId, appointmentId, amount, type, reason, paymentMethod) {
+    async doctorWalletUpdate(docId, appointmentId, amount, type, reason) {
         try {
             const result = await DoctorWalletSchema_1.default.findOneAndUpdate({ doctorId: docId }, {
                 $inc: {
@@ -535,7 +541,6 @@ class UserRepository {
                         amount: amount,
                         type: type,
                         reason: reason,
-                        paymentMethod,
                     },
                 },
             }, {
@@ -694,7 +699,7 @@ class UserRepository {
             throw error;
         }
     }
-    async userWalletUpdate(userId, appointmentId, amount, type, reason, paymentMethod) {
+    async userWalletUpdate(userId, appointmentId, amount, type, reason) {
         try {
             try {
                 const result = await UserWalletSchema_1.default.findOneAndUpdate({ userId: userId }, {
@@ -708,7 +713,6 @@ class UserRepository {
                             amount: amount,
                             type: type,
                             reason: reason,
-                            paymentMethod,
                         },
                     },
                 }, {
@@ -914,22 +918,22 @@ class UserRepository {
             const favoriteDoctors = await UserSchema_1.default.aggregate([
                 {
                     $match: {
-                        _id: new mongoose_1.default.Types.ObjectId(userId)
-                    }
+                        _id: new mongoose_1.default.Types.ObjectId(userId),
+                    },
                 },
                 {
                     $set: {
                         favorites: {
-                            $ifNull: ["$favorites", []]
-                        }
-                    }
+                            $ifNull: ["$favorites", []],
+                        },
+                    },
                 },
                 {
                     $project: {
                         _id: 0,
-                        favorites: 1
-                    }
-                }
+                        favorites: 1,
+                    },
+                },
             ]);
             const favorites = favoriteDoctors[0].favorites;
             if (favorites.length === 0)
@@ -989,14 +993,14 @@ class UserRepository {
                                     image: 1,
                                     degree: 1,
                                     fees: 1,
-                                    averageRating: 1,
+                                    averageRating: { $round: ["$averageRating", 1] },
                                     totalReviews: 1,
                                 },
                             },
                             {
                                 $sort: {
-                                    _id: 1
-                                }
+                                    _id: 1,
+                                },
                             },
                             {
                                 $skip: skip,
@@ -1022,7 +1026,11 @@ class UserRepository {
                     },
                 },
             ]);
-            return { status: true, doctors: doctors[0].data, totalPages: doctors[0].count };
+            return {
+                status: true,
+                doctors: doctors[0].data,
+                totalPages: doctors[0].count,
+            };
         }
         catch (error) {
             throw error;
@@ -1030,10 +1038,14 @@ class UserRepository {
     }
     async addUserReviewToAppointment(appointmentId, rating, description) {
         try {
-            const result = await AppointmentSchema_1.default.updateOne({ _id: appointmentId }, { $set: { review: {
+            const result = await AppointmentSchema_1.default.updateOne({ _id: appointmentId }, {
+                $set: {
+                    review: {
                         rating: rating,
-                        description: description || ""
-                    } } });
+                        description: description || "",
+                    },
+                },
+            });
             return result.modifiedCount > 0;
         }
         catch (error) {

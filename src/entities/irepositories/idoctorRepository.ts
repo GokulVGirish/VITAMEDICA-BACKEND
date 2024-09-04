@@ -85,7 +85,6 @@ export interface IDoctorRepository {
     amount: string,
     type: string,
     reason: string,
-    paymentMethod: string,
     appointmentId?: Types.ObjectId
   ): Promise<boolean>;
   userWalletUpdate(
@@ -94,7 +93,6 @@ export interface IDoctorRepository {
     amount: string,
     type: string,
     reason: string,
-    paymentMethod: string
   ): Promise<boolean>;
 
   createCancelledAppointment(

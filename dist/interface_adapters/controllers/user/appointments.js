@@ -46,6 +46,27 @@ class UserAppointmentControllers {
             throw error;
         }
     }
+    async bookFromWallet(req, res, next) {
+        try {
+            const { docId, slotDetails, fees } = req.body;
+            const userId = req.userData._id;
+            const response = await this.interactor.bookFromWallet(userId, docId, slotDetails, fees);
+            if (response.status) {
+                res.status(200).json({
+                    success: true,
+                    message: response.message,
+                    appointment: response.appointment,
+                });
+            }
+            else {
+                res.status(400).json({ success: false, message: response.message });
+            }
+        }
+        catch (error) {
+            console.log(error);
+            next(error);
+        }
+    }
     async lockSlot(req, res, next) {
         try {
             const { doctorId, date, slotId } = req.body;

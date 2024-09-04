@@ -39,7 +39,7 @@ class UserAppointmentsInteractor implements IUserAppointmentInteractor {
     docId: Types.ObjectId,
     slotDetails: any,
     userId: Types.ObjectId,
-    fees: string
+    fees: string,
   ): Promise<{
     status: boolean;
     message?: string;
@@ -80,8 +80,9 @@ class UserAppointmentsInteractor implements IUserAppointmentInteractor {
         start,
         end,
         fees,
+        appointmentFees.toString(),
+        "wallet",
         razorpay_payment_id,
-        appointmentFees.toString()
       );
       if (!result) return { status: false, message: "Something Went Wrong" };
       await this.Repository.doctorWalletUpdate(
@@ -90,12 +91,63 @@ class UserAppointmentsInteractor implements IUserAppointmentInteractor {
         Number(appointmentFees),
         "credit",
         "Appointment Booked",
-        "razorpay"
       );
       return { status: true, message: "Success", appointment: result };
     } catch (error) {
       throw error;
     }
+  }
+  async bookFromWallet(userId: Types.ObjectId, doctorId: Types.ObjectId, slotDetails: any, fees: string): Promise<{ status: boolean; message?: string; appointment?: IAppointment; }> {
+      try{
+        const slotId = slotDetails.slotTime._id;
+        const isoDate = new Date(slotDetails.date).toISOString();
+        const start = new Date(slotDetails.slotTime.start).toISOString();
+        const end = new Date(slotDetails.slotTime.end).toISOString();
+        const slotBooking = await this.Repository.bookSlot(
+          doctorId,
+          userId,
+          slotId,
+          isoDate
+        );
+        if (!slotBooking)
+          return {
+            status: false,
+            message: "Slot is not locked by you or lock has expired.",
+          };
+        const totalFees = parseFloat(fees);
+        const appointmentFees = (totalFees * 0.8).toFixed(2);
+        const result = await this.Repository.createAppointment(
+          userId,
+          doctorId,
+          isoDate,
+          start,
+          end,
+          fees,
+          appointmentFees.toString(),
+          "wallet"
+        );
+       
+        if (!result) return { status: false, message: "Something Went Wrong" };
+          await this.Repository.userWalletUpdate(
+            userId,
+            result._id as Types.ObjectId,
+            totalFees,
+            "debit",
+            "booked Appointment",
+          );
+        await this.Repository.doctorWalletUpdate(
+          doctorId,
+          result._id as Types.ObjectId,
+          Number(appointmentFees),
+          "credit",
+          "Appointment Booked",
+        );
+        return { status: true, message: "Success", appointment: result };
+
+      }
+      catch(error){
+        throw error
+      }
   }
 
   async lockSlot(
@@ -197,7 +249,6 @@ class UserAppointmentsInteractor implements IUserAppointmentInteractor {
         refundAmount,
         "debit",
         "User Cancelled Appointment",
-        "razorpay"
       );
       const cancellationAppointment =
         await this.Repository.createCancelledAppointment(
@@ -215,7 +266,6 @@ class UserAppointmentsInteractor implements IUserAppointmentInteractor {
         refundAmount,
         "credit",
         "cancelled appointment refund",
-        "razorpay"
       );
       if (!userWalletUpdate)
         return { status: false, message: "something went wrong" };

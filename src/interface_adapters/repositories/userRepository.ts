@@ -197,12 +197,11 @@ class UserRepository implements IUserRepository {
                   totalReviews: { $size: "$reviews" },
                 },
               },
-                {
-          $addFields: {
-            
-            averageRating: { $round: ["$averageRating", 1] },
-          },
-        },
+              {
+                $addFields: {
+                  averageRating: { $round: ["$averageRating", 1] },
+                },
+              },
               {
                 $lookup: {
                   from: "departments",
@@ -244,27 +243,29 @@ class UserRepository implements IUserRepository {
               { $skip: skip },
               { $limit: limit },
             ],
-            count:[
+            count: [
               {
-                $count:"count"
-              }
-            ]
+                $count: "count",
+              },
+            ],
           },
         },
         {
-          $unwind:"$count"
+          $unwind: "$count",
         },
         {
-          $project:{
-            doctors:1,
-            count:"$count.count"
-          }
-        }
+          $project: {
+            doctors: 1,
+            count: "$count.count",
+          },
+        },
       ]);
-      console.log("result",result[0].doctors)
+      console.log("result", result[0].doctors);
 
-    
-      return { doctors: result[0].doctors, totalPages: Math.ceil(result[0].count / limit) };
+      return {
+        doctors: result[0].doctors,
+        totalPages: Math.ceil(result[0].count / limit),
+      };
     } catch (error) {
       throw error;
     }
@@ -275,7 +276,6 @@ class UserRepository implements IUserRepository {
     limit: number
   ): Promise<{ doctors?: MongoDoctor[]; totalPages?: number }> {
     try {
-  
       const newResult = await doctorModel.aggregate([
         {
           $match: {
@@ -342,23 +342,23 @@ class UserRepository implements IUserRepository {
               { $skip: skip },
               { $limit: limit },
             ],
-            count:[{$count:"count"}]
+            count: [{ $count: "count" }],
           },
         },
         {
-          $unwind:"$count"
+          $unwind: "$count",
         },
         {
-          $project:{
-            doctors:1,
-            count:"$count.count"
-          }
-        }
+          $project: {
+            doctors: 1,
+            count: "$count.count",
+          },
+        },
       ]);
-   
+
       return {
-        doctors:newResult[0].doctors,
-      
+        doctors: newResult[0].doctors,
+
         totalPages: Math.ceil(newResult[0].count / limit),
       };
     } catch (error) {
@@ -392,29 +392,29 @@ class UserRepository implements IUserRepository {
           },
         },
         {
-          $lookup:{
-            from:"departments",
-            localField:"department",
-            foreignField:"_id",
-            as:"departmentInfo"
-          }
+          $lookup: {
+            from: "departments",
+            localField: "department",
+            foreignField: "_id",
+            as: "departmentInfo",
+          },
         },
         {
-          $unwind:"$departmentInfo"
+          $unwind: "$departmentInfo",
         },
         {
-          $group:{
-            _id:"$_id",
-            name:{$first:"$name"},
-            department:{$push:"$departmentInfo.name"},
-            image:{$first:"$image"},
-            degree:{$first:"$degree"},
-            fees:{$first:'$fees'},
-            description:{$first:'$description'}
-          }
-        }
+          $group: {
+            _id: "$_id",
+            name: { $first: "$name" },
+            department: { $push: "$departmentInfo.name" },
+            image: { $first: "$image" },
+            degree: { $first: "$degree" },
+            fees: { $first: "$fees" },
+            description: { $first: "$description" },
+          },
+        },
       ]);
-      console.log("departmentInfo",result)
+      console.log("departmentInfo", result);
 
       return result[0];
     } catch (error) {
@@ -578,20 +578,26 @@ class UserRepository implements IUserRepository {
     start: string,
     end: string,
     amount: string,
-    paymentId: string,
-    fees: string
+    fees: string,
+    paymentMethod:string,
+    paymentId?: string
   ): Promise<IAppointment> {
     try {
-      const result = await appointmentModel.create({
-        docId: docId,
-        userId: userId,
-        date: date,
-        start,
-        end,
-        amount,
+
+
+      const query:any={
+        docId,
+        userId,
+        date,
+        start,end
+        ,amount,
         fees,
-        paymentId,
-      });
+        paymentMethod
+      }
+      if(paymentMethod==="razorpay"){
+        query.paymentId=paymentId
+      }
+      const result = await appointmentModel.create(query);
       return result as IAppointment;
     } catch (error) {
       throw error;
@@ -603,7 +609,6 @@ class UserRepository implements IUserRepository {
     amount: number,
     type: string,
     reason: string,
-    paymentMethod: string
   ): Promise<boolean> {
     try {
       const result = await doctorWalletModal.findOneAndUpdate(
@@ -619,7 +624,6 @@ class UserRepository implements IUserRepository {
               amount: amount,
               type: type,
               reason: reason,
-              paymentMethod,
             },
           },
         },
@@ -814,7 +818,6 @@ class UserRepository implements IUserRepository {
     amount: number,
     type: string,
     reason: string,
-    paymentMethod: string
   ): Promise<boolean> {
     try {
       try {
@@ -831,7 +834,6 @@ class UserRepository implements IUserRepository {
                 amount: amount,
                 type: type,
                 reason: reason,
-                paymentMethod,
               },
             },
           },
@@ -997,7 +999,7 @@ class UserRepository implements IUserRepository {
         },
         {
           $addFields: {
-            averageRating: { $round: ["$averageRating",1] },
+            averageRating: { $round: ["$averageRating", 1] },
           },
         },
         {
@@ -1037,156 +1039,179 @@ class UserRepository implements IUserRepository {
     docId: string
   ): Promise<boolean> {
     try {
-      const result =await userModel.updateOne({_id:userId},{$pull:{favorites:new mongoose.Types.ObjectId(docId)}});
-      return result.modifiedCount>0
+      const result = await userModel.updateOne(
+        { _id: userId },
+        { $pull: { favorites: new mongoose.Types.ObjectId(docId) } }
+      );
+      return result.modifiedCount > 0;
     } catch (error) {
       throw error;
     }
   }
-  async addDoctorFavorites(userId: Types.ObjectId, docId: string): Promise<boolean> {
-      try{
-        
-        const result=await userModel.updateOne({_id:userId},{$addToSet:{favorites:new mongoose.Types.ObjectId(docId)}})
-        return result.modifiedCount>0
-
-      }
-      catch(error){
-        throw error
-      }
+  async addDoctorFavorites(
+    userId: Types.ObjectId,
+    docId: string
+  ): Promise<boolean> {
+    try {
+      const result = await userModel.updateOne(
+        { _id: userId },
+        { $addToSet: { favorites: new mongoose.Types.ObjectId(docId) } }
+      );
+      return result.modifiedCount > 0;
+    } catch (error) {
+      throw error;
+    }
   }
-  async getFavoriteDoctorsList(userId: Types.ObjectId, skip: number, limit: number): Promise<{status:boolean; doctors?: MongoDoctor[]; totalPages?: number; }> {
-      try{
-        const favoriteDoctors=await userModel.aggregate([
-          {
-            $match:{
-              _id:new mongoose.Types.ObjectId(userId)
-            }
+  async getFavoriteDoctorsList(
+    userId: Types.ObjectId,
+    skip: number,
+    limit: number
+  ): Promise<{
+    status: boolean;
+    doctors?: MongoDoctor[];
+    totalPages?: number;
+  }> {
+    try {
+      const favoriteDoctors = await userModel.aggregate([
+        {
+          $match: {
+            _id: new mongoose.Types.ObjectId(userId),
           },
-          {
-            $set:{
-              favorites:{
-                $ifNull:["$favorites",[]]
-              }
-            }
-          },
-          {
-            $project:{
-              _id:0,
-              favorites:1
-            }
-          }
-        ])
-        const favorites=favoriteDoctors[0].favorites
-        if(favorites.length===0)return {status:false}
-        const doctors = await doctorModel.aggregate([
-          {
-            $match: {
-              _id: { $in: favorites },
+        },
+        {
+          $set: {
+            favorites: {
+              $ifNull: ["$favorites", []],
             },
           },
-          {
-            $facet: {
-              data: [
-                {
-                  $set: {
-                    reviews: { $ifNull: ["$reviews", []] },
-                  },
-                },
-                {
-                  $addFields: {
-                    averageRating: {
-                      $avg: "$reviews.rating",
-                    },
-                    totalReviews: {
-                      $size: "$reviews",
-                    },
-                  },
-                },
-                {
-                  $lookup: {
-                    from: "departments",
-                    localField: "department",
-                    foreignField: "_id",
-                    as: "departmentInfo",
-                  },
-                },
-                {
-                  $unwind: "$departmentInfo",
-                },
-                {
-                  $group: {
-                    _id: "$_id",
-                    name: { $first: "$name" },
-                    image: { $first: "$image" },
-                    degree: { $first: "$degree" },
-                    fees: { $first: "$fees" },
-                    averageRating: { $first: "$averageRating" },
-                    totalReviews: { $first: "$totalReviews" },
-                    department: { $push: "$departmentInfo.name" },
-                  },
-                },
-                {
-                  $project: {
-                    _id: 1,
-                    name: 1,
-                    department: 1,
-                    image: 1,
-                    degree: 1,
-                    fees: 1,
-                    averageRating: 1,
-                    totalReviews: 1,
-                  },
-                },
-                {
-                  $sort:{
-                    _id:1
-
-                  }
-
-                },
-                {
-                  $skip: skip,
-                },
-                {
-                  $limit: limit,
-                },
-              ],
-              count: [
-                {
-                  $count: "count",
-                },
-              ],
-            },
+        },
+        {
+          $project: {
+            _id: 0,
+            favorites: 1,
           },
-          {
-            $unwind: "$count",
+        },
+      ]);
+      const favorites = favoriteDoctors[0].favorites;
+      if (favorites.length === 0) return { status: false };
+      const doctors = await doctorModel.aggregate([
+        {
+          $match: {
+            _id: { $in: favorites },
           },
-          {
-            $project: {
-              data: 1,
-              count: "$count.count",
-            },
+        },
+        {
+          $facet: {
+            data: [
+              {
+                $set: {
+                  reviews: { $ifNull: ["$reviews", []] },
+                },
+              },
+              {
+                $addFields: {
+                  averageRating: {
+                    $avg: "$reviews.rating",
+                  },
+                  totalReviews: {
+                    $size: "$reviews",
+                  },
+                },
+              },
+              {
+                $lookup: {
+                  from: "departments",
+                  localField: "department",
+                  foreignField: "_id",
+                  as: "departmentInfo",
+                },
+              },
+              {
+                $unwind: "$departmentInfo",
+              },
+              {
+                $group: {
+                  _id: "$_id",
+                  name: { $first: "$name" },
+                  image: { $first: "$image" },
+                  degree: { $first: "$degree" },
+                  fees: { $first: "$fees" },
+                  averageRating: { $first: "$averageRating" },
+                  totalReviews: { $first: "$totalReviews" },
+                  department: { $push: "$departmentInfo.name" },
+                },
+              },
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  department: 1,
+                  image: 1,
+                  degree: 1,
+                  fees: 1,
+                  averageRating: { $round: ["$averageRating", 1] },
+                  totalReviews: 1,
+                },
+              },
+              {
+                $sort: {
+                  _id: 1,
+                },
+              },
+              {
+                $skip: skip,
+              },
+              {
+                $limit: limit,
+              },
+            ],
+            count: [
+              {
+                $count: "count",
+              },
+            ],
           },
-        ]);
-      return {status:true,doctors:doctors[0].data,totalPages:doctors[0].count}
-
-      }
-      catch(error){
-        throw error
-      }
+        },
+        {
+          $unwind: "$count",
+        },
+        {
+          $project: {
+            data: 1,
+            count: "$count.count",
+          },
+        },
+      ]);
+      return {
+        status: true,
+        doctors: doctors[0].data,
+        totalPages: doctors[0].count,
+      };
+    } catch (error) {
+      throw error;
+    }
   }
-  async addUserReviewToAppointment(appointmentId: string, rating: number, description?: string): Promise<boolean> {
-      try{
-        const result=await appointmentModel.updateOne({_id:appointmentId},{$set:{review:{
-          rating:rating,
-          description:description||""
-        }}})
-        return result.modifiedCount>0
-
-      }
-      catch(error){
-        throw error
-      }
+  async addUserReviewToAppointment(
+    appointmentId: string,
+    rating: number,
+    description?: string
+  ): Promise<boolean> {
+    try {
+      const result = await appointmentModel.updateOne(
+        { _id: appointmentId },
+        {
+          $set: {
+            review: {
+              rating: rating,
+              description: description || "",
+            },
+          },
+        }
+      );
+      return result.modifiedCount > 0;
+    } catch (error) {
+      throw error;
+    }
   }
 }
 export default UserRepository

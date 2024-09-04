@@ -90,11 +90,10 @@ class DoctorSlotsInteractor implements IDoctorSlotInteractor {
       if (!res) return { status: false, message: "Something Went Wrong" };
       const response = await this.Repository.doctorWalletUpdate(
         id,
-        result.id as Types.ObjectId,
         result.amount as string,
         "debit",
         "appointment cancelled by Doc",
-        "razorpay"
+        result.id as Types.ObjectId
       );
       if (!response) return { status: false, message: "Something Went Wrong" };
 
@@ -104,7 +103,6 @@ class DoctorSlotsInteractor implements IDoctorSlotInteractor {
         result.amount as string,
         "credit",
         "Appointment cancelled by doctor",
-        "razorpay"
       );
       if (!userwaller)
         return { status: false, message: "Something Went Wrong" };

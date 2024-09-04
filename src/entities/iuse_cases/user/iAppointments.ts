@@ -15,8 +15,9 @@ interface IUserAppointmentInteractor {
     docId: Types.ObjectId,
     slotDetails: any,
     userId: Types.ObjectId,
-    fees: string
+    fees: string,
   ): Promise<{ status: boolean; message?: string; appointment?: IAppointment }>;
+  bookFromWallet(userId:Types.ObjectId,doctorId:Types.ObjectId,slotDetails:any,fees:string):Promise<{ status: boolean; message?: string; appointment?: IAppointment }>
   lockSlot(
     userId: Types.ObjectId,
     docId: Types.ObjectId,

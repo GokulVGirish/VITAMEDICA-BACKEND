@@ -48,8 +48,9 @@ interface IUserRepository {
     start: string,
     end: string,
     amount: string,
-    paymentId: string,
-    fees: string
+    fees: string,
+    paymentMethod: string,
+    paymentId?: string
   ): Promise<IAppointment>;
   doctorWalletUpdate(
     docId: Types.ObjectId,
@@ -57,7 +58,6 @@ interface IUserRepository {
     amount: number,
     type: string,
     reason: string,
-    paymentMethod: string
   ): Promise<boolean>;
   getAppointments(
     page: number,
@@ -91,7 +91,6 @@ interface IUserRepository {
     amount: number,
     type: string,
     reason: string,
-    paymentMethod: string
   ): Promise<boolean>;
   createCancelledAppointment(
     docId: Types.ObjectId,
@@ -137,10 +136,14 @@ interface IUserRepository {
     skip: number,
     limit: number
   ): Promise<{
-    status:boolean;
+    status: boolean;
     doctors?: MongoDoctor[];
     totalPages?: number;
   }>;
-  addUserReviewToAppointment(appointmentId:string,rating:number,description?:string):Promise<boolean>
+  addUserReviewToAppointment(
+    appointmentId: string,
+    rating: number,
+    description?: string
+  ): Promise<boolean>;
 }
 export default IUserRepository

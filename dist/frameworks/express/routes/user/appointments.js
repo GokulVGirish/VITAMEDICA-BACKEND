@@ -18,6 +18,7 @@ const controller = new appointments_1.default(interactor);
 const appointmentRouter = express_1.default.Router();
 appointmentRouter.post("/order", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.razorPayOrder.bind(controller));
 appointmentRouter.post("/order/validate", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.razorPayValidate.bind(controller));
+appointmentRouter.post("/book/wallet", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.bookFromWallet.bind(controller));
 appointmentRouter.post("/lock-slot", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.lockSlot.bind(controller));
 appointmentRouter.get("/", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.getAppointments.bind(controller));
 appointmentRouter.put("/:appointmentId/cancel", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.cancelAppointment.bind(controller));

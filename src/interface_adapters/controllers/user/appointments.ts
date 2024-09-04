@@ -1,4 +1,3 @@
-import { IUserInteractor } from "../../../entities/iuse_cases/iuserInteractor";
 import { Request, Response, NextFunction } from "express";
 import userDataRequest from "../../../frameworks/express/middlewares/user";
 import { Types } from "mongoose";
@@ -48,7 +47,7 @@ class UserAppointmentControllers {
         docId,
         slotDetails,
         userId as Types.ObjectId,
-        fees
+        fees,
       );
       console.log("response", response);
       if (response.status) {
@@ -64,6 +63,28 @@ class UserAppointmentControllers {
       next(error);
       throw error;
     }
+  }
+  async bookFromWallet(req:Request,res:Response,next:NextFunction){
+    try{
+      const { docId, slotDetails ,fees} = req.body;
+          const userId = (req as userDataRequest).userData._id;
+      const response=await this.interactor.bookFromWallet(userId as Types.ObjectId,docId,slotDetails,fees)
+        if (response.status) {
+          res.status(200).json({
+            success: true,
+            message: response.message,
+            appointment: response.appointment,
+          });
+        } else {
+          res.status(400).json({ success: false, message: response.message });
+        }
+
+    }
+    catch(error){
+      console.log(error)
+      next(error)
+    }
+
   }
   async lockSlot(req: Request, res: Response, next: NextFunction) {
     try {

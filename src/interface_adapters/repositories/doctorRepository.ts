@@ -481,7 +481,6 @@ class DoctorRepository implements IDoctorRepository {
     amount: string,
     type: string,
     reason: string,
-    paymentMethod: string,
     appointmentId?: Types.ObjectId
   ): Promise<boolean> {
     const amountNum = Number(amount);
@@ -496,7 +495,6 @@ class DoctorRepository implements IDoctorRepository {
              amount: amountNum,
              type: type,
              reason: reason,
-             paymentMethod,
            },
          },
        };
@@ -541,7 +539,6 @@ class DoctorRepository implements IDoctorRepository {
     amount: string,
     type: string,
     reason: string,
-    paymentMethod: string
   ): Promise<boolean> {
     const amountNum = Number(amount);
     try {
@@ -558,7 +555,6 @@ class DoctorRepository implements IDoctorRepository {
               amount: amountNum,
               type: type,
               reason: reason,
-              paymentMethod,
             },
           },
         },

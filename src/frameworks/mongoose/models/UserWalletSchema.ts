@@ -40,10 +40,6 @@ const UserwalletSchema = new mongoose.Schema({
         type: String,
         required: true,
       },
-      paymentMethod: {
-        type: String,
-        enum: ["razorpay"],
-      },
     },
   ],
 });

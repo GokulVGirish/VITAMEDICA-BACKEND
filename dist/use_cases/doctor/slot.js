@@ -62,10 +62,10 @@ class DoctorSlotsInteractor {
             const res = await this.Repository.createCancelledAppointment(id, result.id, result.amount, "doctor", reason);
             if (!res)
                 return { status: false, message: "Something Went Wrong" };
-            const response = await this.Repository.doctorWalletUpdate(id, result.id, result.amount, "debit", "appointment cancelled by Doc", "razorpay");
+            const response = await this.Repository.doctorWalletUpdate(id, result.amount, "debit", "appointment cancelled by Doc", result.id);
             if (!response)
                 return { status: false, message: "Something Went Wrong" };
-            const userwaller = await this.Repository.userWalletUpdate(result.userId, result.id, result.amount, "credit", "Appointment cancelled by doctor", "razorpay");
+            const userwaller = await this.Repository.userWalletUpdate(result.userId, result.id, result.amount, "credit", "Appointment cancelled by doctor");
             if (!userwaller)
                 return { status: false, message: "Something Went Wrong" };
             const deleteSlot = await this.Repository.deleteSlots(id, date, startTime);

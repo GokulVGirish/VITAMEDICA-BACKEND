@@ -611,8 +611,10 @@ class UserRepository implements IUserRepository {
     reason: string,
   ): Promise<boolean> {
     try {
+
+    
       const result = await doctorWalletModal.findOneAndUpdate(
-        { doctorId: docId },
+        { doctorId: new mongoose.Types.ObjectId(docId) },
         {
           $inc: {
             balance: type === "credit" ? amount : -amount,
@@ -896,6 +898,7 @@ class UserRepository implements IUserRepository {
             start: 1,
             end: 1,
             amount: 1,
+            fees:1,
             prescription: 1,
             createdAt: 1,
             docName: "$docInfo.name",

@@ -287,32 +287,24 @@ class AdminRepository implements IAdminRepository {
         },
         {
           $group: {
-            _id: "$status",
-            count: { $sum: 1 },
+            _id: null,
+            bookedCount: { $sum: 1 },
+            cancelledCount: {
+              $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] },
+            },
           },
         },
         {
           $project: {
             _id: 0,
-            status: "$_id",
-            count: 1,
+            appointmentsCount: "$bookedCount",
+            cancellationsCount: "$cancelledCount",
           },
         },
       ]);
 
-      const stats = {
-        appointmentsCount: 0,
-        cancellationsCount: 0,
-      };
-
-      result?.forEach((entry) => {
-        if (entry.status === "completed" || entry.status === "pending") {
-          stats.appointmentsCount += entry.count;
-        } else if (entry.status === "cancelled") {
-          stats.cancellationsCount = entry.count;
-        }
-      });
-      return stats;
+    
+      return result[0]
     } catch (error) {
       throw error;
     }
@@ -398,32 +390,23 @@ class AdminRepository implements IAdminRepository {
         },
         {
           $group: {
-            _id: "$status",
-            count: { $sum: 1 },
+            _id: null,
+            bookedCount: { $sum: 1 },
+            cancelledCount: {
+              $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] },
+            },
           },
         },
         {
           $project: {
             _id: 0,
-            status: "$_id",
-            count: 1,
+            appointmentsCount: "$bookedCount",
+            cancellationsCount: "$cancelledCount",
           },
         },
       ]);
 
-      const stats = {
-        appointmentsCount: 0,
-        cancellationsCount: 0,
-      };
-
-      result?.forEach((entry) => {
-        if (entry.status === "completed" || entry.status === "pending") {
-          stats.appointmentsCount += entry.count;
-        } else if (entry.status === "cancelled") {
-          stats.cancellationsCount = entry.count;
-        }
-      });
-      return stats;
+   return result[0]
     } catch (error) {
       throw error;
     }
@@ -511,7 +494,7 @@ class AdminRepository implements IAdminRepository {
       const result = await appointmentModel.aggregate([
         {
           $match: {
-            updatedAt: {
+            createdAt: {
               $gte: startOfDay,
               $lte: endOfDay,
             },
@@ -519,31 +502,23 @@ class AdminRepository implements IAdminRepository {
         },
         {
           $group: {
-            _id: "$status",
-            count: { $sum: 1 },
+            _id: null,
+            bookedCount: { $sum: 1 },
+            cancelledCount: {
+              $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] },
+            },
           },
         },
         {
           $project: {
             _id: 0,
-            status: "$_id",
-            count: 1,
+            appointmentsCount: "$bookedCount",
+            cancellationsCount: "$cancelledCount",
           },
         },
       ]);
-      const stats = {
-        appointmentsCount: 0,
-        cancellationsCount: 0,
-      };
-
-      result?.forEach((entry) => {
-        if (entry.status === "completed" || entry.status === "pending") {
-          stats.appointmentsCount += entry.count;
-        } else if (entry.status === "cancelled") {
-          stats.cancellationsCount = entry.count;
-        }
-      });
-      return stats;
+     
+      return result[0];
     } catch (error) {
       throw error;
     }

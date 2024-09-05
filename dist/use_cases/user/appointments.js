@@ -130,7 +130,7 @@ class UserAppointmentsInteractor {
                     message: "You can only cancel the appointment within 4 hours of making it.",
                 };
             }
-            const refundAmount = Number(appointment.fees) * 0.8;
+            const refundAmount = parseFloat(appointment.fees) * 0.8;
             const appointmentCancel = await this.Repository.cancelAppointment(appointmentId, reason);
             if (!appointmentCancel.status)
                 return { status: false, message: "Something Went Wrong" };

@@ -214,6 +214,7 @@ class UserAppointmentsInteractor implements IUserAppointmentInteractor {
     reason: string
   ): Promise<{ status: boolean; message: string }> {
     try {
+      
       const appointment = await this.Repository.getAppointment(appointmentId);
       if (!appointment)
         return { status: false, message: "Something went wrong" };
@@ -228,12 +229,14 @@ class UserAppointmentsInteractor implements IUserAppointmentInteractor {
         };
       }
 
-      const refundAmount = Number(appointment.fees) * 0.8;
+      const refundAmount = parseFloat(appointment.fees)* 0.8;
+  
 
       const appointmentCancel = await this.Repository.cancelAppointment(
         appointmentId,
         reason
       );
+     
       if (!appointmentCancel.status)
         return { status: false, message: "Something Went Wrong" };
       const cancelSlot = await this.Repository.unbookSlot(
@@ -241,6 +244,7 @@ class UserAppointmentsInteractor implements IUserAppointmentInteractor {
         date,
         startTime
       );
+  
       if (!cancelSlot)
         return { status: false, message: "Slot Cancellation Failed" };
 
@@ -249,8 +253,9 @@ class UserAppointmentsInteractor implements IUserAppointmentInteractor {
         new mongoose.Types.ObjectId(appointmentId),
         refundAmount,
         "debit",
-        "User Cancelled Appointment",
+        "User Cancelled Appointment"
       );
+    
       const cancellationAppointment =
         await this.Repository.createCancelledAppointment(
           appointmentCancel.docId as Types.ObjectId,

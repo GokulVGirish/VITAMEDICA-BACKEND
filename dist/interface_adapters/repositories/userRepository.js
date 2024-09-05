@@ -530,7 +530,7 @@ class UserRepository {
     }
     async doctorWalletUpdate(docId, appointmentId, amount, type, reason) {
         try {
-            const result = await DoctorWalletSchema_1.default.findOneAndUpdate({ doctorId: docId }, {
+            const result = await DoctorWalletSchema_1.default.findOneAndUpdate({ doctorId: new mongoose_1.default.Types.ObjectId(docId) }, {
                 $inc: {
                     balance: type === "credit" ? amount : -amount,
                     transactionCount: 1,
@@ -773,6 +773,7 @@ class UserRepository {
                         start: 1,
                         end: 1,
                         amount: 1,
+                        fees: 1,
                         prescription: 1,
                         createdAt: 1,
                         docName: "$docInfo.name",

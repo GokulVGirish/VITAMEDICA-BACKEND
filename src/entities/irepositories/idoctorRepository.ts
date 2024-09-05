@@ -73,7 +73,8 @@ export interface IDoctorRepository {
   cancelAppointment(
     id: Types.ObjectId,
     date: Date,
-    startTime: Date
+    startTime: Date,
+    reason:string
   ): Promise<{
     status: boolean;
     amount?: string;

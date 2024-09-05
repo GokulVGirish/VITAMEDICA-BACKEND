@@ -57,7 +57,7 @@ interface IUserRepository {
     appointmentId: Types.ObjectId,
     amount: number,
     type: string,
-    reason: string,
+    reason: string
   ): Promise<boolean>;
   getAppointments(
     page: number,
@@ -78,7 +78,8 @@ interface IUserRepository {
     totalPages?: number;
   }>;
   cancelAppointment(
-    appointmentId: string
+    appointmentId: string,
+    reason: string
   ): Promise<{ status: boolean; amount?: string; docId?: Types.ObjectId }>;
   unbookSlot(
     docId: Types.ObjectId,
@@ -90,7 +91,7 @@ interface IUserRepository {
     appointmentId: Types.ObjectId,
     amount: number,
     type: string,
-    reason: string,
+    reason: string
   ): Promise<boolean>;
   createCancelledAppointment(
     docId: Types.ObjectId,

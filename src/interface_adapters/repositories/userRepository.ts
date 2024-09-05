@@ -741,12 +741,13 @@ class UserRepository implements IUserRepository {
     }
   }
   async cancelAppointment(
-    appointmentId: string
+    appointmentId: string,
+    reason:string
   ): Promise<{ status: boolean; amount?: string; docId?: Types.ObjectId }> {
     try {
       const response = await appointmentModel.findOneAndUpdate(
         { _id: appointmentId },
-        { status: "cancelled" },
+        { status: "cancelled" ,reason,cancelledBy:"user"},
         { new: true }
       );
       if (response) {

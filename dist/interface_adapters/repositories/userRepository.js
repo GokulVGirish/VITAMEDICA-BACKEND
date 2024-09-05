@@ -640,9 +640,9 @@ class UserRepository {
             throw error;
         }
     }
-    async cancelAppointment(appointmentId) {
+    async cancelAppointment(appointmentId, reason) {
         try {
-            const response = await AppointmentSchema_1.default.findOneAndUpdate({ _id: appointmentId }, { status: "cancelled" }, { new: true });
+            const response = await AppointmentSchema_1.default.findOneAndUpdate({ _id: appointmentId }, { status: "cancelled", reason, cancelledBy: "user" }, { new: true });
             if (response) {
                 return { status: true, amount: response.amount, docId: response.docId };
             }

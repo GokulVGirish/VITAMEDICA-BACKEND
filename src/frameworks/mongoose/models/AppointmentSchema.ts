@@ -67,7 +67,18 @@ const AppointmentSchema = new mongoose.Schema(
       type: String,
       default: null,
     
+  },
+  reason:{
+    type:String,
+    default:null
+  },
+  cancelledBy:{
+    type:String,
+    enum:["user","doctor"],
+    required: false,
+    default:null
   }
+
   },
   { timestamps: true }
 );

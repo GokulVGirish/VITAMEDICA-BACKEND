@@ -3,6 +3,7 @@ import MongoDepartment from "../rules/departments"
 import { MongoDoctor } from "../rules/doctor";
 import { MongoUser, User } from "../rules/user";
 import IAppointment from "../rules/appointments";
+import mongoose, { Types } from "mongoose";
 export interface IAdminRepository {
   getAdmin(email: string): Promise<MongoAdmin | null>;
   getDepartments(): Promise<{
@@ -71,6 +72,56 @@ export interface IAdminRepository {
   getDoctorCount(): Promise<{
     doctorCount: number;
     unverifiedDoctorCount: number;
+  }>;
+  getTodaysRefunds(): Promise<{ total: number; count: number }>;
+  getTodaysWithdrawals(): Promise<{ total: number; count: number }>;
+  getWeeklyRefunds(): Promise<{ total: number; count: number }>;
+  getWeeklyWithdrawals(): Promise<{ total: number; count: number }>;
+  getMonthlyRefunds(): Promise<{ total: number; count: number }>;
+  getMonthlyWithdrawals(): Promise<{ total: number; count: number }>;
+  getYearlyRefunds(): Promise<{ total: number; count: number }>;
+  getYearlyWithdrawals(): Promise<{ total: number; count: number }>;
+  getRefundsList(
+    page: number,
+    limit: number,
+    startDate: string,
+    endDate: string
+  ): Promise<{
+    count: number;
+    RefundList: {
+      _id: mongoose.Types.ObjectId;
+      date: Date;
+      userName: string;
+      cancelledBy: string;
+      amount: string;
+    }[];
+  }>;
+  getWithdrawalList(
+    page: number,
+    limit: number,
+    startDate: string,
+    endDate: string
+  ): Promise<{
+    withdrawalList?: {
+      name: string;
+      date: Date;
+      email: string;
+      amount: number;
+    }[];
+    count?: number;
+  }>;
+  getRefundDetail(id: string): Promise<{
+    _id: Types.ObjectId;
+    docName: string;
+    userName: string;
+    docImg: string;
+    userImg: string;
+    cancelledBy: string;
+    appointmentTime: Date;
+    appointmentBookedTime: Date;
+    reason: string;
+    amount: string;
+    cancellationTime:Date
   }>;
 }
 export default IAdminRepository

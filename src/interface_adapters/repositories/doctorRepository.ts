@@ -439,7 +439,8 @@ class DoctorRepository implements IDoctorRepository {
   async cancelAppointment(
     id: Types.ObjectId,
     date: Date,
-    startTime: Date
+    startTime: Date,
+    reason:string
   ): Promise<{
     status: boolean;
     amount?: string;
@@ -457,7 +458,7 @@ class DoctorRepository implements IDoctorRepository {
             { start: startTime },
           ],
         },
-        { status: "cancelled" },
+        { status: "cancelled" ,reason,cancelledBy:"doctor"},
         {
           new: true,
         }

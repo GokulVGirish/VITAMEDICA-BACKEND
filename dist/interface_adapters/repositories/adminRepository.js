@@ -11,6 +11,8 @@ const RejectedDoctor_1 = __importDefault(require("../../frameworks/mongoose/mode
 const dates_1 = require("../../frameworks/services/dates");
 const AppointmentSchema_1 = __importDefault(require("../../frameworks/mongoose/models/AppointmentSchema"));
 const mongoose_1 = __importDefault(require("mongoose"));
+const cancelledAppointmentSchema_1 = __importDefault(require("../../frameworks/mongoose/models/cancelledAppointmentSchema"));
+const WithdrawalSchema_1 = __importDefault(require("../../frameworks/mongoose/models/WithdrawalSchema"));
 class AdminRepository {
     async getAdmin(email) {
         const admin = await AdminSchema_1.default.findOne({ email: email });
@@ -117,7 +119,7 @@ class AdminRepository {
                     $group: {
                         _id: "$_id",
                         name: { $first: "$name" },
-                        email: { $first: "$email" }
+                        email: { $first: "$email" },
                     },
                 },
             ]);
@@ -316,7 +318,7 @@ class AdminRepository {
                         _id: "$month",
                         totalRevenue: {
                             $sum: {
-                                $toDouble: "$amount"
+                                $toDouble: "$amount",
                             },
                         },
                     },
@@ -406,7 +408,7 @@ class AdminRepository {
                         _id: { label: { $year: "$date" } },
                         totalRevenue: {
                             $sum: {
-                                $toDouble: "$amount"
+                                $toDouble: "$amount",
                             },
                         },
                     },
@@ -470,7 +472,7 @@ class AdminRepository {
             const result = await AppointmentSchema_1.default.aggregate([
                 {
                     $match: {
-                        createdAt: {
+                        updatedAt: {
                             $gte: startOfDay,
                             $lte: endOfDay,
                         },
@@ -579,7 +581,7 @@ class AdminRepository {
                     $facet: {
                         data: [
                             {
-                                $match: matchCondition
+                                $match: matchCondition,
                             },
                             {
                                 $sort: {
@@ -641,7 +643,7 @@ class AdminRepository {
                         ],
                         totalCount: [
                             {
-                                $match: matchCondition
+                                $match: matchCondition,
                             },
                             {
                                 $count: "count",
@@ -650,16 +652,15 @@ class AdminRepository {
                     },
                 },
                 {
-                    $unwind: "$totalCount"
+                    $unwind: "$totalCount",
                 },
                 {
                     $project: {
                         data: 1,
-                        totalCount: "$totalCount.count"
-                    }
-                }
+                        totalCount: "$totalCount.count",
+                    },
+                },
             ]);
-            console.log("result", result);
             return result;
         }
         catch (error) {
@@ -705,7 +706,7 @@ class AdminRepository {
                     },
                 },
                 {
-                    $unwind: "$departmentInfo"
+                    $unwind: "$departmentInfo",
                 },
                 {
                     $project: {
@@ -725,7 +726,7 @@ class AdminRepository {
                         prescription: 1,
                         department: "$departmentInfo.name",
                         docImage: "$docInfo.image",
-                        userImage: "$userInfo.image"
+                        userImage: "$userInfo.image",
                     },
                 },
             ]);
@@ -818,7 +819,7 @@ class AdminRepository {
                         description: 1,
                         isBlocked: 1,
                         reviews: {
-                            $slice: ["$reviews", skip, limit]
+                            $slice: ["$reviews", skip, limit],
                         },
                         totalReviews: 1,
                         averageRating: 1,
@@ -851,9 +852,9 @@ class AdminRepository {
                         bloodGroup: 1,
                         register: 1,
                         image: 1,
-                        isBlocked: 1
-                    }
-                }
+                        isBlocked: 1,
+                    },
+                },
             ]);
             return result[0];
         }
@@ -912,8 +913,8 @@ class AdminRepository {
                     },
                 },
                 {
-                    $unwind: "$totalCount"
-                }
+                    $unwind: "$totalCount",
+                },
             ]);
             return result[0];
         }
@@ -967,20 +968,504 @@ class AdminRepository {
                                 },
                             },
                         ],
-                        totalCount: [{ $count: "count" }]
+                        totalCount: [{ $count: "count" }],
                     },
                 },
                 {
-                    $unwind: "$totalCount"
+                    $unwind: "$totalCount",
                 },
                 {
                     $project: {
                         data: "$data",
-                        count: "$totalCount.count"
+                        count: "$totalCount.count",
+                    },
+                },
+            ]);
+            console.log("result", result);
+            return result[0];
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getTodaysRefunds() {
+        try {
+            const statOfDay = new Date();
+            statOfDay.setHours(0, 0, 0, 0);
+            const endOfToday = new Date();
+            endOfToday.setHours(23, 59, 59, 999);
+            const result = await cancelledAppointmentSchema_1.default.aggregate([
+                {
+                    $match: {
+                        Date: {
+                            $gte: statOfDay,
+                            $lte: endOfToday,
+                        },
+                    },
+                },
+                {
+                    $addFields: {
+                        amountAsNumber: { $toDouble: "$amount" },
+                    },
+                },
+                {
+                    $group: {
+                        _id: null,
+                        total: { $sum: "$amountAsNumber" },
+                        count: { $sum: 1 },
+                    },
+                },
+            ]);
+            const { total = 0, count = 0 } = result[0] || {};
+            return { total, count };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getTodaysWithdrawals() {
+        try {
+            const statOfDay = new Date();
+            statOfDay.setHours(0, 0, 0, 0);
+            const endOfToday = new Date();
+            endOfToday.setHours(23, 59, 59, 999);
+            const result = await WithdrawalSchema_1.default.aggregate([
+                {
+                    $match: {
+                        processedDate: {
+                            $gte: statOfDay,
+                            $lte: endOfToday,
+                        },
+                    },
+                },
+                {
+                    $group: {
+                        _id: null,
+                        total: { $sum: "$amount" },
+                        count: { $sum: 1 },
+                    },
+                },
+            ]);
+            const { total = 0, count = 0 } = result[0] || {};
+            return { total, count };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getWeeklyRefunds() {
+        try {
+            const { startOfWeek, endOfWeek } = (0, dates_1.getCurrentWeekDates)();
+            const result = await cancelledAppointmentSchema_1.default.aggregate([
+                {
+                    $match: {
+                        Date: {
+                            $gte: startOfWeek,
+                            $lte: endOfWeek,
+                        },
+                    },
+                },
+                {
+                    $addFields: {
+                        amountAsNumber: { $toDouble: "$amount" },
+                    },
+                },
+                {
+                    $group: {
+                        _id: null,
+                        total: { $sum: "$amountAsNumber" },
+                        count: { $sum: 1 },
+                    },
+                },
+            ]);
+            const { total = 0, count = 0 } = result[0] || {};
+            return { total, count };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getWeeklyWithdrawals() {
+        const { startOfWeek, endOfWeek } = (0, dates_1.getCurrentWeekDates)();
+        try {
+            const result = await WithdrawalSchema_1.default.aggregate([
+                {
+                    $match: {
+                        processedDate: {
+                            $gte: startOfWeek,
+                            $lte: endOfWeek,
+                        },
+                    },
+                },
+                {
+                    $group: {
+                        _id: null,
+                        total: { $sum: "$amount" },
+                        count: { $sum: 1 },
+                    },
+                },
+            ]);
+            const { total = 0, count = 0 } = result[0] || {};
+            return { total, count };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getMonthlyRefunds() {
+        try {
+            const { startOfMonth, endOfMonth } = (0, dates_1.getCurrentMonthDates)();
+            const result = await cancelledAppointmentSchema_1.default.aggregate([
+                {
+                    $match: {
+                        Date: {
+                            $gte: startOfMonth,
+                            $lte: endOfMonth,
+                        },
+                    },
+                },
+                {
+                    $addFields: {
+                        amountAsNumber: { $toDouble: "$amount" },
+                    },
+                },
+                {
+                    $group: {
+                        _id: null,
+                        total: { $sum: "$amountAsNumber" },
+                        count: { $sum: 1 },
+                    },
+                },
+            ]);
+            const { total = 0, count = 0 } = result[0] || {};
+            return { total, count };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getMonthlyWithdrawals() {
+        const { startOfMonth, endOfMonth } = (0, dates_1.getCurrentMonthDates)();
+        try {
+            const result = await WithdrawalSchema_1.default.aggregate([
+                {
+                    $match: {
+                        processedDate: {
+                            $gte: startOfMonth,
+                            $lte: endOfMonth,
+                        },
+                    },
+                },
+                {
+                    $group: {
+                        _id: null,
+                        total: { $sum: "$amount" },
+                        count: { $sum: 1 },
+                    },
+                },
+            ]);
+            const { total = 0, count = 0 } = result[0] || {};
+            return { total, count };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getYearlyRefunds() {
+        const currentYear = new Date().getFullYear();
+        try {
+            const result = await cancelledAppointmentSchema_1.default.aggregate([
+                {
+                    $match: {
+                        $expr: {
+                            $eq: [{ $year: "$Date" }, currentYear],
+                        },
+                    },
+                },
+                {
+                    $addFields: {
+                        amountAsNumber: { $toDouble: "$amount" },
+                    },
+                },
+                {
+                    $group: {
+                        _id: null,
+                        total: { $sum: "$amountAsNumber" },
+                        count: { $sum: 1 },
+                    },
+                },
+            ]);
+            const { total = 0, count = 0 } = result[0] || {};
+            return { total, count };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getYearlyWithdrawals() {
+        try {
+            const currentYear = new Date().getFullYear();
+            const result = await WithdrawalSchema_1.default.aggregate([
+                {
+                    $match: {
+                        $expr: {
+                            $eq: [{ $year: "$processedDate" }, currentYear],
+                        },
+                    },
+                },
+                {
+                    $group: {
+                        _id: null,
+                        total: { $sum: "$amount" },
+                        count: { $sum: 1 },
+                    },
+                },
+            ]);
+            const { total = 0, count = 0 } = result[0] || {};
+            return { total, count };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getRefundsList(page, limit, startDate, endDate) {
+        try {
+            const skip = (page - 1) * limit;
+            let sortCondition = -1;
+            let matchCondition = {};
+            if (startDate && endDate) {
+                const startDateStr = new Date(startDate).toISOString().split("T")[0];
+                const endDateStr = new Date(endDate).toISOString().split("T")[0];
+                matchCondition.$expr = {
+                    $and: [
+                        {
+                            $gte: [
+                                { $dateToString: { format: "%Y-%m-%d", date: "$Date" } },
+                                startDateStr,
+                            ],
+                        },
+                        {
+                            $lte: [
+                                { $dateToString: { format: "%Y-%m-%d", date: "$Date" } },
+                                endDateStr,
+                            ],
+                        },
+                    ],
+                };
+                sortCondition = 1;
+            }
+            const result = await cancelledAppointmentSchema_1.default.aggregate([
+                {
+                    $match: matchCondition,
+                },
+                {
+                    $facet: {
+                        data: [
+                            {
+                                $sort: { Date: sortCondition },
+                            },
+                            {
+                                $lookup: {
+                                    from: "appointments",
+                                    localField: "appointmentId",
+                                    foreignField: "_id",
+                                    as: "appointmentInfo",
+                                },
+                            },
+                            {
+                                $unwind: "$appointmentInfo",
+                            },
+                            {
+                                $lookup: {
+                                    from: "users",
+                                    localField: "appointmentInfo.userId",
+                                    foreignField: "_id",
+                                    as: "userInfo",
+                                },
+                            },
+                            {
+                                $unwind: "$userInfo",
+                            },
+                            {
+                                $project: {
+                                    _id: 1,
+                                    date: "$Date",
+                                    userName: "$userInfo.name",
+                                    cancelledBy: "$cancelledBy",
+                                    amount: 1,
+                                },
+                            },
+                            {
+                                $skip: skip,
+                            },
+                            {
+                                $limit: limit,
+                            },
+                        ],
+                        count: [
+                            {
+                                $count: "count",
+                            },
+                        ],
+                    },
+                },
+                {
+                    $unwind: "$count",
+                },
+                {
+                    $project: {
+                        RefundList: "$data",
+                        count: "$count.count"
                     }
                 }
             ]);
-            console.log("result", result);
+            return result[0];
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getWithdrawalList(page, limit, startDate, endDate) {
+        try {
+            const skip = (page - 1) * limit;
+            let sortCondition = -1;
+            let matchCondition = {};
+            if (startDate && endDate) {
+                const startDateStr = new Date(startDate)
+                    .toISOString()
+                    .split("T")[0];
+                const endDateStr = new Date(endDate).toISOString().split("T")[0];
+                matchCondition.$expr = {
+                    $and: [
+                        {
+                            $gte: [
+                                { $dateToString: { format: "%Y-%m-%d", date: "$processedDate" } },
+                                startDateStr,
+                            ],
+                        },
+                        {
+                            $lte: [
+                                { $dateToString: { format: "%Y-%m-%d", date: "$processedDate" } },
+                                endDateStr,
+                            ],
+                        },
+                    ],
+                };
+                sortCondition = 1;
+            }
+            const result = await WithdrawalSchema_1.default.aggregate([
+                {
+                    $match: matchCondition,
+                },
+                {
+                    $facet: {
+                        data: [
+                            {
+                                $lookup: {
+                                    from: "doctors",
+                                    localField: "doctorId",
+                                    foreignField: "_id",
+                                    as: "doctorInfo",
+                                },
+                            },
+                            {
+                                $unwind: "$doctorInfo",
+                            },
+                            {
+                                $project: {
+                                    _id: 1,
+                                    name: "$doctorInfo.name",
+                                    email: "$doctorInfo.email",
+                                    date: "$processedDate",
+                                    amount: 1,
+                                },
+                            },
+                            {
+                                $skip: skip,
+                            },
+                            {
+                                $limit: limit,
+                            },
+                        ],
+                        count: [
+                            { $count: "count" }
+                        ]
+                    },
+                },
+                {
+                    $unwind: "$count"
+                }, {
+                    $project: {
+                        withdrawalList: "$data",
+                        count: "$count.count"
+                    }
+                }
+            ]);
+            return result[0];
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getRefundDetail(id) {
+        try {
+            const result = await cancelledAppointmentSchema_1.default.aggregate([
+                {
+                    $match: {
+                        _id: new mongoose_1.default.Types.ObjectId(id),
+                    },
+                },
+                {
+                    $lookup: {
+                        from: "doctors",
+                        localField: "docId",
+                        foreignField: "_id",
+                        as: "doctorInfo",
+                    },
+                },
+                {
+                    $unwind: "$doctorInfo",
+                },
+                {
+                    $lookup: {
+                        from: "appointments",
+                        localField: "appointmentId",
+                        foreignField: "_id",
+                        as: "appointmentInfo",
+                    },
+                },
+                {
+                    $unwind: "$appointmentInfo",
+                },
+                {
+                    $lookup: {
+                        from: "users",
+                        localField: "appointmentInfo.userId",
+                        foreignField: "_id",
+                        as: "userInfo",
+                    },
+                },
+                {
+                    $unwind: "$userInfo",
+                },
+                {
+                    $project: {
+                        _id: 1,
+                        docName: "$doctorInfo.name",
+                        userName: "$userInfo.name",
+                        docImg: "$doctorInfo.image",
+                        userImg: "$userInfo.image",
+                        cancelledBy: 1,
+                        amount: 1,
+                        cancellationTime: "$Date",
+                        appointmentTime: "$appointmentInfo.date",
+                        appointmentBookedTime: "$appointmentInfo.createdAt",
+                        reason: 1,
+                        start: "$appointmentInfo.start",
+                        end: "$appointmentInfo.end"
+                    },
+                },
+            ]);
             return result[0];
         }
         catch (error) {

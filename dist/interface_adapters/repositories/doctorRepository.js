@@ -411,7 +411,7 @@ class DoctorRepository {
             throw error;
         }
     }
-    async cancelAppointment(id, date, startTime) {
+    async cancelAppointment(id, date, startTime, reason) {
         const startOfDay = (0, moment_1.default)(date).startOf("day").toDate();
         const endOfDay = (0, moment_1.default)(date).endOf("day").toDate();
         try {
@@ -421,7 +421,7 @@ class DoctorRepository {
                     { date: { $gte: startOfDay, $lte: endOfDay } },
                     { start: startTime },
                 ],
-            }, { status: "cancelled" }, {
+            }, { status: "cancelled", reason, cancelledBy: "doctor" }, {
                 new: true,
             });
             if (result) {

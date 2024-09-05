@@ -76,7 +76,8 @@ class DoctorSlotsInteractor implements IDoctorSlotInteractor {
       const result = await this.Repository.cancelAppointment(
         id,
         date,
-        startTime
+        startTime,
+        reason
       );
       if (!result.status)
         return { status: false, message: "Something Went Wrong" };

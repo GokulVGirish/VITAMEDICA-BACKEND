@@ -22,7 +22,7 @@ class DoctorWalletInteractor {
     }
     async withdrawFromWallet(docId, amount) {
         try {
-            const response = await this.Repository.doctorWalletUpdate(docId, amount, "withdraw", "withdrawal done", "razorpay");
+            const response = await this.Repository.doctorWalletUpdate(docId, amount, "withdraw", "withdrawal done");
             const withdrawalRedord = await this.Repository.withdrawalRecord(docId, amount);
             if (response && withdrawalRedord)
                 return true;

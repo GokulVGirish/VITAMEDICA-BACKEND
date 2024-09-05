@@ -81,7 +81,7 @@ class UserAppointmentsInteractor implements IUserAppointmentInteractor {
         end,
         fees,
         appointmentFees.toString(),
-        "wallet",
+        "razorpay",
         razorpay_payment_id,
       );
       if (!result) return { status: false, message: "Something Went Wrong" };
@@ -231,7 +231,8 @@ class UserAppointmentsInteractor implements IUserAppointmentInteractor {
       const refundAmount = Number(appointment.fees) * 0.8;
 
       const appointmentCancel = await this.Repository.cancelAppointment(
-        appointmentId
+        appointmentId,
+        reason
       );
       if (!appointmentCancel.status)
         return { status: false, message: "Something Went Wrong" };

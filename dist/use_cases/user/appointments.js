@@ -50,7 +50,7 @@ class UserAppointmentsInteractor {
                 };
             const totalFees = parseFloat(fees);
             const appointmentFees = (totalFees * 0.8).toFixed(2);
-            const result = await this.Repository.createAppointment(userId, docId, isoDate, start, end, fees, appointmentFees.toString(), "wallet", razorpay_payment_id);
+            const result = await this.Repository.createAppointment(userId, docId, isoDate, start, end, fees, appointmentFees.toString(), "razorpay", razorpay_payment_id);
             if (!result)
                 return { status: false, message: "Something Went Wrong" };
             await this.Repository.doctorWalletUpdate(docId, result._id, Number(appointmentFees), "credit", "Appointment Booked");
@@ -131,7 +131,7 @@ class UserAppointmentsInteractor {
                 };
             }
             const refundAmount = Number(appointment.fees) * 0.8;
-            const appointmentCancel = await this.Repository.cancelAppointment(appointmentId);
+            const appointmentCancel = await this.Repository.cancelAppointment(appointmentId, reason);
             if (!appointmentCancel.status)
                 return { status: false, message: "Something Went Wrong" };
             const cancelSlot = await this.Repository.unbookSlot(appointmentCancel.docId, date, startTime);

@@ -56,7 +56,7 @@ class DoctorSlotsInteractor {
     }
     async deleteBookedTimeSlots(id, date, startTime, reason) {
         try {
-            const result = await this.Repository.cancelAppointment(id, date, startTime);
+            const result = await this.Repository.cancelAppointment(id, date, startTime, reason);
             if (!result.status)
                 return { status: false, message: "Something Went Wrong" };
             const res = await this.Repository.createCancelledAppointment(id, result.id, result.amount, "doctor", reason);

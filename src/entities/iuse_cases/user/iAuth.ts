@@ -8,7 +8,13 @@ interface IuserAuthInteractor {
   ): Promise<{ status: true | false; message?: string; token?: string }>;
   verifyOtpSignup(
     otp: string
-  ): Promise<{ status: boolean; accessToken?: string; refreshToken?: string }>;
+  ): Promise<{
+    status: boolean;
+    accessToken?: string;
+    refreshToken?: string;
+    userId?: any;
+    name?: string;
+  }>;
   login(
     email: string,
     password: string

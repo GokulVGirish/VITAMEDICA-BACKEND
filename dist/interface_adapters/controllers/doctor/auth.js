@@ -55,6 +55,7 @@ class DoctorAuthControllers {
                     refreshToken: response.refreshToken,
                     doctor: response.doctor,
                     status: response.docstatus,
+                    docId: response.docId
                 });
             }
             else {

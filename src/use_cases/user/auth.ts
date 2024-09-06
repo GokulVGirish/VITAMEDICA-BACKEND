@@ -51,7 +51,7 @@ class UserAuthInteractor implements IuserAuthInteractor {
   }
   async verifyOtpSignup(
     otp: string
-  ): Promise<{ status: boolean; accessToken?: string; refreshToken?: string }> {
+  ): Promise<{ status: boolean; accessToken?: string; refreshToken?: string;userId?:any;name?:string }> {
     try {
       const response = await this.Repository.createUserOtp(otp);
       if (response.status) {
@@ -74,7 +74,7 @@ class UserAuthInteractor implements IuserAuthInteractor {
           { expiresIn: "1d" }
         );
 
-        return { status: true, accessToken, refreshToken };
+        return { status: true, accessToken, refreshToken,userId:response.user._id,name:response.user.name };
       } else {
         return { status: false };
       }

@@ -34,6 +34,8 @@ class UserAuthControllers {
                     message: "signed Up Sucessfully",
                     accessToken: response.accessToken,
                     refreshToken: response.refreshToken,
+                    userId: response.userId,
+                    name: response.name
                 });
             }
             else {

@@ -16,6 +16,7 @@ interface IDoctorAuthInteractor {
     refreshToken?: string;
     doctor?: string;
     docstatus?: string;
+    docId?: Types.ObjectId;
   }>;
   login(
     email: string,

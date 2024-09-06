@@ -75,6 +75,7 @@ class DoctorAuthInteractor {
                     refreshToken,
                     doctor: response.doctor?.name,
                     docstatus: response.doctor?.status,
+                    docId: response.doctor._id
                 };
             }
             else {

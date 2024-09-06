@@ -68,6 +68,7 @@ class DoctorAuthInteractor implements IDoctorAuthInteractor {
     refreshToken?: string;
     doctor?: string;
     docstatus?: string;
+    docId?:Types.ObjectId
   }> {
     try {
       const response = await this.Repository.createDoctorOtp(otp);
@@ -97,6 +98,7 @@ class DoctorAuthInteractor implements IDoctorAuthInteractor {
           refreshToken,
           doctor: response.doctor?.name,
           docstatus: response.doctor?.status,
+          docId:response.doctor._id
         };
       } else {
         return { status: false, message: response.message };

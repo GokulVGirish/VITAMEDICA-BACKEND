@@ -11,7 +11,7 @@ interface IAppointment extends Document {
   fees: string;
   amount: string;
   paymentStatus: "pending" | "captured" | "failed" | "refunded" | "anonymous";
-  paymentId?: string; // Optional field as it's not required in the schema
+  paymentId?: string;
   createdAt?: Date;
   prescription?:string
 }

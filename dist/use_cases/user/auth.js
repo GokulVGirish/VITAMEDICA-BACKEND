@@ -60,7 +60,7 @@ class UserAuthInteractor {
                     userId: response.user._id,
                     verified: true,
                 }, { expiresIn: "1d" });
-                return { status: true, accessToken, refreshToken };
+                return { status: true, accessToken, refreshToken, userId: response.user._id, name: response.user.name };
             }
             else {
                 return { status: false };

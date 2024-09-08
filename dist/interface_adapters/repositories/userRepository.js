@@ -12,6 +12,7 @@ const AppointmentSchema_1 = __importDefault(require("../../frameworks/mongoose/m
 const DoctorWalletSchema_1 = __importDefault(require("../../frameworks/mongoose/models/DoctorWalletSchema"));
 const UserWalletSchema_1 = __importDefault(require("../../frameworks/mongoose/models/UserWalletSchema"));
 const cancelledAppointmentSchema_1 = __importDefault(require("../../frameworks/mongoose/models/cancelledAppointmentSchema"));
+const ChatSchema_1 = __importDefault(require("../../frameworks/mongoose/models/ChatSchema"));
 const moment = require("moment");
 class UserRepository {
     async tempOtpUser(data) {
@@ -513,10 +514,11 @@ class UserRepository {
                 docId,
                 userId,
                 date,
-                start, end,
+                start,
+                end,
                 amount,
                 fees,
-                paymentMethod
+                paymentMethod,
             };
             if (paymentMethod === "razorpay") {
                 query.paymentId = paymentId;
@@ -767,6 +769,11 @@ class UserRepository {
                     $unwind: "$depatmentInfo",
                 },
                 {
+                    $set: {
+                        medicalRecords: { $ifNull: ["$medicalRecords", []] },
+                    },
+                },
+                {
                     $project: {
                         _id: 0,
                         date: 1,
@@ -780,6 +787,7 @@ class UserRepository {
                         docImage: "$docInfo.image",
                         status: 1,
                         docDegree: "$docInfo.degree",
+                        medicalRecords: 1
                     },
                 },
             ]);
@@ -1047,6 +1055,24 @@ class UserRepository {
                     },
                 },
             });
+            return result.modifiedCount > 0;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getMessages(id) {
+        try {
+            const result = await ChatSchema_1.default.findOne({ appointmentId: id });
+            return result?.messages ?? [];
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async medicalRecordUpload(appointmentId, files) {
+        try {
+            const result = await AppointmentSchema_1.default.updateOne({ _id: new mongoose_1.default.Types.ObjectId(appointmentId) }, { $set: { medicalRecords: files } });
             return result.modifiedCount > 0;
         }
         catch (error) {

@@ -56,6 +56,7 @@ class DoctorAppointmentControllers {
                     success: true,
                     message: response.message,
                     detail: response.detail,
+                    messages: response.messages
                 });
             }
             res.status(500).json({ success: false, message: response.message });

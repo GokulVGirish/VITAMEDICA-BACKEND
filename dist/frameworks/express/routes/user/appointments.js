@@ -11,6 +11,7 @@ const user_1 = require("../../middlewares/user");
 const role_Authenticate_1 = __importDefault(require("../../middlewares/role-Authenticate"));
 const appointments_2 = __importDefault(require("../../../../use_cases/user/appointments"));
 const awsS3_1 = __importDefault(require("../../../services/awsS3"));
+const multer_1 = __importDefault(require("../../../services/multer"));
 const respository = new userRepository_1.default();
 const awsS3 = new awsS3_1.default();
 const interactor = new appointments_2.default(respository, awsS3);
@@ -24,4 +25,5 @@ appointmentRouter.get("/", jwt_verify_1.default, (0, role_Authenticate_1.default
 appointmentRouter.put("/:appointmentId/cancel", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.cancelAppointment.bind(controller));
 appointmentRouter.put(`/:appointmentId/review`, jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.addReview.bind(controller));
 appointmentRouter.get("/:appointmentId/detail", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.getAppointmentDetail.bind(controller));
+appointmentRouter.post("/medicalRecords/:appointmentId", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), multer_1.default.array("medicalRecords"), controller.medicalRecordsUpload.bind(controller));
 exports.default = appointmentRouter;

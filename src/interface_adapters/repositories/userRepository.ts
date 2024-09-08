@@ -15,6 +15,7 @@ import IUserWallet from "../../entities/rules/userWalletType";
 import userWalletModal from "../../frameworks/mongoose/models/UserWalletSchema";
 import cancelledAppointmentsModel from "../../frameworks/mongoose/models/cancelledAppointmentSchema";
 import { count } from "console";
+import chatSchemaModel from "../../frameworks/mongoose/models/ChatSchema";
 
 const moment = require("moment");
 
@@ -579,23 +580,22 @@ class UserRepository implements IUserRepository {
     end: string,
     amount: string,
     fees: string,
-    paymentMethod:string,
+    paymentMethod: string,
     paymentId?: string
   ): Promise<IAppointment> {
     try {
-
-
-      const query:any={
+      const query: any = {
         docId,
         userId,
         date,
-        start,end
-        ,amount,
+        start,
+        end,
+        amount,
         fees,
-        paymentMethod
-      }
-      if(paymentMethod==="razorpay"){
-        query.paymentId=paymentId
+        paymentMethod,
+      };
+      if (paymentMethod === "razorpay") {
+        query.paymentId = paymentId;
       }
       const result = await appointmentModel.create(query);
       return result as IAppointment;
@@ -608,11 +608,9 @@ class UserRepository implements IUserRepository {
     appointmentId: Types.ObjectId,
     amount: number,
     type: string,
-    reason: string,
+    reason: string
   ): Promise<boolean> {
     try {
-
-    
       const result = await doctorWalletModal.findOneAndUpdate(
         { doctorId: new mongoose.Types.ObjectId(docId) },
         {
@@ -744,12 +742,12 @@ class UserRepository implements IUserRepository {
   }
   async cancelAppointment(
     appointmentId: string,
-    reason:string
+    reason: string
   ): Promise<{ status: boolean; amount?: string; docId?: Types.ObjectId }> {
     try {
       const response = await appointmentModel.findOneAndUpdate(
         { _id: appointmentId },
-        { status: "cancelled" ,reason,cancelledBy:"user"},
+        { status: "cancelled", reason, cancelledBy: "user" },
         { new: true }
       );
       if (response) {
@@ -820,7 +818,7 @@ class UserRepository implements IUserRepository {
     appointmentId: Types.ObjectId,
     amount: number,
     type: string,
-    reason: string,
+    reason: string
   ): Promise<boolean> {
     try {
       try {
@@ -892,19 +890,25 @@ class UserRepository implements IUserRepository {
           $unwind: "$depatmentInfo",
         },
         {
+          $set: {
+            medicalRecords: { $ifNull: ["$medicalRecords", []] },
+          },
+        },
+        {
           $project: {
             _id: 0,
             date: 1,
             start: 1,
             end: 1,
             amount: 1,
-            fees:1,
+            fees: 1,
             prescription: 1,
             createdAt: 1,
             docName: "$docInfo.name",
             docImage: "$docInfo.image",
             status: 1,
             docDegree: "$docInfo.degree",
+            medicalRecords:1
           },
         },
       ]);
@@ -1216,6 +1220,29 @@ class UserRepository implements IUserRepository {
     } catch (error) {
       throw error;
     }
+  }
+  async getMessages(
+    id: string
+  ): Promise<
+    { sender: string; message: string; type: string; createdAt: Date }[]
+  > {
+    try {
+      const result = await chatSchemaModel.findOne({ appointmentId: id });
+
+      return result?.messages ?? [];
+    } catch (error) {
+      throw error;
+    }
+  }
+  async medicalRecordUpload(appointmentId: string, files: string[]): Promise<boolean> {
+      try{
+        const result=await appointmentModel.updateOne({_id:new mongoose.Types.ObjectId(appointmentId)},{$set:{medicalRecords:files}})
+        return result.modifiedCount>0
+
+      }
+      catch(error){
+        throw error
+      }
   }
 }
 export default UserRepository

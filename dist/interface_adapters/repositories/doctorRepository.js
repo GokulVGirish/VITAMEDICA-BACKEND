@@ -40,6 +40,7 @@ const UserWalletSchema_1 = __importDefault(require("../../frameworks/mongoose/mo
 const UserSchema_1 = __importDefault(require("../../frameworks/mongoose/models/UserSchema"));
 const dates_1 = require("../../frameworks/services/dates");
 const WithdrawalSchema_1 = __importDefault(require("../../frameworks/mongoose/models/WithdrawalSchema"));
+const ChatSchema_1 = __importDefault(require("../../frameworks/mongoose/models/ChatSchema"));
 class DoctorRepository {
     async doctorExists(email) {
         try {
@@ -193,8 +194,10 @@ class DoctorRepository {
                     fees: data.fees,
                     degree: data.degree,
                     complete: true,
-                    "bankDetails.accountNumber": data.accountNumber,
-                    "bankDetails.ifsc": data.ifsc,
+                    bankDetails: {
+                        accountNumber: data.accountNumber,
+                        ifsc: data.ifsc,
+                    },
                 },
             });
             if (result.modifiedCount > 0)
@@ -401,7 +404,6 @@ class DoctorRepository {
         try {
             const startOfDay = (0, moment_1.default)(date).startOf("day").toDate();
             const endOfDay = (0, moment_1.default)(date).endOf("day").toDate();
-            console.log("sewf", startOfDay, endOfDay, startTime);
             const reault = await DoctorSlotsSchema_1.default.updateOne({ doctorId: id, date: { $gte: startOfDay, $lte: endOfDay } }, { $pull: { slots: { start: startTime } } });
             if (reault.modifiedCount > 0)
                 return true;
@@ -549,6 +551,11 @@ class DoctorRepository {
                 },
                 { $unwind: "$userInfo" },
                 {
+                    $set: {
+                        medicalRecords: { $ifNull: ["$medicalRecords", []] },
+                    },
+                },
+                {
                     $project: {
                         _id: 1,
                         date: 1,
@@ -565,10 +572,10 @@ class DoctorRepository {
                         state: "$userInfo.address.state",
                         prescription: 1,
                         bloodGroup: "$userInfo.bloodGroup",
+                        medicalRecords: 1
                     },
                 },
             ]);
-            console.log("result", result);
             return result[0];
         }
         catch (error) {
@@ -856,8 +863,16 @@ class DoctorRepository {
                     },
                 },
             ]);
-            console.log("result haii", result);
             return result[0];
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getMessages(id) {
+        try {
+            const result = await ChatSchema_1.default.findOne({ appointmentId: id });
+            return result?.messages ?? [];
         }
         catch (error) {
             throw error;

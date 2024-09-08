@@ -153,6 +153,8 @@ class UserAppointmentsInteractor {
     async getAppointmentDetail(id) {
         try {
             const response = await this.Repository.getAppointment(id);
+            if (!response)
+                return { status: false, message: "something went wrong" };
             if (response && "docImage" in response && response.docImage) {
                 const command = this.AwsS3.getObjectCommandS3(response.docImage);
                 const url = await this.AwsS3.getSignedUrlS3(command, 3600);
@@ -165,11 +167,29 @@ class UserAppointmentsInteractor {
                 const url = await this.AwsS3.getSignedUrlS3(command, 3600);
                 response.prescription = url;
             }
+            const messages = await this.Repository.getMessages(id);
+            for (let message of messages) {
+                if (message.type === "img") {
+                    const command = this.AwsS3.getObjectCommandS3(message.message);
+                    const url = await this.AwsS3.getSignedUrlS3(command, 3600);
+                    message.message = url;
+                }
+            }
+            const signedRecords = [];
+            if (response.medicalRecords.length > 0) {
+                for (let medicalRecord of response.medicalRecords) {
+                    const command = this.AwsS3.getObjectCommandS3(medicalRecord);
+                    const url = await this.AwsS3.getSignedUrlS3(command, 3600);
+                    signedRecords.push(url);
+                }
+            }
+            response.medicalRecords = signedRecords;
             if (response)
                 return {
                     status: true,
                     message: "success",
                     appointmentDetail: response,
+                    messages,
                 };
             return { status: false, message: "something went wrong" };
         }
@@ -186,6 +206,24 @@ class UserAppointmentsInteractor {
             return { status: false, message: "Internal server Error" };
         }
         catch (error) {
+            throw error;
+        }
+    }
+    async medicalRecordUpload(appointmentId, files) {
+        try {
+            const keys = [];
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const extension = file.mimetype.split("/")[1];
+                const folderPath = `medicalRecords/${appointmentId}/record-${i + 1}.${extension}`;
+                keys.push(folderPath);
+                await this.AwsS3.putObjectCommandS3(folderPath, file.buffer, file.mimetype);
+            }
+            const savedToDb = await this.Repository.medicalRecordUpload(appointmentId, keys);
+            return !!savedToDb;
+        }
+        catch (error) {
+            console.error("Error uploading medical records:", error);
             throw error;
         }
     }

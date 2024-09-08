@@ -2,7 +2,7 @@ import { Server } from "socket.io";
 import { Server as HttpServer } from "http";
 import { verifyAccessToken } from "../express/middlewares/jwt-verify";
 import { CustomJwtPayload } from "../express/middlewares/jwt-verify";
-import { ObjectId } from "mongoose";
+import chatSchemaModel from "../mongoose/models/ChatSchema";
 
 
 const onlineUsers :any= {}
@@ -76,6 +76,28 @@ export const initializeSocket = (server: HttpServer) => {
      
         
       });
+
+       socket.on("join_appointment", ({ appointmentId }) => {
+         socket.join(appointmentId);
+          console.log(`User joined appointment room///////: ${appointmentId}`);
+       });
+
+       socket.on("send_message", async ({ appointmentId ,sender,message,type}) => {
+       if(type==="txt"){
+          await chatSchemaModel.updateOne(
+           { appointmentId: appointmentId },
+           { $push: { messages: { sender, message, type } } },
+           { upsert: true }
+         );
+       }
+
+
+        io.to(appointmentId).emit("receive_message",{sender,message,type});
+
+       });
+
+
+
       socket.on("logout",()=>{
         console.log("hereee monu")
         

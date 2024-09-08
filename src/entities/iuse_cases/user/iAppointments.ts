@@ -1,5 +1,7 @@
 import { Types } from "mongoose";
 import IAppointment from "../../rules/appointments";
+import { promises } from "dns";
+import { MulterFile } from "../../rules/multerFile";
 
 
 interface IUserAppointmentInteractor {
@@ -15,9 +17,14 @@ interface IUserAppointmentInteractor {
     docId: Types.ObjectId,
     slotDetails: any,
     userId: Types.ObjectId,
-    fees: string,
+    fees: string
   ): Promise<{ status: boolean; message?: string; appointment?: IAppointment }>;
-  bookFromWallet(userId:Types.ObjectId,doctorId:Types.ObjectId,slotDetails:any,fees:string):Promise<{ status: boolean; message?: string; appointment?: IAppointment }>
+  bookFromWallet(
+    userId: Types.ObjectId,
+    doctorId: Types.ObjectId,
+    slotDetails: any,
+    fees: string
+  ): Promise<{ status: boolean; message?: string; appointment?: IAppointment }>;
   lockSlot(
     userId: Types.ObjectId,
     docId: Types.ObjectId,
@@ -45,6 +52,12 @@ interface IUserAppointmentInteractor {
     status: boolean;
     message: string;
     appointmentDetail?: IAppointment;
+    messages?: {
+      sender: string;
+      message: string;
+      type: string;
+      createdAt: Date;
+    }[];
   }>;
   addReview(
     appointmentId: string,
@@ -53,5 +66,6 @@ interface IUserAppointmentInteractor {
     rating: number,
     description?: string
   ): Promise<{ status: boolean; message: string }>;
+  medicalRecordUpload(appointmentId:string,files:MulterFile[]):Promise<boolean>
 }
 export default IUserAppointmentInteractor

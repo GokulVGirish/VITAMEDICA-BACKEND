@@ -77,7 +77,8 @@ const AppointmentSchema = new mongoose.Schema(
     enum:["user","doctor"],
     required: false,
     default:null
-  }
+  },
+  medicalRecords:[String]
 
   },
   { timestamps: true }

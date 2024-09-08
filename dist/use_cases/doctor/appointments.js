@@ -48,7 +48,29 @@ class DoctorAppointmentInteractor {
                 const url = await this.AwsS3.getSignedUrlS3(command, 3600);
                 response.prescription = url;
             }
-            return { status: true, message: "Success", detail: response };
+            const messages = await this.Repository.getMessages(id);
+            for (let message of messages) {
+                if (message.type === "img") {
+                    const command = this.AwsS3.getObjectCommandS3(message.message);
+                    const url = await this.AwsS3.getSignedUrlS3(command, 3600);
+                    message.message = url;
+                }
+            }
+            const signedRecords = [];
+            if (response.medicalRecords.length > 0) {
+                for (let medicalRecord of response.medicalRecords) {
+                    const command = this.AwsS3.getObjectCommandS3(medicalRecord);
+                    const url = await this.AwsS3.getSignedUrlS3(command, 3600);
+                    signedRecords.push(url);
+                }
+            }
+            response.medicalRecords = signedRecords;
+            return {
+                status: true,
+                message: "Success",
+                detail: response,
+                messages: messages,
+            };
         }
         catch (error) {
             throw error;

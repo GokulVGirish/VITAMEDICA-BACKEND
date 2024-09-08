@@ -74,7 +74,8 @@ const AppointmentSchema = new mongoose_1.default.Schema({
         enum: ["user", "doctor"],
         required: false,
         default: null
-    }
+    },
+    medicalRecords: [String]
 }, { timestamps: true });
 const appointmentModel = mongoose_1.default.model("Appointment", AppointmentSchema);
 exports.default = appointmentModel;

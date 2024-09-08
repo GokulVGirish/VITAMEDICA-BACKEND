@@ -13,7 +13,8 @@ interface IAppointment extends Document {
   paymentStatus: "pending" | "captured" | "failed" | "refunded" | "anonymous";
   paymentId?: string;
   createdAt?: Date;
-  prescription?:string
+  prescription?:string;
+  medicalRecords:string[]
 }
 
 export default IAppointment;

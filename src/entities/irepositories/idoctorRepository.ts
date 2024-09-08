@@ -126,4 +126,5 @@ export interface IDoctorRepository {
     revenue?: { label: number; totalRevenue: number }[];
   }>;
   withdrawalRecord(id:Types.ObjectId,amount:string):Promise<boolean>
+  getMessages(id:string):Promise<{sender:string,message:string,type:string,createdAt:Date}[]>
 }

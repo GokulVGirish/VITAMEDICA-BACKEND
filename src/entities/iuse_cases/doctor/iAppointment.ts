@@ -21,7 +21,17 @@ interface IDoctorAppointmentInteractor {
   }>;
   getAppointmentDetail(
     id: string
-  ): Promise<{ status: boolean; message?: string; detail?: IAppointment }>;
+  ): Promise<{
+    status: boolean;
+    message?: string;
+    detail?: IAppointment;
+    messages?: {
+      sender: string;
+      message: string;
+      type: string;
+      createdAt: Date;
+    }[];
+  }>;
   addPrescription(
     appointmentId: string,
     prescription: MulterFile

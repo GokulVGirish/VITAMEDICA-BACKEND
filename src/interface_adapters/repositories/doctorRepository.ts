@@ -21,6 +21,8 @@ import userModel from "../../frameworks/mongoose/models/UserSchema";
 import { getCurrentMonthDates, getCurrentWeekDates } from "../../frameworks/services/dates";
 import { count } from "console";
 import withdrawalModel from "../../frameworks/mongoose/models/WithdrawalSchema";
+import { throwDeprecation } from "process";
+import chatSchemaModel from "../../frameworks/mongoose/models/ChatSchema";
 
 class DoctorRepository implements IDoctorRepository {
   async doctorExists(email: string): Promise<null | MongoDoctor> {
@@ -204,8 +206,10 @@ class DoctorRepository implements IDoctorRepository {
             fees: data.fees,
             degree: data.degree,
             complete: true,
-            "bankDetails.accountNumber": data.accountNumber,
-            "bankDetails.ifsc": data.ifsc,
+            bankDetails: {
+              accountNumber: data.accountNumber,
+              ifsc: data.ifsc,
+            },
           },
         }
       );
@@ -425,7 +429,7 @@ class DoctorRepository implements IDoctorRepository {
     try {
       const startOfDay = moment(date).startOf("day").toDate();
       const endOfDay = moment(date).endOf("day").toDate();
-      console.log("sewf", startOfDay, endOfDay, startTime);
+    
       const reault = await doctorSlotsModel.updateOne(
         { doctorId: id, date: { $gte: startOfDay, $lte: endOfDay } },
         { $pull: { slots: { start: startTime } } }
@@ -615,6 +619,11 @@ class DoctorRepository implements IDoctorRepository {
         },
         { $unwind: "$userInfo" },
         {
+          $set: {
+            medicalRecords: { $ifNull: ["$medicalRecords", []] },
+          },
+        },
+        {
           $project: {
             _id: 1,
             date: 1,
@@ -631,10 +640,11 @@ class DoctorRepository implements IDoctorRepository {
             state: "$userInfo.address.state",
             prescription: 1,
             bloodGroup: "$userInfo.bloodGroup",
+            medicalRecords:1
           },
         },
       ]);
-      console.log("result", result);
+
       return result[0];
     } catch (error) {
       throw error;
@@ -942,11 +952,22 @@ class DoctorRepository implements IDoctorRepository {
           },
         },
       ]);
-      console.log("result haii", result);
+   
       return result[0];
     } catch (error) {
       throw error;
     }
+  }
+  async getMessages(id: string): Promise<{ sender: string; message: string; type: string; createdAt: Date; }[]> {
+      try{
+        const result=await chatSchemaModel.findOne({appointmentId:id})
+       
+      return result?.messages ?? [];
+
+      }
+      catch(error){
+        throw error
+      }
   }
 }
 export default DoctorRepository

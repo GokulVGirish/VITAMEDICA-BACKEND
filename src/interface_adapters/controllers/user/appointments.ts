@@ -136,7 +136,7 @@ class UserAppointmentControllers {
     try{
           const appointmentId = req.params.appointmentId;
           const response=await this.interactor.getAppointmentDetail(appointmentId)
-          if(response.status) return res.status(200).json({success:true,message:response.message,data:response.appointmentDetail})
+          if(response.status) return res.status(200).json({success:true,message:response.message,data:response.appointmentDetail,messages:response.messages})
             return res
               .status(500)
               .json({
@@ -211,6 +211,20 @@ class UserAppointmentControllers {
     } catch (error) {
       next(error);
     }
+  }
+  async medicalRecordsUpload(req:Request,res:Response,next:NextFunction){
+    try{
+        const appointmentId = req.params.appointmentId;
+        const files = req.files as Express.Multer.File[];
+        const response= await this.interactor.medicalRecordUpload(appointmentId,files)
+        if(response) return res.status(200).json({success:true,message:"success"})
+          res.status(500).json({success:false,message:"filed to upload"})
+
+    }catch(error){
+      console.log(error)
+      next(error)
+    }
+
   }
 }
 export default UserAppointmentControllers

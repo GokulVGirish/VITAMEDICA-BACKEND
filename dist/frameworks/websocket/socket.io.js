@@ -1,8 +1,12 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.initializeSocket = void 0;
 const socket_io_1 = require("socket.io");
 const jwt_verify_1 = require("../express/middlewares/jwt-verify");
+const ChatSchema_1 = __importDefault(require("../mongoose/models/ChatSchema"));
 const onlineUsers = {};
 const initializeSocket = (server) => {
     const io = new socket_io_1.Server(server, {
@@ -62,6 +66,16 @@ const initializeSocket = (server) => {
             const isOnline = onlineUsers[data.user];
             const doctorSocket = onlineUsers[data.from];
             io.to(doctorSocket).emit("check-online-status", { status: isOnline });
+        });
+        socket.on("join_appointment", ({ appointmentId }) => {
+            socket.join(appointmentId);
+            console.log(`User joined appointment room///////: ${appointmentId}`);
+        });
+        socket.on("send_message", async ({ appointmentId, sender, message, type }) => {
+            if (type === "txt") {
+                await ChatSchema_1.default.updateOne({ appointmentId: appointmentId }, { $push: { messages: { sender, message, type } } }, { upsert: true });
+            }
+            io.to(appointmentId).emit("receive_message", { sender, message, type });
         });
         socket.on("logout", () => {
             console.log("hereee monu");

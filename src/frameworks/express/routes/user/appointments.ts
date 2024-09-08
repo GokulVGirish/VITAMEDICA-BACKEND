@@ -6,6 +6,7 @@ import { getUser } from "../../middlewares/user";
 import verifyRole from "../../middlewares/role-Authenticate";
 import UserAppointmentsInteractor from "../../../../use_cases/user/appointments";
 import AwsS3 from "../../../services/awsS3";
+import upload from "../../../services/multer";
 
 const respository = new UserRepository();
 const awsS3=new AwsS3()
@@ -56,4 +57,5 @@ appointmentRouter.put(
   controller.addReview.bind(controller)
 );
 appointmentRouter.get("/:appointmentId/detail",authMiddleware,verifyRole("user"),getUser,controller.getAppointmentDetail.bind(controller))
+appointmentRouter.post("/medicalRecords/:appointmentId",authMiddleware,verifyRole("user"),upload.array("medicalRecords"),controller.medicalRecordsUpload.bind(controller))
 export default appointmentRouter

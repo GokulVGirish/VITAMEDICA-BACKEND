@@ -146,5 +146,14 @@ interface IUserRepository {
     rating: number,
     description?: string
   ): Promise<boolean>;
+  getMessages(
+    id: string
+  ): Promise<
+    { sender: string; message: string; type: string; createdAt: Date }[]
+  >;
+  medicalRecordUpload(
+    appointmentId: string,
+    files: string[]
+  ): Promise<boolean>;
 }
 export default IUserRepository

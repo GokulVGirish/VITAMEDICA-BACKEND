@@ -7,6 +7,7 @@ exports.initializeSocket = void 0;
 const socket_io_1 = require("socket.io");
 const jwt_verify_1 = require("../express/middlewares/jwt-verify");
 const ChatSchema_1 = __importDefault(require("../mongoose/models/ChatSchema"));
+const NotificationSchema_1 = __importDefault(require("../mongoose/models/NotificationSchema"));
 const onlineUsers = {};
 const initializeSocket = (server) => {
     const io = new socket_io_1.Server(server, {
@@ -76,6 +77,14 @@ const initializeSocket = (server) => {
                 await ChatSchema_1.default.updateOne({ appointmentId: appointmentId }, { $push: { messages: { sender, message, type } } }, { upsert: true });
             }
             io.to(appointmentId).emit("receive_message", { sender, message, type });
+        });
+        socket.on("send_notification", async ({ receiverId, content, appointmentId, type }) => {
+            console.log("sendNotification received", receiverId, content, appointmentId, type);
+            const response = await NotificationSchema_1.default.updateOne({ receiverId: receiverId }, { $push: { notifications: { content: content, type: type, appointmentId: appointmentId } } }, { upsert: true, new: true });
+            console.log("socket connection id", onlineUsers[receiverId]);
+            io.to(onlineUsers[receiverId]).emit("receive_notification", {
+                content: content
+            });
         });
         socket.on("logout", () => {
             console.log("hereee monu");

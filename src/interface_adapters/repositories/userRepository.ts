@@ -16,6 +16,8 @@ import userWalletModal from "../../frameworks/mongoose/models/UserWalletSchema";
 import cancelledAppointmentsModel from "../../frameworks/mongoose/models/cancelledAppointmentSchema";
 import { count } from "console";
 import chatSchemaModel from "../../frameworks/mongoose/models/ChatSchema";
+import NotificationModel from "../../frameworks/mongoose/models/NotificationSchema";
+import { INotificationContent } from "../../entities/rules/Notifications";
 
 const moment = require("moment");
 
@@ -908,7 +910,8 @@ class UserRepository implements IUserRepository {
             docImage: "$docInfo.image",
             status: 1,
             docDegree: "$docInfo.degree",
-            medicalRecords:1
+            medicalRecords: 1,
+            docId: "$docInfo._id",
           },
         },
       ]);
@@ -1234,10 +1237,103 @@ class UserRepository implements IUserRepository {
       throw error;
     }
   }
-  async medicalRecordUpload(appointmentId: string, files: string[]): Promise<boolean> {
+  async medicalRecordUpload(
+    appointmentId: string,
+    files: string[]
+  ): Promise<boolean> {
+    try {
+      const result = await appointmentModel.updateOne(
+        { _id: new mongoose.Types.ObjectId(appointmentId) },
+        { $set: { medicalRecords: files } }
+      );
+      return result.modifiedCount > 0;
+    } catch (error) {
+      throw error;
+    }
+  }
+  async fetchNotificationCount(docId: Types.ObjectId): Promise<number> {
+    try {
+      const result = await NotificationModel.aggregate([
+        {
+          $match: {
+            receiverId: new mongoose.Types.ObjectId(docId),
+          },
+        },
+        {
+          $unwind: "$notifications",
+        },
+        {
+          $group: {
+            _id: "$_id",
+            count: {
+              $sum: {
+                $cond: {
+                  if: { $eq: ["$notifications.read", false] },
+                  then: 1,
+                  else: 0,
+                },
+              },
+            },
+          },
+        },
+      ]);
+      if (result.length === 0 || result[0].count === 0) return 0;
+      else return result[0].count;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async fetchNotifications(userId: Types.ObjectId): Promise<INotificationContent[]> {
       try{
-        const result=await appointmentModel.updateOne({_id:new mongoose.Types.ObjectId(appointmentId)},{$set:{medicalRecords:files}})
-        return result.modifiedCount>0
+        const result = await NotificationModel.aggregate([
+          {
+            $match: {
+              receiverId: new mongoose.Types.ObjectId(userId),
+            },
+          },
+          {
+            $unwind: "$notifications",
+          },
+          {
+            $match: {
+              "notifications.read": false,
+            },
+          },
+          {
+            $sort:{
+              "notifications.createdAt":-1
+
+            }
+          },
+          {
+            $group: {
+              _id: "$_id",
+              notifications: {
+                $push: "$notifications",
+              },
+            },
+          },
+        ]);
+     
+        
+        if(result.length===0) return []
+        return result[0].notifications
+
+      }
+      catch(error){
+        throw error
+      }
+  }
+  async markNotificationAsRead(userId: Types.ObjectId): Promise<boolean> {
+      try{
+        const response=await NotificationModel.updateOne({receiverId:new mongoose.Types.ObjectId(userId)},{$set:{"notifications.$[elem].read":true}},{
+          arrayFilters:[{"elem.read":false}],
+          multi:true
+        })
+     
+        return response.modifiedCount>0
+
 
       }
       catch(error){

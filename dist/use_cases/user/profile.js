@@ -113,5 +113,32 @@ class ProfileInteractor {
             throw error;
         }
     }
+    async fetchNotificationCount(userId) {
+        try {
+            const count = await this.Repository.fetchNotificationCount(userId);
+            return count;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async fetchNotifications(userId) {
+        try {
+            const result = await this.Repository.fetchNotifications(userId);
+            return result;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async markNotificationAsRead(userId) {
+        try {
+            const response = await this.Repository.markNotificationAsRead(userId);
+            return response;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
 }
 exports.default = ProfileInteractor;

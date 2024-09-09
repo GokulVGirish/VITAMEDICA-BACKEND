@@ -41,6 +41,7 @@ const UserSchema_1 = __importDefault(require("../../frameworks/mongoose/models/U
 const dates_1 = require("../../frameworks/services/dates");
 const WithdrawalSchema_1 = __importDefault(require("../../frameworks/mongoose/models/WithdrawalSchema"));
 const ChatSchema_1 = __importDefault(require("../../frameworks/mongoose/models/ChatSchema"));
+const NotificationSchema_1 = __importDefault(require("../../frameworks/mongoose/models/NotificationSchema"));
 class DoctorRepository {
     async doctorExists(email) {
         try {
@@ -543,6 +544,17 @@ class DoctorRepository {
                 { $match: { _id: new mongoose_1.Types.ObjectId(id) } },
                 {
                     $lookup: {
+                        from: "doctors",
+                        localField: "docId",
+                        foreignField: "_id",
+                        as: "doctorInfo",
+                    },
+                },
+                {
+                    $unwind: "$doctorInfo",
+                },
+                {
+                    $lookup: {
                         from: "users",
                         localField: "userId",
                         foreignField: "_id",
@@ -572,7 +584,8 @@ class DoctorRepository {
                         state: "$userInfo.address.state",
                         prescription: 1,
                         bloodGroup: "$userInfo.bloodGroup",
-                        medicalRecords: 1
+                        medicalRecords: 1,
+                        docName: "$doctorInfo.name",
                     },
                 },
             ]);
@@ -873,6 +886,91 @@ class DoctorRepository {
         try {
             const result = await ChatSchema_1.default.findOne({ appointmentId: id });
             return result?.messages ?? [];
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async fetchNotificationCount(docId) {
+        try {
+            const result = await NotificationSchema_1.default.aggregate([
+                {
+                    $match: {
+                        receiverId: new mongoose_1.default.Types.ObjectId(docId),
+                    },
+                },
+                {
+                    $unwind: "$notifications",
+                },
+                {
+                    $group: {
+                        _id: "$_id",
+                        count: {
+                            $sum: {
+                                $cond: {
+                                    if: { $eq: ["$notifications.read", false] },
+                                    then: 1,
+                                    else: 0,
+                                },
+                            },
+                        },
+                    },
+                },
+            ]);
+            if (result.length === 0 || result[0].count === 0)
+                return 0;
+            else
+                return result[0].count;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async fetchNotifications(docId) {
+        try {
+            const result = await NotificationSchema_1.default.aggregate([
+                {
+                    $match: {
+                        receiverId: new mongoose_1.default.Types.ObjectId(docId),
+                    },
+                },
+                {
+                    $unwind: "$notifications",
+                },
+                {
+                    $match: {
+                        "notifications.read": false,
+                    },
+                },
+                {
+                    $sort: {
+                        "notifications.createdAt": -1,
+                    },
+                },
+                {
+                    $group: {
+                        _id: "$_id",
+                        notifications: {
+                            $push: "$notifications",
+                        },
+                    },
+                },
+            ]);
+            if (result.length === 0)
+                return [];
+            return result[0].notifications;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async markNotificationAsRead(docId) {
+        try {
+            const response = await NotificationSchema_1.default.updateOne({ receiverId: new mongoose_1.default.Types.ObjectId(docId) }, { $set: { "notifications.$[elem].read": true } }, {
+                arrayFilters: [{ "elem.read": false }],
+                multi: true,
+            });
+            return response.modifiedCount > 0;
         }
         catch (error) {
             throw error;

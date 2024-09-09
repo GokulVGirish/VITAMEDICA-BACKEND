@@ -5,6 +5,7 @@ import { RejectedDoctor } from "../rules/rejectedDoctor";
 import { DoctorSlots } from "../rules/slotsType";
 import { IDoctorWallet } from "../rules/doctorWalletType";
 import IAppointment from "../rules/appointments";
+import { INotificationContent } from "../rules/Notifications";
 
 
 export interface IDoctorRepository {
@@ -74,7 +75,7 @@ export interface IDoctorRepository {
     id: Types.ObjectId,
     date: Date,
     startTime: Date,
-    reason:string
+    reason: string
   ): Promise<{
     status: boolean;
     amount?: string;
@@ -93,7 +94,7 @@ export interface IDoctorRepository {
     appointmentId: Types.ObjectId,
     amount: string,
     type: string,
-    reason: string,
+    reason: string
   ): Promise<boolean>;
 
   createCancelledAppointment(
@@ -125,6 +126,13 @@ export interface IDoctorRepository {
     count?: { appointmentsCount: number; cancellationsCount: number };
     revenue?: { label: number; totalRevenue: number }[];
   }>;
-  withdrawalRecord(id:Types.ObjectId,amount:string):Promise<boolean>
-  getMessages(id:string):Promise<{sender:string,message:string,type:string,createdAt:Date}[]>
+  withdrawalRecord(id: Types.ObjectId, amount: string): Promise<boolean>;
+  getMessages(
+    id: string
+  ): Promise<
+    { sender: string; message: string; type: string; createdAt: Date }[]
+  >;
+  fetchNotificationCount(docId: Types.ObjectId): Promise<number>;
+  fetchNotifications(userId: Types.ObjectId): Promise<INotificationContent[]>;
+  markNotificationAsRead(docId: Types.ObjectId): Promise<boolean>;
 }

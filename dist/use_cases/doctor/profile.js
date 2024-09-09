@@ -52,7 +52,7 @@ class DoctorProfileInteractor {
                 fees: data.fees,
                 degree: data.degree,
                 accountNumber: data.bankDetails.accountNumber,
-                ifsc: data.bankDetails.ifsc
+                ifsc: data.bankDetails.ifsc,
             });
             if (!response)
                 return { status: false, message: "internal server error" };
@@ -104,6 +104,33 @@ class DoctorProfileInteractor {
             if (!response)
                 return { status: false, message: "Internal server error" };
             return { status: true, message: "Password Changed Sucessfully" };
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async fetchNotificationCount(docId) {
+        try {
+            const count = await this.Repository.fetchNotificationCount(docId);
+            return count;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async fetchNotifications(docId) {
+        try {
+            const result = await this.Repository.fetchNotifications(docId);
+            return result;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async markNotificationAsRead(docId) {
+        try {
+            const response = await this.Repository.markNotificationAsRead(docId);
+            return response;
         }
         catch (error) {
             throw error;

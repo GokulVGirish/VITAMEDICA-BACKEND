@@ -105,5 +105,40 @@ class UserProfileControllers {
             next(error);
         }
     }
+    async fetchNotificationCount(req, res, next) {
+        try {
+            const userId = req.userData._id;
+            const response = await this.interactor.fetchNotificationCount(userId);
+            res.status(200).json({ count: response });
+        }
+        catch (error) {
+            console.log(error);
+            next(error);
+        }
+    }
+    async fetchNotifications(req, res, next) {
+        try {
+            const userId = req.userData._id;
+            const response = await this.interactor.fetchNotifications(userId);
+            res.status(200).json({ notifications: response });
+        }
+        catch (error) {
+            console.log(error);
+            next(error);
+        }
+    }
+    async markNotificationAsRead(req, res, next) {
+        try {
+            const userId = req.userData._id;
+            const response = await this.interactor.markNotificationAsRead(userId);
+            if (response)
+                return res.status(200).json({ success: true, message: "Success" });
+            res.status(500).json({ success: false, message: "Something went wrong" });
+        }
+        catch (error) {
+            console.log(error);
+            next(error);
+        }
+    }
 }
 exports.default = UserProfileControllers;

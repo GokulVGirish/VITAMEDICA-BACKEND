@@ -13,6 +13,7 @@ const DoctorWalletSchema_1 = __importDefault(require("../../frameworks/mongoose/
 const UserWalletSchema_1 = __importDefault(require("../../frameworks/mongoose/models/UserWalletSchema"));
 const cancelledAppointmentSchema_1 = __importDefault(require("../../frameworks/mongoose/models/cancelledAppointmentSchema"));
 const ChatSchema_1 = __importDefault(require("../../frameworks/mongoose/models/ChatSchema"));
+const NotificationSchema_1 = __importDefault(require("../../frameworks/mongoose/models/NotificationSchema"));
 const moment = require("moment");
 class UserRepository {
     async tempOtpUser(data) {
@@ -787,7 +788,8 @@ class UserRepository {
                         docImage: "$docInfo.image",
                         status: 1,
                         docDegree: "$docInfo.degree",
-                        medicalRecords: 1
+                        medicalRecords: 1,
+                        docId: "$docInfo._id",
                     },
                 },
             ]);
@@ -1074,6 +1076,91 @@ class UserRepository {
         try {
             const result = await AppointmentSchema_1.default.updateOne({ _id: new mongoose_1.default.Types.ObjectId(appointmentId) }, { $set: { medicalRecords: files } });
             return result.modifiedCount > 0;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async fetchNotificationCount(docId) {
+        try {
+            const result = await NotificationSchema_1.default.aggregate([
+                {
+                    $match: {
+                        receiverId: new mongoose_1.default.Types.ObjectId(docId),
+                    },
+                },
+                {
+                    $unwind: "$notifications",
+                },
+                {
+                    $group: {
+                        _id: "$_id",
+                        count: {
+                            $sum: {
+                                $cond: {
+                                    if: { $eq: ["$notifications.read", false] },
+                                    then: 1,
+                                    else: 0,
+                                },
+                            },
+                        },
+                    },
+                },
+            ]);
+            if (result.length === 0 || result[0].count === 0)
+                return 0;
+            else
+                return result[0].count;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async fetchNotifications(userId) {
+        try {
+            const result = await NotificationSchema_1.default.aggregate([
+                {
+                    $match: {
+                        receiverId: new mongoose_1.default.Types.ObjectId(userId),
+                    },
+                },
+                {
+                    $unwind: "$notifications",
+                },
+                {
+                    $match: {
+                        "notifications.read": false,
+                    },
+                },
+                {
+                    $sort: {
+                        "notifications.createdAt": -1
+                    }
+                },
+                {
+                    $group: {
+                        _id: "$_id",
+                        notifications: {
+                            $push: "$notifications",
+                        },
+                    },
+                },
+            ]);
+            if (result.length === 0)
+                return [];
+            return result[0].notifications;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async markNotificationAsRead(userId) {
+        try {
+            const response = await NotificationSchema_1.default.updateOne({ receiverId: new mongoose_1.default.Types.ObjectId(userId) }, { $set: { "notifications.$[elem].read": true } }, {
+                arrayFilters: [{ "elem.read": false }],
+                multi: true
+            });
+            return response.modifiedCount > 0;
         }
         catch (error) {
             throw error;

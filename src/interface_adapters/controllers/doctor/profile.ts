@@ -1,4 +1,3 @@
-import { IDoctorInteractor } from "../../../entities/iuse_cases/iDoctorInteractor";
 import { Request, Response, NextFunction } from "express";
 import { doctorDataRequest } from "../../../frameworks/express/middlewares/doctor";
 import { MulterFile } from "../../../entities/rules/multerFile";
@@ -93,6 +92,51 @@ class DoctorProfileControllers {
       } else {
         res.status(500).json({ success: false, message: response.message });
       }
+    } catch (error) {
+      console.log(error);
+      next(error);
+    }
+  }
+  async fetchNotificationCount(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const docId = (req as doctorDataRequest).doctorData._id;
+      const response = await this.interactor.fetchNotificationCount(docId);
+      res.status(200).json({ count: response });
+    } catch (error) {
+      console.log(error);
+      next(error);
+    }
+  }
+  async fetchNotifications(req: Request, res: Response, next: NextFunction) {
+    try {
+      const docId = (req as doctorDataRequest).doctorData._id;
+      const response = await this.interactor.fetchNotifications(docId);
+      res.status(200).json({ notifications: response });
+    } catch (error) {
+      console.log(error);
+      next(error);
+    }
+  }
+  async markNotificationAsRead(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+       const docId = (req as doctorDataRequest).doctorData._id;
+          const response = await this.interactor.markNotificationAsRead(
+            docId
+          );
+          if (response)
+            return res.status(200).json({ success: true, message: "Success" });
+          res
+            .status(500)
+            .json({ success: false, message: "Something went wrong" });
+
     } catch (error) {
       console.log(error);
       next(error);

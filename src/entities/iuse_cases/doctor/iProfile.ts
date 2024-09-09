@@ -1,6 +1,7 @@
 import { Types } from "mongoose";
 import { MongoDoctor } from "../../rules/doctor";
 import { MulterFile } from "../../rules/multerFile";
+import { INotificationContent } from "../../rules/Notifications";
 
 
 interface IDoctorProfileInteractor {
@@ -26,5 +27,8 @@ interface IDoctorProfileInteractor {
     token: string,
     password: string
   ): Promise<{ status: boolean; message: string }>;
+  fetchNotificationCount(docId: Types.ObjectId): Promise<number>;
+  fetchNotifications(docId: Types.ObjectId): Promise<INotificationContent[]>;
+  markNotificationAsRead(docId: Types.ObjectId): Promise<boolean>;
 }
 export default IDoctorProfileInteractor

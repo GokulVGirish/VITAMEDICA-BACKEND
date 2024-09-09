@@ -1,6 +1,7 @@
 import { Types } from "mongoose";
 import { MongoUser } from "../../rules/user";
 import { MulterFile } from "../../rules/multerFile";
+import { INotificationContent } from "../../rules/Notifications";
 
 
 interface IUserProfileInteractor {
@@ -26,6 +27,9 @@ interface IUserProfileInteractor {
     token: string,
     password: string
   ): Promise<{ status: boolean; message: string }>;
+  fetchNotificationCount(userId: Types.ObjectId): Promise<number>;
+  fetchNotifications(userId: Types.ObjectId): Promise<INotificationContent[]>;
+  markNotificationAsRead(userId: Types.ObjectId):Promise<boolean>
 }
 
 export default IUserProfileInteractor

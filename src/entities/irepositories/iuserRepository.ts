@@ -6,6 +6,7 @@ import { MongoUser } from "../rules/user"
 import { Types } from "mongoose"
 import IUserWallet from "../rules/userWalletType";
 import { promises } from "dns";
+import { INotificationContent } from "../rules/Notifications";
 
 interface IUserRepository {
   tempOtpUser(data: User): Promise<{ userId: Types.ObjectId }>;
@@ -151,9 +152,9 @@ interface IUserRepository {
   ): Promise<
     { sender: string; message: string; type: string; createdAt: Date }[]
   >;
-  medicalRecordUpload(
-    appointmentId: string,
-    files: string[]
-  ): Promise<boolean>;
+  medicalRecordUpload(appointmentId: string, files: string[]): Promise<boolean>;
+  fetchNotificationCount(userId: Types.ObjectId): Promise<number>;
+  fetchNotifications(userId: Types.ObjectId): Promise<INotificationContent[]>;
+  markNotificationAsRead(userId: Types.ObjectId): Promise<boolean>;
 }
 export default IUserRepository

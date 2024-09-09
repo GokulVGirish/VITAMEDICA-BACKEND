@@ -23,6 +23,8 @@ import { count } from "console";
 import withdrawalModel from "../../frameworks/mongoose/models/WithdrawalSchema";
 import { throwDeprecation } from "process";
 import chatSchemaModel from "../../frameworks/mongoose/models/ChatSchema";
+import NotificationModel from "../../frameworks/mongoose/models/NotificationSchema";
+import { INotificationContent } from "../../entities/rules/Notifications";
 
 class DoctorRepository implements IDoctorRepository {
   async doctorExists(email: string): Promise<null | MongoDoctor> {
@@ -429,7 +431,7 @@ class DoctorRepository implements IDoctorRepository {
     try {
       const startOfDay = moment(date).startOf("day").toDate();
       const endOfDay = moment(date).endOf("day").toDate();
-    
+
       const reault = await doctorSlotsModel.updateOne(
         { doctorId: id, date: { $gte: startOfDay, $lte: endOfDay } },
         { $pull: { slots: { start: startTime } } }
@@ -444,7 +446,7 @@ class DoctorRepository implements IDoctorRepository {
     id: Types.ObjectId,
     date: Date,
     startTime: Date,
-    reason:string
+    reason: string
   ): Promise<{
     status: boolean;
     amount?: string;
@@ -462,7 +464,7 @@ class DoctorRepository implements IDoctorRepository {
             { start: startTime },
           ],
         },
-        { status: "cancelled" ,reason,cancelledBy:"doctor"},
+        { status: "cancelled", reason, cancelledBy: "doctor" },
         {
           new: true,
         }
@@ -490,60 +492,57 @@ class DoctorRepository implements IDoctorRepository {
   ): Promise<boolean> {
     const amountNum = Number(amount);
     try {
-       const update = {
-         $inc: {
-           balance: type === "credit" ? amountNum : -amountNum,
-           transactionCount: 1,
-         },
-         $push: {
-           transactions: {
-             amount: amountNum,
-             type: type,
-             reason: reason,
-           },
-         },
-       };
+      const update = {
+        $inc: {
+          balance: type === "credit" ? amountNum : -amountNum,
+          transactionCount: 1,
+        },
+        $push: {
+          transactions: {
+            amount: amountNum,
+            type: type,
+            reason: reason,
+          },
+        },
+      };
 
-       if (appointmentId) {
-         (update.$push.transactions as any).appointment = appointmentId;
-       }
+      if (appointmentId) {
+        (update.$push.transactions as any).appointment = appointmentId;
+      }
 
-       const result = await doctorWalletModal.findOneAndUpdate(
-         { doctorId: docId },
-         update,
-         {
-           new: true,
-           upsert: true,
-           setDefaultsOnInsert: true,
-         }
-       );
-    return !!result
-     
+      const result = await doctorWalletModal.findOneAndUpdate(
+        { doctorId: docId },
+        update,
+        {
+          new: true,
+          upsert: true,
+          setDefaultsOnInsert: true,
+        }
+      );
+      return !!result;
     } catch (error) {
       throw error;
     }
   }
   async withdrawalRecord(id: Types.ObjectId, amount: string): Promise<boolean> {
-    const  numAmount=Number(amount)
+    const numAmount = Number(amount);
 
-      try{
-        const result = await withdrawalModel.create({
-          doctorId:id,
-          amount: numAmount,
-        });
-        return !!result
-
-      }
-      catch(error){
-        throw error
-      }
+    try {
+      const result = await withdrawalModel.create({
+        doctorId: id,
+        amount: numAmount,
+      });
+      return !!result;
+    } catch (error) {
+      throw error;
+    }
   }
   async userWalletUpdate(
     userId: Types.ObjectId,
     appointmentId: Types.ObjectId,
     amount: string,
     type: string,
-    reason: string,
+    reason: string
   ): Promise<boolean> {
     const amountNum = Number(amount);
     try {
@@ -611,6 +610,17 @@ class DoctorRepository implements IDoctorRepository {
         { $match: { _id: new Types.ObjectId(id) } },
         {
           $lookup: {
+            from: "doctors",
+            localField: "docId",
+            foreignField: "_id",
+            as: "doctorInfo",
+          },
+        },
+        {
+          $unwind: "$doctorInfo",
+        },
+        {
+          $lookup: {
             from: "users",
             localField: "userId",
             foreignField: "_id",
@@ -640,7 +650,8 @@ class DoctorRepository implements IDoctorRepository {
             state: "$userInfo.address.state",
             prescription: 1,
             bloodGroup: "$userInfo.bloodGroup",
-            medicalRecords:1
+            medicalRecords: 1,
+            docName: "$doctorInfo.name",
           },
         },
       ]);
@@ -952,22 +963,111 @@ class DoctorRepository implements IDoctorRepository {
           },
         },
       ]);
-   
+
       return result[0];
     } catch (error) {
       throw error;
     }
   }
-  async getMessages(id: string): Promise<{ sender: string; message: string; type: string; createdAt: Date; }[]> {
-      try{
-        const result=await chatSchemaModel.findOne({appointmentId:id})
-       
-      return result?.messages ?? [];
+  async getMessages(
+    id: string
+  ): Promise<
+    { sender: string; message: string; type: string; createdAt: Date }[]
+  > {
+    try {
+      const result = await chatSchemaModel.findOne({ appointmentId: id });
 
-      }
-      catch(error){
-        throw error
-      }
+      return result?.messages ?? [];
+    } catch (error) {
+      throw error;
+    }
+  }
+  async fetchNotificationCount(docId: Types.ObjectId): Promise<number> {
+    try {
+      const result = await NotificationModel.aggregate([
+        {
+          $match: {
+            receiverId: new mongoose.Types.ObjectId(docId),
+          },
+        },
+        {
+          $unwind: "$notifications",
+        },
+        {
+          $group: {
+            _id: "$_id",
+            count: {
+              $sum: {
+                $cond: {
+                  if: { $eq: ["$notifications.read", false] },
+                  then: 1,
+                  else: 0,
+                },
+              },
+            },
+          },
+        },
+      ]);
+      if (result.length === 0 || result[0].count === 0) return 0;
+      else return result[0].count;
+    } catch (error) {
+      throw error;
+    }
+  }
+  async fetchNotifications(
+    docId: Types.ObjectId
+  ): Promise<INotificationContent[]> {
+    try {
+      const result = await NotificationModel.aggregate([
+        {
+          $match: {
+            receiverId: new mongoose.Types.ObjectId(docId),
+          },
+        },
+        {
+          $unwind: "$notifications",
+        },
+        {
+          $match: {
+            "notifications.read": false,
+          },
+        },
+        {
+          $sort: {
+            "notifications.createdAt": -1,
+          },
+        },
+        {
+          $group: {
+            _id: "$_id",
+            notifications: {
+              $push: "$notifications",
+            },
+          },
+        },
+      ]);
+
+      if (result.length === 0) return [];
+      return result[0].notifications;
+    } catch (error) {
+      throw error;
+    }
+  }
+  async markNotificationAsRead(docId: Types.ObjectId): Promise<boolean> {
+    try {
+      const response = await NotificationModel.updateOne(
+        { receiverId: new mongoose.Types.ObjectId(docId) },
+        { $set: { "notifications.$[elem].read": true } },
+        {
+          arrayFilters: [{ "elem.read": false }],
+          multi: true,
+        }
+      );
+     
+      return response.modifiedCount > 0;
+    } catch (error) {
+      throw error;
+    }
   }
 }
 export default DoctorRepository

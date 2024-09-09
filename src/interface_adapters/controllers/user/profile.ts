@@ -117,6 +117,46 @@ class UserProfileControllers {
   next(error)
     }
   }
+  async fetchNotificationCount(req:Request,res:Response,next:NextFunction){
+    try{
+       const userId = (req as userDataRequest).userData._id;
+         const response = await this.interactor.fetchNotificationCount(userId as Types.ObjectId);
+         res.status(200).json({ count: response });
+
+    }
+    catch(error){
+      console.log(error)
+      next(error)
+    }
+  }
+  async fetchNotifications(req:Request,res:Response,next:NextFunction){
+    try{
+       const userId = (req as userDataRequest).userData._id;
+       const response=await this.interactor.fetchNotifications(userId as Types.ObjectId)
+       res.status(200).json({notifications:response})
+       
+
+    }
+    catch(error){
+      console.log(error)
+      next(error)
+    }
+
+  }
+  async markNotificationAsRead(req:Request,res:Response,next:NextFunction){
+    try{
+       const userId = (req as userDataRequest).userData._id;
+       const response=await this.interactor.markNotificationAsRead(userId as Types.ObjectId)
+       if(response) return res.status(200).json({success:true,message:"Success"})
+        res.status(500).json({success:false,message:"Something went wrong"})
+
+    }
+    catch(error){
+      console.log(error)
+      next(error)
+    }
+
+  }
 
 }
 export default UserProfileControllers

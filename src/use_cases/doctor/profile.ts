@@ -8,6 +8,8 @@ import jwt from "jsonwebtoken";
 import { MongoDoctor } from "../../entities/rules/doctor";
 import { Types } from "mongoose";
 import { MulterFile } from "../../entities/rules/multerFile";
+import { error } from "console";
+import { INotificationContent } from "../../entities/rules/Notifications";
 
 
 
@@ -20,8 +22,8 @@ class DoctorProfileInteractor implements IDoctorProfileInteractor {
   async getProfile(image: string): Promise<{ url: string | null }> {
     try {
       if (image) {
-        const command = this.AwsS3.getObjectCommandS3(image)
-       const url=await this.AwsS3.getSignedUrlS3(command,3600)
+        const command = this.AwsS3.getObjectCommandS3(image);
+        const url = await this.AwsS3.getSignedUrlS3(command, 3600);
         return { url: url };
       } else {
         return { url: null };
@@ -39,10 +41,10 @@ class DoctorProfileInteractor implements IDoctorProfileInteractor {
       const fileExtension = image.originalname.split(".").pop();
       const uniqueFileName = `profile-${id}.${fileExtension}`;
       const key = `${folderPath}/${uniqueFileName}`;
-      await this.AwsS3.putObjectCommandS3(key,image.buffer,image.mimetype)
+      await this.AwsS3.putObjectCommandS3(key, image.buffer, image.mimetype);
       const response = await this.Repository.updateProfileImage(id, key);
-      const command=this.AwsS3.getObjectCommandS3(key)
-      const url=await this.AwsS3.getSignedUrlS3(command,3600)
+      const command = this.AwsS3.getObjectCommandS3(key);
+      const url = await this.AwsS3.getSignedUrlS3(command, 3600);
       return { status: true, imageData: url };
     } catch (error) {
       console.log(error);
@@ -60,7 +62,6 @@ class DoctorProfileInteractor implements IDoctorProfileInteractor {
     data?: MongoDoctor;
   }> {
     try {
-      
       const response = await this.Repository.profileUpdate(userId, {
         name: data.name,
         phone: data.phone,
@@ -68,7 +69,7 @@ class DoctorProfileInteractor implements IDoctorProfileInteractor {
         fees: data.fees,
         degree: data.degree,
         accountNumber: data.bankDetails.accountNumber,
-        ifsc:data.bankDetails.ifsc
+        ifsc: data.bankDetails.ifsc,
       });
       if (!response) return { status: false, message: "internal server error" };
       const result = await this.Repository.getDoctor(email);
@@ -131,6 +132,36 @@ class DoctorProfileInteractor implements IDoctorProfileInteractor {
     } catch (error) {
       throw error;
     }
+  }
+  async fetchNotificationCount(docId: Types.ObjectId): Promise<number> {
+    try {
+      const count = await this.Repository.fetchNotificationCount(docId);
+      return count;
+    } catch (error) {
+      throw error;
+    }
+  }
+  async fetchNotifications(
+    docId: Types.ObjectId
+  ): Promise<INotificationContent[]> {
+    try {
+      const result = await this.Repository.fetchNotifications(docId);
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  }
+  async markNotificationAsRead(docId: Types.ObjectId): Promise<boolean> {
+      try{
+
+        const response=await this.Repository.markNotificationAsRead(docId)
+        return response
+
+      }
+      catch(error){
+        throw error
+
+      }
   }
 }
 export default DoctorProfileInteractor

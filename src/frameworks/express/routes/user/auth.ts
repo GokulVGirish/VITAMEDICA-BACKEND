@@ -30,7 +30,6 @@ authRouter.get(
   controller.verifyToken.bind(controller)
 );
 authRouter.post("/login", controller.login.bind(controller));
-authRouter.post("/google/signup", controller.googleSignup.bind(controller));
 authRouter.post("/google/login", controller.googleLogin.bind(controller));
 authRouter.post(
   "/otp/resend",

@@ -120,61 +120,33 @@ class UserAuthInteractor {
             throw error;
         }
     }
-    async googleSignup(email, name, password) {
-        try {
-            const exists = await this.Repository.userExist(email);
-            if (exists) {
-                return {
-                    status: false,
-                    message: "User already exists",
-                    errorCode: "USER_EXIST",
-                };
-            }
-            password = await bcryptjs_1.default.hash(password, 10);
-            const response = await this.Repository.googleSignup(email, name, password);
-            if (response.status) {
-                const accessToken = this.JWTServices.generateToken({
-                    emailId: email,
-                    role: "user",
-                    verified: true,
-                }, { expiresIn: "1h" });
-                const refreshToken = this.JWTServices.generateRefreshToken({
-                    emailId: email,
-                    role: "user",
-                    verified: true,
-                }, { expiresIn: "1d" });
-                return {
-                    status: true,
-                    accessToken,
-                    refreshToken,
-                    message: response.message,
-                };
-            }
-            else {
-                return {
-                    status: true,
-                    message: response.message,
-                    errorCode: "SERVER_ERROR",
-                };
-            }
-        }
-        catch (error) {
-            console.log(error);
-            throw error;
-        }
-    }
-    async googleLogin(email, password) {
+    async googleLogin(name, email, password) {
         try {
             console.log("mail", email, password, "password");
             const userExist = await this.Repository.getUser(email);
             if (!userExist) {
-                return {
-                    status: false,
-                    message: "This user dosent exist",
-                    errorCode: "NO_USER",
-                };
+                password = await bcryptjs_1.default.hash(password, 10);
+                const response = await this.Repository.googleSignup(email, name, password);
+                if (response) {
+                    const accessToken = this.JWTServices.generateToken({ emailId: email, role: "user", userId: response._id, verified: true }, { expiresIn: "1h" });
+                    const refreshToken = this.JWTServices.generateRefreshToken({ emailId: email, role: "user", userId: response._id, verified: true }, { expiresIn: "1d" });
+                    return {
+                        status: true,
+                        accessToken,
+                        refreshToken,
+                        message: "Signed Up Sucessfully",
+                        name: response.name,
+                        userId: response._id
+                    };
+                }
+                else
+                    return {
+                        status: false,
+                        message: "Something went wrong",
+                        errorCode: "Server_Error"
+                    };
             }
-            const hashedPassword = userExist.password;
+            const hashedPassword = userExist?.password;
             const match = await bcryptjs_1.default.compare(password, hashedPassword);
             if (!match) {
                 return {
@@ -183,20 +155,21 @@ class UserAuthInteractor {
                     errorCode: "INCORRECT_PASSWORD",
                 };
             }
-            if (userExist.isBlocked)
+            if (userExist?.isBlocked)
                 return {
                     status: false,
                     message: "Sorry User Blocked",
                     errorCode: "BLOCKED",
                 };
-            const accessToken = this.JWTServices.generateToken({ emailId: userExist.email, role: "user", verified: true }, { expiresIn: "1h" });
-            const refreshToken = this.JWTServices.generateRefreshToken({ emailId: userExist.email, role: "user", verified: true }, { expiresIn: "1d" });
+            const accessToken = this.JWTServices.generateToken({ emailId: userExist?.email, userId: userExist?._id, role: "user", verified: true }, { expiresIn: "1h" });
+            const refreshToken = this.JWTServices.generateRefreshToken({ emailId: userExist?.email, userId: userExist?._id, role: "user", verified: true }, { expiresIn: "1d" });
             return {
                 status: true,
                 accessToken,
                 refreshToken,
                 message: "logged in Sucessfully",
-                name: userExist.name,
+                name: userExist?.name,
+                userId: userExist?._id
             };
         }
         catch (error) {

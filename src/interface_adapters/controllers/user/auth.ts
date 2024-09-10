@@ -78,48 +78,20 @@ class UserAuthControllers {
       next(error);
     }
   }
-  async googleSignup(req: Request, res: Response, next: NextFunction) {
+  
+  async googleLogin(req: Request, res: Response, next: NextFunction) {
     try {
-      const { email, name, sub } = req.body;
-
-      const response = await this.interactor.googleSignup(email, name, sub);
+      const { email, sub,name } = req.body;
+      console.log(req.body);
+      const response = await this.interactor.googleLogin(name,email, sub);
       if (response.status) {
         res.status(200).json({
           success: true,
           message: response.message,
           accessToken: response.accessToken,
           refreshToken: response.refreshToken,
-        });
-      } else {
-        switch (response.errorCode) {
-          case "USER_EXIST":
-            res.status(409).json({ status: false, message: response.message });
-            break;
-          case "SERVER_ERROR":
-            res.status(500).json({ status: false, message: response.message });
-            break;
-          default:
-            res.status(400).json({ success: false, message: response.message });
-            break;
-        }
-      }
-    } catch (error) {
-      console.log(error);
-      next(error);
-    }
-  }
-  async googleLogin(req: Request, res: Response, next: NextFunction) {
-    try {
-      const { email, sub } = req.body;
-      console.log(req.body);
-      const response = await this.interactor.googleLogin(email, sub);
-      if (response.status) {
-        res.status(200).json({
-          success: true,
-          message: "logged in Sucessfully",
-          accessToken: response.accessToken,
-          refreshToken: response.refreshToken,
-          name:response.name
+          name:response.name,
+          userId:response.userId
         });
       } else {
         switch (response.errorCode) {
@@ -135,6 +107,10 @@ class UserAuthControllers {
             return res
               .status(403)
               .json({ success: false, message: response.message });
+           case "Server_Error":
+              return res
+                .status(500)
+                .json({ success: false, message: response.message });
           default:
             return res
               .status(400)

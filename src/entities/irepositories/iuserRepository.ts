@@ -17,7 +17,7 @@ interface IUserRepository {
     email: string,
     name: string,
     password: string
-  ): Promise<{ status: boolean; message: string }>;
+  ): Promise<MongoUser>;
   resendOtp(otp: string, email: string): Promise<boolean>;
   updateProfile(id: Types.ObjectId, data: User): Promise<{ success: boolean }>;
   updateProfileImage(id: Types.ObjectId, imagePath: string): Promise<boolean>;

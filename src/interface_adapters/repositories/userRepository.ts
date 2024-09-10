@@ -80,7 +80,7 @@ class UserRepository implements IUserRepository {
     email: string,
     name: string,
     password: string
-  ): Promise<{ status: boolean; message: string }> {
+  ): Promise<MongoUser> {
     try {
       const user = await userModel.create({
         name: name,
@@ -88,17 +88,7 @@ class UserRepository implements IUserRepository {
         password: password,
         register: "Google",
       });
-      if (user) {
-        return {
-          status: true,
-          message: "Signed Up Sucessfully",
-        };
-      } else {
-        return {
-          status: false,
-          message: "error signing up",
-        };
-      }
+     return user
     } catch (error) {
       console.log(error);
       throw error;

@@ -78,18 +78,7 @@ class UserRepository {
                 password: password,
                 register: "Google",
             });
-            if (user) {
-                return {
-                    status: true,
-                    message: "Signed Up Sucessfully",
-                };
-            }
-            else {
-                return {
-                    status: false,
-                    message: "error signing up",
-                };
-            }
+            return user;
         }
         catch (error) {
             console.log(error);

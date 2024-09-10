@@ -1,3 +1,4 @@
+import { Types } from "mongoose";
 import { User } from "../../rules/user";
 
 
@@ -6,9 +7,7 @@ interface IuserAuthInteractor {
   otpSignup(
     user: User
   ): Promise<{ status: true | false; message?: string; token?: string }>;
-  verifyOtpSignup(
-    otp: string
-  ): Promise<{
+  verifyOtpSignup(otp: string): Promise<{
     status: boolean;
     accessToken?: string;
     refreshToken?: string;
@@ -26,18 +25,9 @@ interface IuserAuthInteractor {
     userId?: string;
     name?: string;
   }>;
-  googleSignup(
-    email: string,
-    name: string,
-    password: string
-  ): Promise<{
-    status: boolean;
-    accessToken?: string;
-    refreshToken?: string;
-    message?: string;
-    errorCode?: string;
-  }>;
+
   googleLogin(
+    name: string,
     email: string,
     password: string
   ): Promise<{
@@ -47,6 +37,7 @@ interface IuserAuthInteractor {
     message?: string;
     errorCode?: string;
     name?: string;
+    userId?: Types.ObjectId;
   }>;
   resendOtp(
     email: string

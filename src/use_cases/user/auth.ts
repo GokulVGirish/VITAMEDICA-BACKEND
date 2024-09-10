@@ -1,3 +1,4 @@
+import { Types } from "mongoose";
 import IUserRepository from "../../entities/irepositories/iuserRepository";
 import IuserAuthInteractor from "../../entities/iuse_cases/user/iAuth";
 import { User } from "../../entities/rules/user";
@@ -147,69 +148,9 @@ class UserAuthInteractor implements IuserAuthInteractor {
       throw error;
     }
   }
-  async googleSignup(
-    email: string,
-    name: string,
-    password: string
-  ): Promise<{
-    status: boolean;
-    accessToken?: string;
-    refreshToken?: string;
-    message?: string;
-    errorCode?: string;
-  }> {
-    try {
-      const exists = await this.Repository.userExist(email);
-      if (exists) {
-        return {
-          status: false,
-          message: "User already exists",
-          errorCode: "USER_EXIST",
-        };
-      }
-      password = await bcrypt.hash(password, 10);
 
-      const response = await this.Repository.googleSignup(
-        email,
-        name,
-        password
-      );
-      if (response.status) {
-        const accessToken = this.JWTServices.generateToken(
-          {
-            emailId: email,
-            role: "user",
-            verified: true,
-          },
-          { expiresIn: "1h" }
-        );
-        const refreshToken = this.JWTServices.generateRefreshToken(
-          {
-            emailId: email,
-            role: "user",
-            verified: true,
-          },
-          { expiresIn: "1d" }
-        );
-        return {
-          status: true,
-          accessToken,
-          refreshToken,
-          message: response.message,
-        };
-      } else {
-        return {
-          status: true,
-          message: response.message,
-          errorCode: "SERVER_ERROR",
-        };
-      }
-    } catch (error) {
-      console.log(error);
-      throw error;
-    }
-  }
   async googleLogin(
+    name:string,
     email: string,
     password: string
   ): Promise<{
@@ -219,19 +160,49 @@ class UserAuthInteractor implements IuserAuthInteractor {
     message?: string;
     errorCode?: string;
     name?: string;
+    userId?:Types.ObjectId
   }> {
     try {
       console.log("mail", email, password, "password");
       const userExist = await this.Repository.getUser(email);
       if (!userExist) {
-        return {
-          status: false,
-          message: "This user dosent exist",
-          errorCode: "NO_USER",
-        };
+
+        password = await bcrypt.hash(password, 10);
+
+       const response = await this.Repository.googleSignup(
+        email,
+        name,
+        password
+      );
+      if(response){ 
+
+          const accessToken = this.JWTServices.generateToken(
+            { emailId: email, role: "user",userId:response._id, verified: true },
+            { expiresIn: "1h" }
+          );
+          const refreshToken = this.JWTServices.generateRefreshToken(
+            { emailId: email, role: "user",userId:response._id, verified: true },
+            { expiresIn: "1d" }
+          );
+
+          return {
+            status: true,
+            accessToken,
+            refreshToken,
+            message: "Signed Up Sucessfully",
+            name: response.name,
+            userId:response._id as Types.ObjectId
+          };
+       
+      }else return {
+        status :false,
+        message:"Something went wrong",
+        errorCode:"Server_Error"
       }
-      const hashedPassword = userExist.password;
-      const match = await bcrypt.compare(password, hashedPassword);
+      
+      }
+      const hashedPassword = userExist?.password;
+      const match = await bcrypt.compare(password, hashedPassword as string);
       if (!match) {
         return {
           status: false,
@@ -239,18 +210,18 @@ class UserAuthInteractor implements IuserAuthInteractor {
           errorCode: "INCORRECT_PASSWORD",
         };
       }
-      if (userExist.isBlocked)
+      if (userExist?.isBlocked)
         return {
           status: false,
           message: "Sorry User Blocked",
           errorCode: "BLOCKED",
         };
       const accessToken = this.JWTServices.generateToken(
-        { emailId: userExist.email, role: "user", verified: true },
+        { emailId: userExist?.email,userId:userExist?._id, role: "user", verified: true },
         { expiresIn: "1h" }
       );
       const refreshToken = this.JWTServices.generateRefreshToken(
-        { emailId: userExist.email, role: "user", verified: true },
+        { emailId: userExist?.email,userId:userExist?._id, role: "user", verified: true },
         { expiresIn: "1d" }
       );
 
@@ -259,7 +230,8 @@ class UserAuthInteractor implements IuserAuthInteractor {
         accessToken,
         refreshToken,
         message: "logged in Sucessfully",
-        name: userExist.name,
+        name: userExist?.name,
+        userId:userExist?._id as Types.ObjectId
       };
     } catch (error) {
       console.log(error);

@@ -107,6 +107,7 @@ class UserRepository implements IUserRepository {
           dob: data.dob,
           gender: data.gender,
           bloodGroup: data.bloodGroup,
+          isComplete:true,
           address: {
             street: data.address?.street,
             city: data.address?.city,
@@ -350,9 +351,9 @@ class UserRepository implements IUserRepository {
       ]);
 
       return {
-        doctors: newResult[0].doctors,
+        doctors: newResult[0]?.doctors||[],
 
-        totalPages: Math.ceil(newResult[0].count / limit),
+        totalPages: Math.ceil(newResult[0]?.count / limit)||1,
       };
     } catch (error) {
       throw error;

@@ -119,9 +119,17 @@ class DoctorProfileControllers {
             const response = await this.interactor.markNotificationAsRead(docId);
             if (response)
                 return res.status(200).json({ success: true, message: "Success" });
-            res
-                .status(500)
-                .json({ success: false, message: "Something went wrong" });
+            res.status(500).json({ success: false, message: "Something went wrong" });
+        }
+        catch (error) {
+            console.log(error);
+            next(error);
+        }
+    }
+    async isProfileCompleted(req, res, next) {
+        try {
+            const isComplete = req.doctorData.complete;
+            res.status(200).json({ success: true, message: "Complete Your Profile To Add Slots", isComplete });
         }
         catch (error) {
             console.log(error);

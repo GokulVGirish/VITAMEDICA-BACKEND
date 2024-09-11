@@ -45,6 +45,7 @@ profileRouter.post(
   "/password/reset/:token",
   controller.resetPassword.bind(controller)
 );
+profileRouter.get("/isComplete/check",authMiddleware,verifyRole("user"),getUser,controller.isProfileComplete.bind(controller))
 profileRouter.get("/notifications/count",authMiddleware,verifyRole("user"),getUser,controller.fetchNotificationCount.bind(controller))
 profileRouter.get("/notifications",authMiddleware,verifyRole("user"),getUser,controller.fetchNotifications.bind(controller))
 profileRouter.put("/notifications/mark-as-read",authMiddleware,verifyRole("user"),getUser,controller.markNotificationAsRead.bind(controller));

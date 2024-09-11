@@ -140,5 +140,14 @@ class UserProfileControllers {
             next(error);
         }
     }
+    async isProfileComplete(req, res, next) {
+        try {
+            const isComplete = req.userData.isComplete;
+            return res.status(200).json({ status: true, message: "Please Complete your Profile", isComplete });
+        }
+        catch (error) {
+            next(error);
+        }
+    }
 }
 exports.default = UserProfileControllers;

@@ -33,9 +33,11 @@ export const initializeSocket = (server: HttpServer) => {
       socket.join(id);
     });
     socket.on("join", (room) => {
+    
       socket.join(room);
     });
     socket.on("calling", (message) => {
+   
       const { room, data } = message;
       socket.to(room).emit("calling", data);
     });
@@ -54,6 +56,7 @@ export const initializeSocket = (server: HttpServer) => {
       io.to(data.from).emit("cut-call");
     });
     socket.on("chat-message", (data) => {
+      console.log("message",data)
       const { message, from, to } = data;
       io.to(to).emit("chat-message", data);
     });

@@ -38,6 +38,7 @@ profileRouter.put(
   verifyRole("doctor"),
   controller.DoctorProfileUpdate.bind(controller)
 );
+profileRouter.get("/isComplete/check",authMiddleware,verifyRole("doctor"),getDoctor,controller.isProfileCompleted.bind(controller));
 profileRouter.post("/password/reset-request",controller.passwordResetLink.bind(controller));
 profileRouter.post("/password/reset/:token",controller.resetPassword.bind(controller));
 profileRouter.get("/notifications/count",authMiddleware,verifyRole("doctor"),getDoctor,controller.fetchNotificationCount.bind(controller))

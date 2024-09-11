@@ -20,5 +20,6 @@ export interface User extends Document {
   otp?: string;
   bloodGroup: string | null;
   register: string;
+  isComplete:boolean
 }
 export interface MongoUser extends User {}

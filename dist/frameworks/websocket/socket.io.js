@@ -52,6 +52,7 @@ const initializeSocket = (server) => {
             io.to(data.from).emit("cut-call");
         });
         socket.on("chat-message", (data) => {
+            console.log("message", data);
             const { message, from, to } = data;
             io.to(to).emit("chat-message", data);
         });

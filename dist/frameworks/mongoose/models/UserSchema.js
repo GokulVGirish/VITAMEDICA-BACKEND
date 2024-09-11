@@ -70,6 +70,10 @@ const userSchema = new mongoose_1.default.Schema({
         ref: "UserWallet",
         default: null,
     },
+    isComplete: {
+        type: Boolean,
+        default: false
+    }
 });
 const userModel = mongoose_1.default.model("User", userSchema);
 exports.default = userModel;

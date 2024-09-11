@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from "express";
 import { Types } from "mongoose";
 import { MulterFile } from "../../../entities/rules/multerFile";
 import IUserProfileInteractor from "../../../entities/iuse_cases/user/iProfile";
+import { stat } from "fs";
 
 
 
@@ -153,6 +154,17 @@ class UserProfileControllers {
     }
     catch(error){
       console.log(error)
+      next(error)
+    }
+
+  }
+  async isProfileComplete(req:Request,res:Response,next:NextFunction){
+    try{
+      const isComplete = (req as userDataRequest).userData.isComplete
+       return res.status(200).json({status:true,message:"Please Complete your Profile",isComplete})  
+
+    }
+    catch(error){
       next(error)
     }
 

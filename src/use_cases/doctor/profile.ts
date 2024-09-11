@@ -8,8 +8,8 @@ import jwt from "jsonwebtoken";
 import { MongoDoctor } from "../../entities/rules/doctor";
 import { Types } from "mongoose";
 import { MulterFile } from "../../entities/rules/multerFile";
-import { error } from "console";
 import { INotificationContent } from "../../entities/rules/Notifications";
+
 
 
 
@@ -163,5 +163,6 @@ class DoctorProfileInteractor implements IDoctorProfileInteractor {
 
       }
   }
+
 }
 export default DoctorProfileInteractor

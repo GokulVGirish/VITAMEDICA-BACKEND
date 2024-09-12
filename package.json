@@ -8,7 +8,7 @@
     "start:js": "nodemon dist/main.js",
     "start": "concurrently npm:start:*",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build":"vite build"
+    "build":"tsc"
   },
   "keywords": [],
   "author": "",

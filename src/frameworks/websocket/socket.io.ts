@@ -10,7 +10,7 @@ const onlineUsers: any = {};
 export const initializeSocket = (server: HttpServer) => {
   const io = new Server(server, {
     cors: {
-      origin: "http://localhost:5173",
+      origin: process.env.cors_origin,
       methods: ["GET", "POST"],
       credentials: true,
     },

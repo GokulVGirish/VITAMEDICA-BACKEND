@@ -56,7 +56,6 @@ class UserRepository {
             }
         }
         catch (error) {
-            console.log(error);
             throw error;
         }
     }
@@ -66,7 +65,6 @@ class UserRepository {
             return user;
         }
         catch (error) {
-            console.log(error);
             throw error;
         }
     }
@@ -81,7 +79,6 @@ class UserRepository {
             return user;
         }
         catch (error) {
-            console.log(error);
             throw error;
         }
     }
@@ -101,7 +98,6 @@ class UserRepository {
                     postalCode: data.address?.postalCode,
                 },
             });
-            console.log("response", response);
             if (response.modifiedCount > 0) {
                 return { success: true };
             }
@@ -110,7 +106,6 @@ class UserRepository {
             }
         }
         catch (error) {
-            console.log(error);
             throw error;
         }
     }
@@ -128,7 +123,6 @@ class UserRepository {
             }
         }
         catch (error) {
-            console.log(error);
             throw error;
         }
     }
@@ -233,7 +227,6 @@ class UserRepository {
                     },
                 },
             ]);
-            console.log("result", result[0].doctors);
             return {
                 doctors: result[0].doctors,
                 totalPages: Math.ceil(result[0].count / limit),
@@ -382,7 +375,6 @@ class UserRepository {
                     },
                 },
             ]);
-            console.log("departmentInfo", result);
             return result[0];
         }
         catch (error) {
@@ -403,14 +395,12 @@ class UserRepository {
     }
     async getTimeSlots(id, date) {
         try {
-            console.log("id", id, "date", date);
             const startOfDay = moment(date).startOf("day").toDate();
             const endOfDay = moment(date).endOf("day").toDate();
             const result = await DoctorSlotsSchema_1.default.findOne({
                 doctorId: id,
                 date: { $gte: startOfDay, $lte: endOfDay },
             });
-            console.log("second result", result);
             return result;
         }
         catch (error) {
@@ -418,7 +408,6 @@ class UserRepository {
         }
     }
     async lockSlot(userId, docId, date, slotId, lockExpiration) {
-        console.log("userId", userId, "slotId", slotId, "doctorId", docId, "date", date);
         try {
             const startOfDay = moment(date).startOf("day").toDate();
             const endOfDay = moment(date).endOf("day").toDate();
@@ -433,10 +422,8 @@ class UserRepository {
                     },
                 ],
             });
-            console.log("initialCHeck", initialCheck);
             if (initialCheck)
                 return false;
-            console.log("initialCHeck", initialCheck);
             const result = await DoctorSlotsSchema_1.default.findOneAndUpdate({
                 doctorId: docId,
                 date: { $gte: startOfDay, $lte: endOfDay },
@@ -453,18 +440,15 @@ class UserRepository {
                 runValidators: true,
             });
             if (!result) {
-                console.log("Slot locking failed: already locked or not available");
                 return false;
             }
             return true;
         }
         catch (error) {
-            console.error("Error locking slot:", error);
             throw error;
         }
     }
     async bookSlot(doctorId, userId, slotId, date) {
-        console.log("next", "...", "docId", doctorId, "userId", userId, "slotId", slotId, "date", date);
         try {
             const now = new Date();
             const startOfDay = moment(date).startOf("day").toDate();
@@ -495,7 +479,6 @@ class UserRepository {
             return false;
         }
         catch (error) {
-            console.error("Error booking slot:", error);
             throw error;
         }
     }
@@ -808,7 +791,6 @@ class UserRepository {
         }
     }
     async fetchDoctorRating(id, page, limit) {
-        console.log("id", id, page, limit);
         const skipReviews = (page - 1) * limit;
         try {
             const result = await DoctorSchema_1.default.aggregate([
@@ -1124,8 +1106,8 @@ class UserRepository {
                 },
                 {
                     $sort: {
-                        "notifications.createdAt": -1
-                    }
+                        "notifications.createdAt": -1,
+                    },
                 },
                 {
                     $group: {
@@ -1148,7 +1130,7 @@ class UserRepository {
         try {
             const response = await NotificationSchema_1.default.updateOne({ receiverId: new mongoose_1.default.Types.ObjectId(userId) }, { $set: { "notifications.$[elem].read": true } }, {
                 arrayFilters: [{ "elem.read": false }],
-                multi: true
+                multi: true,
             });
             return response.modifiedCount > 0;
         }

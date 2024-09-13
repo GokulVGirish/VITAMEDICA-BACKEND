@@ -49,7 +49,6 @@ class DoctorRepository {
             return doctor;
         }
         catch (error) {
-            console.log(error);
             throw error;
         }
     }
@@ -59,7 +58,6 @@ class DoctorRepository {
             return { userId: otpDoc._id };
         }
         catch (error) {
-            console.log(error);
             throw error;
         }
     }
@@ -85,7 +83,6 @@ class DoctorRepository {
             return { status: true, message: "created", doctor: doc };
         }
         catch (error) {
-            console.log(error);
             throw error;
         }
     }
@@ -95,7 +92,6 @@ class DoctorRepository {
             return doctor;
         }
         catch (error) {
-            console.log(error);
             throw error;
         }
     }
@@ -112,7 +108,6 @@ class DoctorRepository {
             }
         }
         catch (error) {
-            console.log(error);
             throw error;
         }
     }
@@ -135,7 +130,6 @@ class DoctorRepository {
             });
         }
         catch (error) {
-            console.log(error);
             throw error;
         }
     }
@@ -144,7 +138,6 @@ class DoctorRepository {
             await DoctorSchema_1.default.updateOne({ _id: id }, { $set: { status: status } });
         }
         catch (error) {
-            console.log(error);
             throw error;
         }
     }
@@ -162,7 +155,6 @@ class DoctorRepository {
             }
         }
         catch (error) {
-            console.log(error);
             throw error;
         }
     }
@@ -186,7 +178,6 @@ class DoctorRepository {
     }
     async profileUpdate(id, data) {
         try {
-            console.log("data", data.accountNumber);
             const result = await DoctorSchema_1.default.updateOne({ _id: id }, {
                 $set: {
                     name: data.name,
@@ -269,7 +260,6 @@ class DoctorRepository {
                     },
                 },
             ]);
-            console.log("walletDetails", walletDetails);
             if (!walletDetails || walletDetails.length === 0) {
                 return { status: false };
             }
@@ -546,7 +536,6 @@ class DoctorRepository {
     }
     async getAppointmentDetail(id) {
         try {
-            console.log("id", id);
             const result = await AppointmentSchema_1.default.aggregate([
                 { $match: { _id: new mongoose_1.Types.ObjectId(id) } },
                 {
@@ -717,7 +706,6 @@ class DoctorRepository {
                     },
                 },
             ]);
-            console.log("result", result);
             const finalData = result[0];
             if (finalData) {
                 const dayNames = [

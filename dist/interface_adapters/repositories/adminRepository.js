@@ -31,7 +31,6 @@ class AdminRepository {
             }
         }
         catch (error) {
-            console.log(error);
             throw error;
         }
     }
@@ -44,7 +43,6 @@ class AdminRepository {
             return { status: true, department };
         }
         catch (error) {
-            console.log(error);
             throw error;
         }
     }
@@ -65,7 +63,6 @@ class AdminRepository {
             }
         }
         catch (error) {
-            console.log(error);
             throw error;
         }
     }
@@ -78,7 +75,6 @@ class AdminRepository {
             return { status: true, message: "sucessful", users };
         }
         catch (error) {
-            console.log(error);
             throw error;
         }
     }
@@ -88,7 +84,6 @@ class AdminRepository {
             return result.modifiedCount > 0;
         }
         catch (error) {
-            console.log(error);
             throw error;
         }
     }
@@ -126,7 +121,6 @@ class AdminRepository {
             return { status: true, doctors: result };
         }
         catch (error) {
-            console.log(error);
             throw error;
         }
     }
@@ -898,7 +892,6 @@ class AdminRepository {
     async getUserAppointments(id, page, limit) {
         try {
             const skip = (page - 1) * limit;
-            console.log("skip", skip);
             const result = await AppointmentSchema_1.default.aggregate([
                 {
                     $match: {
@@ -954,7 +947,6 @@ class AdminRepository {
                     },
                 },
             ]);
-            console.log("result", result);
             return result[0];
         }
         catch (error) {
@@ -1288,9 +1280,9 @@ class AdminRepository {
                 {
                     $project: {
                         RefundList: "$data",
-                        count: "$count.count"
-                    }
-                }
+                        count: "$count.count",
+                    },
+                },
             ]);
             return result[0];
         }
@@ -1304,21 +1296,23 @@ class AdminRepository {
             let sortCondition = -1;
             let matchCondition = {};
             if (startDate && endDate) {
-                const startDateStr = new Date(startDate)
-                    .toISOString()
-                    .split("T")[0];
+                const startDateStr = new Date(startDate).toISOString().split("T")[0];
                 const endDateStr = new Date(endDate).toISOString().split("T")[0];
                 matchCondition.$expr = {
                     $and: [
                         {
                             $gte: [
-                                { $dateToString: { format: "%Y-%m-%d", date: "$processedDate" } },
+                                {
+                                    $dateToString: { format: "%Y-%m-%d", date: "$processedDate" },
+                                },
                                 startDateStr,
                             ],
                         },
                         {
                             $lte: [
-                                { $dateToString: { format: "%Y-%m-%d", date: "$processedDate" } },
+                                {
+                                    $dateToString: { format: "%Y-%m-%d", date: "$processedDate" },
+                                },
                                 endDateStr,
                             ],
                         },
@@ -1360,19 +1354,18 @@ class AdminRepository {
                                 $limit: limit,
                             },
                         ],
-                        count: [
-                            { $count: "count" }
-                        ]
+                        count: [{ $count: "count" }],
                     },
                 },
                 {
-                    $unwind: "$count"
-                }, {
+                    $unwind: "$count",
+                },
+                {
                     $project: {
                         withdrawalList: "$data",
-                        count: "$count.count"
-                    }
-                }
+                        count: "$count.count",
+                    },
+                },
             ]);
             return result[0];
         }
@@ -1435,7 +1428,7 @@ class AdminRepository {
                         appointmentBookedTime: "$appointmentInfo.createdAt",
                         reason: 1,
                         start: "$appointmentInfo.start",
-                        end: "$appointmentInfo.end"
+                        end: "$appointmentInfo.end",
                     },
                 },
             ]);

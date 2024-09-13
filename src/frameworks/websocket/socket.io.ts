@@ -99,11 +99,26 @@ export const initializeSocket = (server: HttpServer) => {
       "send_notification",
       async({ receiverId, content, appointmentId, type }) => {
         console.log("sendNotification received",receiverId,content,appointmentId,type)
-        const response=await NotificationModel.updateOne({receiverId:receiverId},{$push:{notifications:{content:content,type:type,appointmentId:appointmentId}}},{upsert:true,new:true})
+
+        let notificationContent:any={
+          content,
+          receiverId,
+          type
+        }
+        if(type==="message"||type==="appointment"){
+          notificationContent.appointmentId=appointmentId
+        }
+        
+        const response=await NotificationModel.updateOne({receiverId:receiverId},{$push:{notifications:notificationContent}},{upsert:true,new:true})
         console.log("socket connection id", onlineUsers[receiverId]);
      
         io.to(onlineUsers[receiverId]).emit("receive_notification",{
-          content:content
+          content:content,
+          type:type
+        })
+        io.to(onlineUsers[receiverId]).emit("realtime-notification",{
+          receiverId,content,type,createdAt:new Date()
+
         })
 
       }

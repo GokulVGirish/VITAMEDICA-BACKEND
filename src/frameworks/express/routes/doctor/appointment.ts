@@ -23,11 +23,11 @@ appointmentRouter.get(
   controller.todaysAppointments.bind(controller)
 );
 appointmentRouter.get(
-  "/upcomming",
+  "/filter/:days",
   authMiddleware,
   verifyRole("doctor"),
   getDoctor,
-  controller.getUpcommingAppointments.bind(controller)
+  controller.getUpcommingOrPrevAppointments.bind(controller)
 );
 appointmentRouter.get(
   `/:id`,

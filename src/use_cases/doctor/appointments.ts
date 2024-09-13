@@ -28,10 +28,11 @@ class DoctorAppointmentInteractor implements IDoctorAppointmentInteractor {
       throw error;
     }
   }
-  async getUpcommingAppointments(
+  async getUpcommingOrPrevAppointments(
     docId: Types.ObjectId,
     page: number,
-    limit: number
+    limit: number,
+    days:string
   ): Promise<{
     status: boolean;
     message: string;
@@ -39,10 +40,11 @@ class DoctorAppointmentInteractor implements IDoctorAppointmentInteractor {
     totalPages?: number;
   }> {
     try {
-      const response = await this.Repository.getUpcommingAppointments(
+      const response = await this.Repository.getUpcommingOrPrevAppointments(
         docId,
         page,
-        limit
+        limit,
+        days
       );
       if (!response.status)
         return { status: false, message: "no appointments" };
@@ -56,9 +58,7 @@ class DoctorAppointmentInteractor implements IDoctorAppointmentInteractor {
       throw error;
     }
   }
-  async getAppointmentDetail(
-    id: string
-  ): Promise<{
+  async getAppointmentDetail(id: string): Promise<{
     status: boolean;
     message?: string;
     detail?: IAppointment;
@@ -87,23 +87,22 @@ class DoctorAppointmentInteractor implements IDoctorAppointmentInteractor {
         response.prescription = url;
       }
       const messages = await this.Repository.getMessages(id);
-        for (let message of messages) {
-          if (message.type === "img") {
-            const command = this.AwsS3.getObjectCommandS3(message.message);
-            const url = await this.AwsS3.getSignedUrlS3(command, 3600);
-            message.message = url;
-          }
+      for (let message of messages) {
+        if (message.type === "img") {
+          const command = this.AwsS3.getObjectCommandS3(message.message);
+          const url = await this.AwsS3.getSignedUrlS3(command, 3600);
+          message.message = url;
         }
-        const signedRecords=[]
-        if(response.medicalRecords.length>0){
-          for(let medicalRecord of response.medicalRecords ){
-            const command=this.AwsS3.getObjectCommandS3(medicalRecord)
-            const url=await this.AwsS3.getSignedUrlS3(command,3600)
-            signedRecords.push(url)
-
-          }
+      }
+      const signedRecords = [];
+      if (response.medicalRecords.length > 0) {
+        for (let medicalRecord of response.medicalRecords) {
+          const command = this.AwsS3.getObjectCommandS3(medicalRecord);
+          const url = await this.AwsS3.getSignedUrlS3(command, 3600);
+          signedRecords.push(url);
         }
-        response.medicalRecords=signedRecords
+      }
+      response.medicalRecords = signedRecords;
 
       return {
         status: true,

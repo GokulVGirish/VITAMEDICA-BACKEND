@@ -1,21 +1,24 @@
-import { nextTick } from "process"
-import IAdminRepository from "../../entities/irepositories/iAdminRepository"
-import { MongoAdmin } from "../../entities/rules/admin"
-import MongoDepartment from "../../entities/rules/departments"
-import { MongoDoctor } from "../../entities/rules/doctor"
-import { MongoUser, User } from "../../entities/rules/user"
-import adminModel from "../../frameworks/mongoose/models/AdminSchema"
-import departmentModel from "../../frameworks/mongoose/models/departmentSchema"
-import doctorModel from "../../frameworks/mongoose/models/DoctorSchema"
-import userModel from "../../frameworks/mongoose/models/UserSchema"
-import rejectedDoctorModel from "../../frameworks/mongoose/models/RejectedDoctor"
-import { getCurrentMonthDates, getCurrentWeekDates } from "../../frameworks/services/dates"
-import appointmentModel from "../../frameworks/mongoose/models/AppointmentSchema"
-import IAppointment from "../../entities/rules/appointments"
-import mongoose, { mongo } from "mongoose"
-import { userInfo } from "os"
-import cancelledAppointmentsModel from "../../frameworks/mongoose/models/cancelledAppointmentSchema"
-import withdrawalModel from "../../frameworks/mongoose/models/WithdrawalSchema"
+import { nextTick } from "process";
+import IAdminRepository from "../../entities/irepositories/iAdminRepository";
+import { MongoAdmin } from "../../entities/rules/admin";
+import MongoDepartment from "../../entities/rules/departments";
+import { MongoDoctor } from "../../entities/rules/doctor";
+import { MongoUser, User } from "../../entities/rules/user";
+import adminModel from "../../frameworks/mongoose/models/AdminSchema";
+import departmentModel from "../../frameworks/mongoose/models/departmentSchema";
+import doctorModel from "../../frameworks/mongoose/models/DoctorSchema";
+import userModel from "../../frameworks/mongoose/models/UserSchema";
+import rejectedDoctorModel from "../../frameworks/mongoose/models/RejectedDoctor";
+import {
+  getCurrentMonthDates,
+  getCurrentWeekDates,
+} from "../../frameworks/services/dates";
+import appointmentModel from "../../frameworks/mongoose/models/AppointmentSchema";
+import IAppointment from "../../entities/rules/appointments";
+import mongoose, { mongo } from "mongoose";
+import { userInfo } from "os";
+import cancelledAppointmentsModel from "../../frameworks/mongoose/models/cancelledAppointmentSchema";
+import withdrawalModel from "../../frameworks/mongoose/models/WithdrawalSchema";
 
 class AdminRepository implements IAdminRepository {
   async getAdmin(email: string): Promise<MongoAdmin | null> {
@@ -36,7 +39,6 @@ class AdminRepository implements IAdminRepository {
         };
       }
     } catch (error) {
-      console.log(error);
       throw error;
     }
   }
@@ -50,7 +52,6 @@ class AdminRepository implements IAdminRepository {
       }
       return { status: true, department };
     } catch (error) {
-      console.log(error);
       throw error;
     }
   }
@@ -71,7 +72,6 @@ class AdminRepository implements IAdminRepository {
         };
       }
     } catch (error) {
-      console.log(error);
       throw error;
     }
   }
@@ -87,7 +87,6 @@ class AdminRepository implements IAdminRepository {
       }
       return { status: true, message: "sucessful", users };
     } catch (error) {
-      console.log(error);
       throw error;
     }
   }
@@ -100,7 +99,6 @@ class AdminRepository implements IAdminRepository {
 
       return result.modifiedCount > 0;
     } catch (error) {
-      console.log(error);
       throw error;
     }
   }
@@ -141,7 +139,6 @@ class AdminRepository implements IAdminRepository {
 
       return { status: true, doctors: result };
     } catch (error) {
-      console.log(error);
       throw error;
     }
   }
@@ -303,8 +300,7 @@ class AdminRepository implements IAdminRepository {
         },
       ]);
 
-    
-      return result[0]
+      return result[0];
     } catch (error) {
       throw error;
     }
@@ -406,7 +402,7 @@ class AdminRepository implements IAdminRepository {
         },
       ]);
 
-   return result[0]
+      return result[0];
     } catch (error) {
       throw error;
     }
@@ -517,7 +513,7 @@ class AdminRepository implements IAdminRepository {
           },
         },
       ]);
-     
+
       return result[0];
     } catch (error) {
       throw error;
@@ -961,7 +957,7 @@ class AdminRepository implements IAdminRepository {
   ): Promise<IAppointment[]> {
     try {
       const skip = (page - 1) * limit;
-      console.log("skip", skip);
+
       const result = await appointmentModel.aggregate([
         {
           $match: {
@@ -1017,7 +1013,7 @@ class AdminRepository implements IAdminRepository {
           },
         },
       ]);
-      console.log("result", result);
+
       return result[0];
     } catch (error) {
       throw error;
@@ -1278,29 +1274,28 @@ class AdminRepository implements IAdminRepository {
       let sortCondition: -1 | 1 = -1;
       let matchCondition: any = {};
       if (startDate && endDate) {
-         const startDateStr = new Date(startDate).toISOString().split("T")[0]; 
-         const endDateStr = new Date(endDate).toISOString().split("T")[0]; 
+        const startDateStr = new Date(startDate).toISOString().split("T")[0];
+        const endDateStr = new Date(endDate).toISOString().split("T")[0];
 
-         matchCondition.$expr = {
-           $and: [
-             {
-               $gte: [
-                 { $dateToString: { format: "%Y-%m-%d", date: "$Date" } },
-                 startDateStr,
-               ],
-             },
-             {
-               $lte: [
-                 { $dateToString: { format: "%Y-%m-%d", date: "$Date" } },
-                 endDateStr,
-               ],
-             },
-           ],
-         };
+        matchCondition.$expr = {
+          $and: [
+            {
+              $gte: [
+                { $dateToString: { format: "%Y-%m-%d", date: "$Date" } },
+                startDateStr,
+              ],
+            },
+            {
+              $lte: [
+                { $dateToString: { format: "%Y-%m-%d", date: "$Date" } },
+                endDateStr,
+              ],
+            },
+          ],
+        };
 
         sortCondition = 1;
       }
-    
 
       const result = await cancelledAppointmentsModel.aggregate([
         {
@@ -1361,172 +1356,195 @@ class AdminRepository implements IAdminRepository {
           $unwind: "$count",
         },
         {
-          $project:{
-            RefundList:"$data",
-            count:"$count.count"
-          }
-        }
+          $project: {
+            RefundList: "$data",
+            count: "$count.count",
+          },
+        },
       ]);
- 
+
       return result[0];
     } catch (error) {
       throw error;
     }
   }
-  async getWithdrawalList(page: number, limit: number, startDate: string, endDate: string): Promise<{ withdrawalList?: { name: string; date: Date; email: string; amount: number; }[]; count?: number; }> {
-      try{
-          const skip = (page - 1) * limit;
-          let sortCondition: -1 | 1 = -1;
-          let matchCondition: any = {};
-          if (startDate && endDate) {
-            const startDateStr = new Date(startDate)
-              .toISOString()
-              .split("T")[0];
-            const endDateStr = new Date(endDate).toISOString().split("T")[0];
+  async getWithdrawalList(
+    page: number,
+    limit: number,
+    startDate: string,
+    endDate: string
+  ): Promise<{
+    withdrawalList?: {
+      name: string;
+      date: Date;
+      email: string;
+      amount: number;
+    }[];
+    count?: number;
+  }> {
+    try {
+      const skip = (page - 1) * limit;
+      let sortCondition: -1 | 1 = -1;
+      let matchCondition: any = {};
+      if (startDate && endDate) {
+        const startDateStr = new Date(startDate).toISOString().split("T")[0];
+        const endDateStr = new Date(endDate).toISOString().split("T")[0];
 
-            matchCondition.$expr = {
-              $and: [
+        matchCondition.$expr = {
+          $and: [
+            {
+              $gte: [
                 {
-                  $gte: [
-                    { $dateToString: { format: "%Y-%m-%d", date: "$processedDate" } },
-                    startDateStr,
-                  ],
+                  $dateToString: { format: "%Y-%m-%d", date: "$processedDate" },
                 },
-                {
-                  $lte: [
-                    { $dateToString: { format: "%Y-%m-%d", date: "$processedDate" } },
-                    endDateStr,
-                  ],
-                },
+                startDateStr,
               ],
-            };
-
-            sortCondition = 1;
-          }
-
-          const result = await withdrawalModel.aggregate([
-            {
-              $match: matchCondition,
             },
             {
-              $facet: {
-                data: [
-                  {
-                    $lookup: {
-                      from: "doctors",
-                      localField: "doctorId",
-                      foreignField: "_id",
-                      as: "doctorInfo",
-                    },
-                  },
-                  {
-                    $unwind: "$doctorInfo",
-                  },
-                  {
-                    $project: {
-                      _id: 1,
-                      name: "$doctorInfo.name",
-                      email: "$doctorInfo.email",
-                      date: "$processedDate",
-                      amount: 1,
-                    },
-                  },
-                  {
-                    $skip: skip,
-                  },
-                  {
-                    $limit: limit,
-                  },
-                ],
-                count:[
-                  {$count:"count"}
-                ]
+              $lte: [
+                {
+                  $dateToString: { format: "%Y-%m-%d", date: "$processedDate" },
+                },
+                endDateStr,
+              ],
+            },
+          ],
+        };
+
+        sortCondition = 1;
+      }
+
+      const result = await withdrawalModel.aggregate([
+        {
+          $match: matchCondition,
+        },
+        {
+          $facet: {
+            data: [
+              {
+                $lookup: {
+                  from: "doctors",
+                  localField: "doctorId",
+                  foreignField: "_id",
+                  as: "doctorInfo",
+                },
               },
-            },
-            {
-              $unwind:"$count"
-            },{
-              $project:{
-                withdrawalList:"$data",
-                count:"$count.count"
-              }
-            }
-          ]);
-     
-          return result[0]
-         
+              {
+                $unwind: "$doctorInfo",
+              },
+              {
+                $project: {
+                  _id: 1,
+                  name: "$doctorInfo.name",
+                  email: "$doctorInfo.email",
+                  date: "$processedDate",
+                  amount: 1,
+                },
+              },
+              {
+                $skip: skip,
+              },
+              {
+                $limit: limit,
+              },
+            ],
+            count: [{ $count: "count" }],
+          },
+        },
+        {
+          $unwind: "$count",
+        },
+        {
+          $project: {
+            withdrawalList: "$data",
+            count: "$count.count",
+          },
+        },
+      ]);
 
-      }
-      catch(error){
-        throw error
-      }
+      return result[0];
+    } catch (error) {
+      throw error;
+    }
   }
-  async getRefundDetail(id: string): Promise<{ _id: mongoose.Types.ObjectId; docName: string; userName: string; docImg: string; userImg: string; cancelledBy: string; appointmentTime: Date; appointmentBookedTime: Date; reason: string; amount: string; cancellationTime:Date }> {
-      try{
-        const result = await cancelledAppointmentsModel.aggregate([
-          {
-            $match: {
-              _id: new mongoose.Types.ObjectId(id),
-            },
+  async getRefundDetail(
+    id: string
+  ): Promise<{
+    _id: mongoose.Types.ObjectId;
+    docName: string;
+    userName: string;
+    docImg: string;
+    userImg: string;
+    cancelledBy: string;
+    appointmentTime: Date;
+    appointmentBookedTime: Date;
+    reason: string;
+    amount: string;
+    cancellationTime: Date;
+  }> {
+    try {
+      const result = await cancelledAppointmentsModel.aggregate([
+        {
+          $match: {
+            _id: new mongoose.Types.ObjectId(id),
           },
-          {
-            $lookup: {
-              from: "doctors",
-              localField: "docId",
-              foreignField: "_id",
-              as: "doctorInfo",
-            },
+        },
+        {
+          $lookup: {
+            from: "doctors",
+            localField: "docId",
+            foreignField: "_id",
+            as: "doctorInfo",
           },
-          {
-            $unwind: "$doctorInfo",
+        },
+        {
+          $unwind: "$doctorInfo",
+        },
+        {
+          $lookup: {
+            from: "appointments",
+            localField: "appointmentId",
+            foreignField: "_id",
+            as: "appointmentInfo",
           },
-          {
-            $lookup: {
-              from: "appointments",
-              localField: "appointmentId",
-              foreignField: "_id",
-              as: "appointmentInfo",
-            },
+        },
+        {
+          $unwind: "$appointmentInfo",
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "appointmentInfo.userId",
+            foreignField: "_id",
+            as: "userInfo",
           },
-          {
-            $unwind: "$appointmentInfo",
+        },
+        {
+          $unwind: "$userInfo",
+        },
+        {
+          $project: {
+            _id: 1,
+            docName: "$doctorInfo.name",
+            userName: "$userInfo.name",
+            docImg: "$doctorInfo.image",
+            userImg: "$userInfo.image",
+            cancelledBy: 1,
+            amount: 1,
+            cancellationTime: "$Date",
+            appointmentTime: "$appointmentInfo.date",
+            appointmentBookedTime: "$appointmentInfo.createdAt",
+            reason: 1,
+            start: "$appointmentInfo.start",
+            end: "$appointmentInfo.end",
           },
-          {
-            $lookup: {
-              from: "users",
-              localField: "appointmentInfo.userId",
-              foreignField: "_id",
-              as: "userInfo",
-            },
-          },
-          {
-            $unwind: "$userInfo",
-          },
-          {
-            $project: {
-              _id: 1,
-              docName: "$doctorInfo.name",
-              userName: "$userInfo.name",
-              docImg: "$doctorInfo.image",
-              userImg: "$userInfo.image",
-              cancelledBy: 1,
-              amount: 1,
-              cancellationTime: "$Date",
-              appointmentTime:"$appointmentInfo.date",
-              appointmentBookedTime:"$appointmentInfo.createdAt",
-              reason:1,
-              start:"$appointmentInfo.start",
-              end:"$appointmentInfo.end"
-            },
-          },
-        ]);
-  
-        return result[0]
+        },
+      ]);
 
-      }
-      catch(error){
-        throw error
-      }
+      return result[0];
+    } catch (error) {
+      throw error;
+    }
   }
 }
-export default AdminRepository
+export default AdminRepository;

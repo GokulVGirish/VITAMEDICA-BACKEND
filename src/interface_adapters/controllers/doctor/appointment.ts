@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { doctorDataRequest } from "../../../frameworks/express/middlewares/doctor";
 import { MulterFile } from "../../../entities/rules/multerFile";
 import IDoctorAppointmentInteractor from "../../../entities/iuse_cases/doctor/iAppointment";
+import { error } from "console";
 
 
 
@@ -25,7 +26,7 @@ class DoctorAppointmentControllers {
       next(error);
     }
   }
-  async getUpcommingAppointments(
+  async getUpcommingOrPrevAppointments(
     req: Request,
     res: Response,
     next: NextFunction
@@ -34,10 +35,12 @@ class DoctorAppointmentControllers {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 7;
       const docId = (req as doctorDataRequest).doctorData._id;
-      const response = await this.interactor.getUpcommingAppointments(
+      const days=req.params.days
+      const response = await this.interactor.getUpcommingOrPrevAppointments(
         docId,
         page,
-        limit
+        limit,
+        days
       );
       if (response.status) {
         res.status(200).json({
@@ -54,6 +57,7 @@ class DoctorAppointmentControllers {
       next(error);
     }
   }
+
   async getAppointmentDetails(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id;
@@ -63,7 +67,7 @@ class DoctorAppointmentControllers {
           success: true,
           message: response.message,
           detail: response.detail,
-          messages:response.messages
+          messages: response.messages,
         });
       }
       res.status(500).json({ success: false, message: response.message });

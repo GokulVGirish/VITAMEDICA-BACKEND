@@ -14,13 +14,11 @@ import doctorWalletModal from "../../frameworks/mongoose/models/DoctorWalletSche
 import IUserWallet from "../../entities/rules/userWalletType";
 import userWalletModal from "../../frameworks/mongoose/models/UserWalletSchema";
 import cancelledAppointmentsModel from "../../frameworks/mongoose/models/cancelledAppointmentSchema";
-import { count } from "console";
 import chatSchemaModel from "../../frameworks/mongoose/models/ChatSchema";
 import NotificationModel from "../../frameworks/mongoose/models/NotificationSchema";
 import { INotificationContent } from "../../entities/rules/Notifications";
 
 const moment = require("moment");
-
 
 class UserRepository implements IUserRepository {
   async tempOtpUser(data: User): Promise<{ userId: Types.ObjectId }> {
@@ -63,7 +61,6 @@ class UserRepository implements IUserRepository {
         return { status: false };
       }
     } catch (error) {
-      console.log(error);
       throw error;
     }
   }
@@ -72,7 +69,6 @@ class UserRepository implements IUserRepository {
       const user = await userModel.findOne({ email: email });
       return user;
     } catch (error) {
-      console.log(error);
       throw error;
     }
   }
@@ -88,9 +84,8 @@ class UserRepository implements IUserRepository {
         password: password,
         register: "Google",
       });
-     return user
+      return user;
     } catch (error) {
-      console.log(error);
       throw error;
     }
   }
@@ -107,7 +102,7 @@ class UserRepository implements IUserRepository {
           dob: data.dob,
           gender: data.gender,
           bloodGroup: data.bloodGroup,
-          isComplete:true,
+          isComplete: true,
           address: {
             street: data.address?.street,
             city: data.address?.city,
@@ -116,14 +111,13 @@ class UserRepository implements IUserRepository {
           },
         }
       );
-      console.log("response", response);
+
       if (response.modifiedCount > 0) {
         return { success: true };
       } else {
         return { success: false };
       }
     } catch (error) {
-      console.log(error);
       throw error;
     }
   }
@@ -139,7 +133,6 @@ class UserRepository implements IUserRepository {
         return false;
       }
     } catch (error) {
-      console.log(error);
       throw error;
     }
   }
@@ -254,7 +247,6 @@ class UserRepository implements IUserRepository {
           },
         },
       ]);
-      console.log("result", result[0].doctors);
 
       return {
         doctors: result[0].doctors,
@@ -351,9 +343,9 @@ class UserRepository implements IUserRepository {
       ]);
 
       return {
-        doctors: newResult[0]?.doctors||[],
+        doctors: newResult[0]?.doctors || [],
 
-        totalPages: Math.ceil(newResult[0]?.count / limit)||1,
+        totalPages: Math.ceil(newResult[0]?.count / limit) || 1,
       };
     } catch (error) {
       throw error;
@@ -408,7 +400,6 @@ class UserRepository implements IUserRepository {
           },
         },
       ]);
-      console.log("departmentInfo", result);
 
       return result[0];
     } catch (error) {
@@ -428,14 +419,13 @@ class UserRepository implements IUserRepository {
   }
   async getTimeSlots(id: string, date: string): Promise<DoctorSlots | null> {
     try {
-      console.log("id", id, "date", date);
       const startOfDay = moment(date).startOf("day").toDate();
       const endOfDay = moment(date).endOf("day").toDate();
       const result = await doctorSlotsModel.findOne({
         doctorId: id,
         date: { $gte: startOfDay, $lte: endOfDay },
       });
-      console.log("second result", result);
+
       return result;
     } catch (error) {
       throw error;
@@ -448,16 +438,6 @@ class UserRepository implements IUserRepository {
     slotId: Types.ObjectId,
     lockExpiration: Date
   ): Promise<boolean> {
-    console.log(
-      "userId",
-      userId,
-      "slotId",
-      slotId,
-      "doctorId",
-      docId,
-      "date",
-      date
-    );
     try {
       const startOfDay = moment(date).startOf("day").toDate();
       const endOfDay = moment(date).endOf("day").toDate();
@@ -473,9 +453,8 @@ class UserRepository implements IUserRepository {
           },
         ],
       });
-      console.log("initialCHeck", initialCheck);
+
       if (initialCheck) return false;
-      console.log("initialCHeck", initialCheck);
 
       const result = await doctorSlotsModel.findOneAndUpdate(
         {
@@ -498,12 +477,10 @@ class UserRepository implements IUserRepository {
       );
 
       if (!result) {
-        console.log("Slot locking failed: already locked or not available");
         return false;
       }
       return true;
     } catch (error) {
-      console.error("Error locking slot:", error);
       throw error;
     }
   }
@@ -514,18 +491,6 @@ class UserRepository implements IUserRepository {
     slotId: Types.ObjectId,
     date: string
   ): Promise<boolean> {
-    console.log(
-      "next",
-      "...",
-      "docId",
-      doctorId,
-      "userId",
-      userId,
-      "slotId",
-      slotId,
-      "date",
-      date
-    );
     try {
       const now = new Date();
       const startOfDay = moment(date).startOf("day").toDate();
@@ -560,7 +525,6 @@ class UserRepository implements IUserRepository {
       if (result) return true;
       return false;
     } catch (error) {
-      console.error("Error booking slot:", error);
       throw error;
     }
   }
@@ -950,7 +914,6 @@ class UserRepository implements IUserRepository {
     totalReviews: number;
     latestReviews: Review[];
   }> {
-    console.log("id", id, page, limit);
     const skipReviews = (page - 1) * limit;
     try {
       const result = await doctorModel.aggregate([
@@ -1275,61 +1238,60 @@ class UserRepository implements IUserRepository {
     }
   }
 
-  async fetchNotifications(userId: Types.ObjectId): Promise<INotificationContent[]> {
-      try{
-        const result = await NotificationModel.aggregate([
-          {
-            $match: {
-              receiverId: new mongoose.Types.ObjectId(userId),
+  async fetchNotifications(
+    userId: Types.ObjectId
+  ): Promise<INotificationContent[]> {
+    try {
+      const result = await NotificationModel.aggregate([
+        {
+          $match: {
+            receiverId: new mongoose.Types.ObjectId(userId),
+          },
+        },
+        {
+          $unwind: "$notifications",
+        },
+        {
+          $match: {
+            "notifications.read": false,
+          },
+        },
+        {
+          $sort: {
+            "notifications.createdAt": -1,
+          },
+        },
+        {
+          $group: {
+            _id: "$_id",
+            notifications: {
+              $push: "$notifications",
             },
           },
-          {
-            $unwind: "$notifications",
-          },
-          {
-            $match: {
-              "notifications.read": false,
-            },
-          },
-          {
-            $sort:{
-              "notifications.createdAt":-1
+        },
+      ]);
 
-            }
-          },
-          {
-            $group: {
-              _id: "$_id",
-              notifications: {
-                $push: "$notifications",
-              },
-            },
-          },
-        ]);
-     
-        
-        if(result.length===0) return []
-        return result[0].notifications
-
-      }
-      catch(error){
-        throw error
-      }
+      if (result.length === 0) return [];
+      return result[0].notifications;
+    } catch (error) {
+      throw error;
+    }
   }
   async markNotificationAsRead(userId: Types.ObjectId): Promise<boolean> {
-      try{
-        const response=await NotificationModel.updateOne({receiverId:new mongoose.Types.ObjectId(userId)},{$set:{"notifications.$[elem].read":true}},{
-          arrayFilters:[{"elem.read":false}],
-          multi:true
-        })
-     
-        return response.modifiedCount>0
+    try {
+      const response = await NotificationModel.updateOne(
+        { receiverId: new mongoose.Types.ObjectId(userId) },
+        { $set: { "notifications.$[elem].read": true } },
+        {
+          arrayFilters: [{ "elem.read": false }],
+          multi: true,
+        }
+      );
 
-
-      }
-      catch(error){
-        throw error
-      }
+      return response.modifiedCount > 0;
+    } catch (error) {
+      throw error;
+    }
   }
 }
-export default UserRepository
+export default UserRepository;

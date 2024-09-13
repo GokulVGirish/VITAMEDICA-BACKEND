@@ -7,7 +7,7 @@ const NotificationContentSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["message", "normal"],
+      enum: ["message", "appointment","welcome"],
       required: true,
     },
     appointmentId: {

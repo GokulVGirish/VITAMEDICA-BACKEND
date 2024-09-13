@@ -1,5 +1,5 @@
 import { IDoctorRepository } from "../../entities/irepositories/idoctorRepository";
-import { MongoDoctor,OtpDoctor } from "../../entities/rules/doctor";
+import { MongoDoctor, OtpDoctor } from "../../entities/rules/doctor";
 import doctorOtpModel from "../../frameworks/mongoose/models/TempDoctor";
 import MongoDepartment from "../../entities/rules/departments";
 import departmentModel from "../../frameworks/mongoose/models/departmentSchema";
@@ -18,8 +18,10 @@ import { Type } from "@aws-sdk/client-s3";
 import cancelledAppointmentsModel from "../../frameworks/mongoose/models/cancelledAppointmentSchema";
 import userWalletModal from "../../frameworks/mongoose/models/UserWalletSchema";
 import userModel from "../../frameworks/mongoose/models/UserSchema";
-import { getCurrentMonthDates, getCurrentWeekDates } from "../../frameworks/services/dates";
-import { count } from "console";
+import {
+  getCurrentMonthDates,
+  getCurrentWeekDates,
+} from "../../frameworks/services/dates";
 import withdrawalModel from "../../frameworks/mongoose/models/WithdrawalSchema";
 import { throwDeprecation } from "process";
 import chatSchemaModel from "../../frameworks/mongoose/models/ChatSchema";
@@ -32,7 +34,6 @@ class DoctorRepository implements IDoctorRepository {
       const doctor = await doctorModel.findOne({ email: email });
       return doctor;
     } catch (error) {
-      console.log(error);
       throw error;
     }
   }
@@ -41,7 +42,6 @@ class DoctorRepository implements IDoctorRepository {
       const otpDoc = await doctorOtpModel.create(data);
       return { userId: otpDoc._id };
     } catch (error) {
-      console.log(error);
       throw error;
     }
   }
@@ -70,7 +70,6 @@ class DoctorRepository implements IDoctorRepository {
       });
       return { status: true, message: "created", doctor: doc };
     } catch (error) {
-      console.log(error);
       throw error;
     }
   }
@@ -79,7 +78,6 @@ class DoctorRepository implements IDoctorRepository {
       const doctor = await doctorModel.findOne({ email: email });
       return doctor;
     } catch (error) {
-      console.log(error);
       throw error;
     }
   }
@@ -97,7 +95,6 @@ class DoctorRepository implements IDoctorRepository {
         };
       }
     } catch (error) {
-      console.log(error);
       throw error;
     }
   }
@@ -131,7 +128,6 @@ class DoctorRepository implements IDoctorRepository {
         }
       );
     } catch (error) {
-      console.log(error);
       throw error;
     }
   }
@@ -139,7 +135,6 @@ class DoctorRepository implements IDoctorRepository {
     try {
       await doctorModel.updateOne({ _id: id }, { $set: { status: status } });
     } catch (error) {
-      console.log(error);
       throw error;
     }
   }
@@ -155,7 +150,6 @@ class DoctorRepository implements IDoctorRepository {
         return false;
       }
     } catch (error) {
-      console.log(error);
       throw error;
     }
   }
@@ -197,7 +191,6 @@ class DoctorRepository implements IDoctorRepository {
     }
   ): Promise<boolean> {
     try {
-      console.log("data", data.accountNumber);
       const result = await doctorModel.updateOne(
         { _id: id },
         {
@@ -283,7 +276,7 @@ class DoctorRepository implements IDoctorRepository {
           },
         },
       ]);
-      console.log("walletDetails", walletDetails);
+
       if (!walletDetails || walletDetails.length === 0) {
         return { status: false };
       }
@@ -340,19 +333,27 @@ class DoctorRepository implements IDoctorRepository {
       throw error;
     }
   }
-  async getUpcommingAppointments(
+  async getUpcommingOrPrevAppointments(
     docId: Types.ObjectId,
     page: number,
-    limit: number
+    limit: number,
+    days: string
   ): Promise<{
     status: boolean;
     appointments?: IAppointment[];
     totalPages?: number;
   }> {
+    const currentdate = new Date();
+    let filterDate: any = {};
+
+    if (days === "upcomming") {
+      filterDate.$gt = currentdate;
+    } else {
+      filterDate.$lt = currentdate;
+    }
     try {
-      const currentdate = new Date();
       const result = await appointmentModel.aggregate([
-        { $match: { docId: docId, date: { $gt: currentdate } } },
+        { $match: { docId: docId, date: filterDate } },
         {
           $lookup: {
             from: "users",
@@ -377,14 +378,14 @@ class DoctorRepository implements IDoctorRepository {
             createdAt: 1,
           },
         },
-        { $sort: { createdAt: -1 } },
+        { $sort: { createdAt: days === "upcomming" ? 1 : -1 } },
         { $skip: (page - 1) * limit },
         { $limit: limit },
       ]);
       if (result) {
         const totalAppointments = await appointmentModel.countDocuments({
           docId: docId,
-          date: { $gt: currentdate },
+          date: filterDate,
         });
         const totalPages = Math.ceil(totalAppointments / limit);
         return { status: true, appointments: result, totalPages };
@@ -604,8 +605,6 @@ class DoctorRepository implements IDoctorRepository {
   }
   async getAppointmentDetail(id: string): Promise<IAppointment | null> {
     try {
-      console.log("id", id);
-
       const result = await appointmentModel.aggregate([
         { $match: { _id: new Types.ObjectId(id) } },
         {
@@ -788,7 +787,7 @@ class DoctorRepository implements IDoctorRepository {
           },
         },
       ]);
-      console.log("result", result);
+
       const finalData = result[0];
       if (finalData) {
         const dayNames = [
@@ -1063,11 +1062,11 @@ class DoctorRepository implements IDoctorRepository {
           multi: true,
         }
       );
-     
+
       return response.modifiedCount > 0;
     } catch (error) {
       throw error;
     }
   }
 }
-export default DoctorRepository
+export default DoctorRepository;

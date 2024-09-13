@@ -192,6 +192,7 @@ class UserAuthInteractor implements IuserAuthInteractor {
             message: "Signed Up Sucessfully",
             name: response.name,
             userId:response._id as Types.ObjectId
+            
           };
        
       }else return {

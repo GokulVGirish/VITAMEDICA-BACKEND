@@ -18,7 +18,7 @@ const interactor = new appointments_1.default(repository, awss3);
 const controller = new appointment_1.default(interactor);
 const appointmentRouter = express_1.default.Router();
 appointmentRouter.get("/today", jwt_verify_1.default, (0, role_Authenticate_1.default)("doctor"), doctor_1.getDoctor, controller.todaysAppointments.bind(controller));
-appointmentRouter.get("/upcomming", jwt_verify_1.default, (0, role_Authenticate_1.default)("doctor"), doctor_1.getDoctor, controller.getUpcommingAppointments.bind(controller));
+appointmentRouter.get("/filter/:days", jwt_verify_1.default, (0, role_Authenticate_1.default)("doctor"), doctor_1.getDoctor, controller.getUpcommingOrPrevAppointments.bind(controller));
 appointmentRouter.get(`/:id`, jwt_verify_1.default, (0, role_Authenticate_1.default)("doctor"), doctor_1.getDoctor, controller.getAppointmentDetails.bind(controller));
 appointmentRouter.put(`/:appointmentId/prescriptions`, jwt_verify_1.default, (0, role_Authenticate_1.default)("doctor"), doctor_1.getDoctor, multer_1.default.single("prescription"), controller.addPrescription.bind(controller));
 exports.default = appointmentRouter;

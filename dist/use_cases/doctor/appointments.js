@@ -17,9 +17,9 @@ class DoctorAppointmentInteractor {
             throw error;
         }
     }
-    async getUpcommingAppointments(docId, page, limit) {
+    async getUpcommingOrPrevAppointments(docId, page, limit, days) {
         try {
-            const response = await this.Repository.getUpcommingAppointments(docId, page, limit);
+            const response = await this.Repository.getUpcommingOrPrevAppointments(docId, page, limit, days);
             if (!response.status)
                 return { status: false, message: "no appointments" };
             return {

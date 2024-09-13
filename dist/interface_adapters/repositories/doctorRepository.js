@@ -326,11 +326,18 @@ class DoctorRepository {
             throw error;
         }
     }
-    async getUpcommingAppointments(docId, page, limit) {
+    async getUpcommingOrPrevAppointments(docId, page, limit, days) {
+        const currentdate = new Date();
+        let filterDate = {};
+        if (days === "upcomming") {
+            filterDate.$gt = currentdate;
+        }
+        else {
+            filterDate.$lt = currentdate;
+        }
         try {
-            const currentdate = new Date();
             const result = await AppointmentSchema_1.default.aggregate([
-                { $match: { docId: docId, date: { $gt: currentdate } } },
+                { $match: { docId: docId, date: filterDate } },
                 {
                     $lookup: {
                         from: "users",
@@ -355,14 +362,14 @@ class DoctorRepository {
                         createdAt: 1,
                     },
                 },
-                { $sort: { createdAt: -1 } },
+                { $sort: { createdAt: days === "upcomming" ? 1 : -1 } },
                 { $skip: (page - 1) * limit },
                 { $limit: limit },
             ]);
             if (result) {
                 const totalAppointments = await AppointmentSchema_1.default.countDocuments({
                     docId: docId,
-                    date: { $gt: currentdate },
+                    date: filterDate,
                 });
                 const totalPages = Math.ceil(totalAppointments / limit);
                 return { status: true, appointments: result, totalPages };

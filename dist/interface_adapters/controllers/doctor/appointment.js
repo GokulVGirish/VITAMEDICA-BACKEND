@@ -24,12 +24,13 @@ class DoctorAppointmentControllers {
             next(error);
         }
     }
-    async getUpcommingAppointments(req, res, next) {
+    async getUpcommingOrPrevAppointments(req, res, next) {
         try {
             const page = parseInt(req.query.page) || 1;
             const limit = parseInt(req.query.limit) || 7;
             const docId = req.doctorData._id;
-            const response = await this.interactor.getUpcommingAppointments(docId, page, limit);
+            const days = req.params.days;
+            const response = await this.interactor.getUpcommingOrPrevAppointments(docId, page, limit, days);
             if (response.status) {
                 res.status(200).json({
                     success: true,
@@ -56,7 +57,7 @@ class DoctorAppointmentControllers {
                     success: true,
                     message: response.message,
                     detail: response.detail,
-                    messages: response.messages
+                    messages: response.messages,
                 });
             }
             res.status(500).json({ success: false, message: response.message });

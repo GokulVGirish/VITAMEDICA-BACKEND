@@ -9,19 +9,18 @@ interface IDoctorAppointmentInteractor {
     message: string;
     appointments?: IAppointment[];
   }>;
-  getUpcommingAppointments(
+  getUpcommingOrPrevAppointments(
     docId: Types.ObjectId,
     page: number,
-    limit: number
+    limit: number,
+    days: string
   ): Promise<{
     status: boolean;
     message: string;
     appointments?: IAppointment[];
     totalPages?: number;
   }>;
-  getAppointmentDetail(
-    id: string
-  ): Promise<{
+  getAppointmentDetail(id: string): Promise<{
     status: boolean;
     message?: string;
     detail?: IAppointment;

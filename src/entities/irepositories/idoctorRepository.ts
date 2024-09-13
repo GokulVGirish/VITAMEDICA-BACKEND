@@ -55,10 +55,11 @@ export interface IDoctorRepository {
     totalPages?: number;
   }>;
   getTodaysAppointments(docId: Types.ObjectId): Promise<IAppointment[] | null>;
-  getUpcommingAppointments(
+  getUpcommingOrPrevAppointments(
     docId: Types.ObjectId,
     page: number,
-    limit: number
+    limit: number,
+    days:string
   ): Promise<{
     status: boolean;
     appointments?: IAppointment[];

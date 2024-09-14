@@ -110,7 +110,7 @@ class ProfileInteractor implements IUserProfileInteractor {
         payload,
         process.env.Password_RESET_SECRET as string
       );
-      const resetLink = `http://localhost:5173/reset-password?token=${hashedToken}&request=user`;
+      const resetLink = `${process.env.cors_origin}/reset-password?token=${hashedToken}&request=user`;
       const result = await this.Mailer.sendPasswordResetLink(email, resetLink);
       if (!result.success)
         return { status: false, message: "Internal Server Error" };

@@ -16,5 +16,5 @@ const interactor = new auth_2.default(repository, jwtservices);
 const controller = new auth_1.default(interactor);
 const authRouter = express_1.default.Router();
 authRouter.post("/login", controller.login.bind(controller));
-authRouter.get("/verify-token", jwt_verify_1.default, (0, role_Authenticate_1.default)("admin"), controller.verifyToken.bind(controller));
+authRouter.get("/token/verify-token", jwt_verify_1.default, (0, role_Authenticate_1.default)("admin"), controller.verifyToken.bind(controller));
 exports.default = authRouter;

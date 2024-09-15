@@ -19,7 +19,7 @@ const controller = new DoctorAuthControllers(interactor);
 const authRouter=express.Router()
 authRouter.post("/signup", controller.otpSignup.bind(controller));
 authRouter.get(
-  "/verify-token",
+  "/token/verify-token",
   authMiddleware,
   verifyRole("doctor"),
   getDoctor,

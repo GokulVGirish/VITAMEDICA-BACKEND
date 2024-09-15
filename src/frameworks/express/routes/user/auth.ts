@@ -23,7 +23,7 @@ authRouter.post(
   controller.verifyOtpSignup.bind(controller)
 );
 authRouter.get(
-  "/token/verify",
+  "/token/verify-token",
   authMiddleware,
   verifyRole("user"),
   getUser,

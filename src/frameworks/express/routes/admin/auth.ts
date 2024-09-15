@@ -17,7 +17,7 @@ const controller = new AdminAuthControllers(interactor);
 const authRouter = express.Router();
 authRouter.post("/login", controller.login.bind(controller));
 authRouter.get(
-  "/verify-token",
+  "/token/verify-token",
   authMiddleware,
   verifyRole("admin"),
   controller.verifyToken.bind(controller)

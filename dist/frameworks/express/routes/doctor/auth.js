@@ -19,7 +19,7 @@ const interactor = new auth_2.default(repository, mailer, jwtService);
 const controller = new auth_1.default(interactor);
 const authRouter = express_1.default.Router();
 authRouter.post("/signup", controller.otpSignup.bind(controller));
-authRouter.get("/verify-token", jwt_verify_1.default, (0, role_Authenticate_1.default)("doctor"), doctor_1.getDoctor, controller.verifyToken.bind(controller));
+authRouter.get("/token/verify-token", jwt_verify_1.default, (0, role_Authenticate_1.default)("doctor"), doctor_1.getDoctor, controller.verifyToken.bind(controller));
 authRouter.post("/signup/verify-otp", jwt_verify_1.default, controller.verifyOtpSignup.bind(controller));
 authRouter.post("/login", controller.login.bind(controller));
 authRouter.post("/otp/resend", jwt_verify_1.default, controller.resendOtp.bind(controller));

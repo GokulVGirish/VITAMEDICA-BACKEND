@@ -20,7 +20,7 @@ const controller = new auth_1.default(interactor);
 const authRouter = express_1.default.Router();
 authRouter.post("/signup", controller.otpSignup.bind(controller));
 authRouter.post("/signup/verify-otp", controller.verifyOtpSignup.bind(controller));
-authRouter.get("/token/verify", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.verifyToken.bind(controller));
+authRouter.get("/token/verify-token", jwt_verify_1.default, (0, role_Authenticate_1.default)("user"), user_1.getUser, controller.verifyToken.bind(controller));
 authRouter.post("/login", controller.login.bind(controller));
 authRouter.post("/google/login", controller.googleLogin.bind(controller));
 authRouter.post("/otp/resend", jwt_verify_1.default, controller.resendOtp.bind(controller));

@@ -1,6 +1,6 @@
 import { Types } from "mongoose";
 import IDoctorSlotInteractor from "../../entities/iuse_cases/doctor/iSlot";
-import { DoctorSlots } from "../../entities/rules/slotsType";
+import { DoctorSlots, RangeDoctorSlots } from "../../entities/rules/slotsType";
 import { IDoctorRepository } from "../../entities/irepositories/idoctorRepository";
 
 
@@ -11,16 +11,17 @@ class DoctorSlotsInteractor implements IDoctorSlotInteractor {
   ) {}
   async addSlots(
     id: Types.ObjectId,
-    data: DoctorSlots
+    data: RangeDoctorSlots
   ): Promise<{ status: boolean; message: string; errorCode?: string }> {
     try {
-      const exist = await this.Repository.getSlot(data.date, id);
-      if (exist)
-        return { status: false, message: "Slot For this Day Already exist" };
+      const exist = await this.Repository.slotRangeExist(id,data.date.start,data.date.end);
+      if (exist.length>0)
+        return { status: false, message: "Slot For this Day Already exist",errorCode:"ALREADY_EXIST" };
       const response = await this.Repository.createSlot(id, data);
       if (!response) return { status: false, message: "Something Went Wrong" };
       return { status: true, message: "Slot Added Sucessfully" };
     } catch (error) {
+     
       throw error;
     }
   }

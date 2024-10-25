@@ -1,11 +1,11 @@
 import { Types } from "mongoose";
-import { DoctorSlots } from "../../rules/slotsType";
+import { DoctorSlots, RangeDoctorSlots } from "../../rules/slotsType";
 
 
 interface IDoctorSlotInteractor {
   addSlots(
     id: Types.ObjectId,
-    data: DoctorSlots
+    data: RangeDoctorSlots
   ): Promise<{ status: boolean; message: string; errorCode?: string }>;
   getAvailableDate(
     id: Types.ObjectId

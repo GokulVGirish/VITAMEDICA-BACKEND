@@ -7,6 +7,7 @@ const razorpayInstance_1 = __importDefault(require("../../frameworks/services/ra
 const mongoose_1 = __importDefault(require("mongoose"));
 const moment_1 = __importDefault(require("moment"));
 const crypto_1 = __importDefault(require("crypto"));
+const agenda_1 = __importDefault(require("../../frameworks/background/agenda"));
 class UserAppointmentsInteractor {
     constructor(Repository, AwsS3) {
         this.Repository = Repository;
@@ -54,6 +55,14 @@ class UserAppointmentsInteractor {
             if (!result)
                 return { status: false, message: "Something Went Wrong" };
             await this.Repository.doctorWalletUpdate(docId, result._id, Number(appointmentFees), "credit", "Appointment Booked");
+            const appointmentStart = new Date(slotDetails.slotTime.start).getTime();
+            // const notificationTime = new Date(appointmentStart - 2 * 60 * 60 * 1000); 
+            const notificationTime = new Date(Date.now() + 60 * 1000);
+            await agenda_1.default.schedule(notificationTime, "send appointment notification", {
+                appointmentId: result._id,
+                userId,
+                docId,
+            });
             return { status: true, message: "Success", appointment: result };
         }
         catch (error) {

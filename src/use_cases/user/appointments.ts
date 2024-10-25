@@ -8,6 +8,7 @@ import moment from "moment";
 import crypto from "crypto";
 import  { IawsS3 } from "../../entities/services/awsS3";
 import { MulterFile } from "../../entities/rules/multerFile";
+import agenda from "../../frameworks/background/agenda";
 
 
 
@@ -96,6 +97,16 @@ class UserAppointmentsInteractor implements IUserAppointmentInteractor {
         "credit",
         "Appointment Booked"
       );
+    const appointmentStart = new Date(slotDetails.slotTime.start).getTime();
+    // const notificationTime = new Date(appointmentStart - 2 * 60 * 60 * 1000); 
+    const notificationTime = new Date(Date.now()+60*1000); 
+
+  
+    await agenda.schedule(notificationTime, "send appointment notification", {
+      appointmentId: result._id,
+      userId,
+      docId,
+    });
       return { status: true, message: "Success", appointment: result };
     } catch (error) {
       throw error;

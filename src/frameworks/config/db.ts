@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { startLockCleaner } from "../background/lockCleaner";
+import agenda from "../background/agenda";
 
 
 const connectDB=async():Promise<void>=>{
@@ -7,6 +8,7 @@ const connectDB=async():Promise<void>=>{
      await mongoose.connect(process.env.MONGODB as string)
      mongoose.set("strictQuery", true);
      startLockCleaner()
+     await agenda.start()
      console.log("Connected to the MongoDB database");
 
   }

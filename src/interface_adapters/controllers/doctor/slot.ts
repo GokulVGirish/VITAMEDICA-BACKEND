@@ -9,9 +9,15 @@ class DoctorSlotsControllers {
   async addSlots(req: Request, res: Response, next: NextFunction) {
     try {
       const { _id } = (req as doctorDataRequest).doctorData;
+     
+    
       const response = await this.interactor.addSlots(_id, req.body);
       if (response.status) {
         res.status(200).json({ success: true, message: response.message });
+      }else if(response.errorCode==="ALREADY_EXIST"){
+
+            res.status(403).json({ success: true, message: response.message });
+
       } else {
         res.status(500).json({ success: false, message: response.message });
       }

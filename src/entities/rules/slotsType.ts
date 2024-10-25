@@ -20,5 +20,13 @@ interface DoctorSlots extends Document {
   createdAt: Date;
   updatedAt: Date;
 }
+interface RangeDoctorSlots extends Document {
+  doctorId: Types.ObjectId;
+  date: {start:Date,end:Date};
+  slots: Slot[];
+  active: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-export { Slot, DoctorSlots };
+export { Slot, DoctorSlots,RangeDoctorSlots };

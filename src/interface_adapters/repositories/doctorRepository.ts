@@ -7,7 +7,11 @@ import doctorModel from "../../frameworks/mongoose/models/DoctorSchema";
 import mongoose, { mongo, Mongoose, Types } from "mongoose";
 import { RejectedDoctor } from "../../entities/rules/rejectedDoctor";
 import rejectedDoctorModel from "../../frameworks/mongoose/models/RejectedDoctor";
-import { DoctorSlots } from "../../entities/rules/slotsType";
+import {
+  DoctorSlots,
+  RangeDoctorSlots,
+  Slot,
+} from "../../entities/rules/slotsType";
 import doctorSlotsModel from "../../frameworks/mongoose/models/DoctorSlotsSchema";
 import { IDoctorWallet } from "../../entities/rules/doctorWalletType";
 import doctorWalletModal from "../../frameworks/mongoose/models/DoctorWalletSchema";
@@ -233,19 +237,68 @@ class DoctorRepository implements IDoctorRepository {
       throw error;
     }
   }
-  async createSlot(id: Types.ObjectId, data: DoctorSlots): Promise<boolean> {
+  async slotRangeExist(
+    docId: Types.ObjectId,
+    startDate: Date,
+    endDate: Date
+  ): Promise<DoctorSlots[] | []> {
     try {
-      const slot = await doctorSlotsModel.create({
-        doctorId: id,
-        date: data.date,
-        slots: data.slots.map((slot) => ({ start: slot.start, end: slot.end })),
+      const existingSlots = await doctorSlotsModel.find({
+        doctorId: docId,
+        date: { $gte: startDate, $lte: endDate },
       });
-      if (slot) return true;
-      else return false;
+      return existingSlots;
     } catch (error) {
       throw error;
     }
   }
+  async createSlot(
+    id: Types.ObjectId,
+    data: RangeDoctorSlots
+  ): Promise<boolean> {
+    try {
+      const startDate = new Date(data.date.start);
+      const endDate = new Date(data.date.end);
+
+      const totalDays =
+        Math.ceil(
+          (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)
+        ) + 1;
+
+      for (let i = 0; i < totalDays; i++) {
+        const currentDate = new Date(startDate);
+        currentDate.setDate(startDate.getDate() + i);
+
+        const newSlots: any[] = data.slots.map((slot) => ({
+          start: new Date(
+            currentDate.getTime() +
+              (new Date(slot.start).getTime() - startDate.getTime())
+          ),
+          end: new Date(
+            currentDate.getTime() +
+              (new Date(slot.end).getTime() - startDate.getTime())
+          ),
+          availability: true,
+          bookedBy: null,
+          locked: false,
+          lockedBy: null,
+          lockExpiration: null,
+        }));
+
+        await doctorSlotsModel.create({
+          doctorId: id,
+          date: currentDate,
+          slots: newSlots,
+          active: true,
+        });
+      }
+
+      return true;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async getWalletDetails(
     page: number,
     limit: number,

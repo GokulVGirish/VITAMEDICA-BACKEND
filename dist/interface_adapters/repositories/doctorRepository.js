@@ -222,17 +222,45 @@ class DoctorRepository {
             throw error;
         }
     }
+    async slotRangeExist(docId, startDate, endDate) {
+        try {
+            const existingSlots = await DoctorSlotsSchema_1.default.find({
+                doctorId: docId,
+                date: { $gte: startDate, $lte: endDate },
+            });
+            return existingSlots;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
     async createSlot(id, data) {
         try {
-            const slot = await DoctorSlotsSchema_1.default.create({
-                doctorId: id,
-                date: data.date,
-                slots: data.slots.map((slot) => ({ start: slot.start, end: slot.end })),
-            });
-            if (slot)
-                return true;
-            else
-                return false;
+            const startDate = new Date(data.date.start);
+            const endDate = new Date(data.date.end);
+            const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)) + 1;
+            for (let i = 0; i < totalDays; i++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + i);
+                const newSlots = data.slots.map((slot) => ({
+                    start: new Date(currentDate.getTime() +
+                        (new Date(slot.start).getTime() - startDate.getTime())),
+                    end: new Date(currentDate.getTime() +
+                        (new Date(slot.end).getTime() - startDate.getTime())),
+                    availability: true,
+                    bookedBy: null,
+                    locked: false,
+                    lockedBy: null,
+                    lockExpiration: null,
+                }));
+                await DoctorSlotsSchema_1.default.create({
+                    doctorId: id,
+                    date: currentDate,
+                    slots: newSlots,
+                    active: true,
+                });
+            }
+            return true;
         }
         catch (error) {
             throw error;

@@ -2,7 +2,7 @@ import { MongoDoctor, OtpDoctor } from "../rules/doctor"
 import MongoDepartment from "../rules/departments";
 import { ObjectId, Types } from "mongoose";
 import { RejectedDoctor } from "../rules/rejectedDoctor";
-import { DoctorSlots } from "../rules/slotsType";
+import { DoctorSlots, RangeDoctorSlots } from "../rules/slotsType";
 import { IDoctorWallet } from "../rules/doctorWalletType";
 import IAppointment from "../rules/appointments";
 import { INotificationContent } from "../rules/Notifications";
@@ -43,7 +43,7 @@ export interface IDoctorRepository {
     }
   ): Promise<boolean>;
   getRejectedDoctor(email: string): Promise<RejectedDoctor | null>;
-  createSlot(id: Types.ObjectId, data: DoctorSlots): Promise<boolean>;
+  createSlot(id: Types.ObjectId, data: RangeDoctorSlots): Promise<boolean>;
   getSlot(date: Date, id: Types.ObjectId): Promise<DoctorSlots | null>;
   getWalletDetails(
     page: number,
@@ -59,7 +59,7 @@ export interface IDoctorRepository {
     docId: Types.ObjectId,
     page: number,
     limit: number,
-    days:string
+    days: string
   ): Promise<{
     status: boolean;
     appointments?: IAppointment[];
@@ -136,4 +136,9 @@ export interface IDoctorRepository {
   fetchNotificationCount(docId: Types.ObjectId): Promise<number>;
   fetchNotifications(userId: Types.ObjectId): Promise<INotificationContent[]>;
   markNotificationAsRead(docId: Types.ObjectId): Promise<boolean>;
+  slotRangeExist(
+    docId: Types.ObjectId,
+    startDate: Date,
+    endDate: Date
+  ): Promise<DoctorSlots[] | []>;
 }

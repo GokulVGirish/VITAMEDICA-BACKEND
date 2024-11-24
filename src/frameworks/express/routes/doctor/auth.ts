@@ -3,15 +3,16 @@ import DoctorAuthControllers from "../../../../interface_adapters/controllers/do
 import DoctorRepository from "../../../../interface_adapters/repositories/doctorRepository"
 import Mailer from "../../../services/mailer"
 import JwtService from "../../../services/jwt-generate"
-import authMiddleware from "../../middlewares/jwt-verify"
+import authMiddleware from "../../middlewares/authentication"
 import verifyRole from "../../middlewares/role-Authenticate"
 import { getDoctor } from "../../middlewares/doctor"
 import DoctorAuthInteractor from "../../../../use_cases/doctor/auth"
+import { loginLimiter } from "../../middlewares/rateLimiter"
 
 const mailer = new Mailer();
 const jwtService = new JwtService(
-  process.env.ACCESS_TOCKEN_SECRET as string,
-  process.env.REFRESH_TOCKEN_SECRET as string
+  process.env.ACCESS_TOKEN_SECRET as string,
+  process.env.REFRESH_TOKEN_SECRET as string
 );
 const repository = new DoctorRepository();
 const interactor = new DoctorAuthInteractor(repository, mailer, jwtService);
@@ -30,7 +31,8 @@ authRouter.post(
   authMiddleware,
   controller.verifyOtpSignup.bind(controller)
 );
-authRouter.post("/login", controller.login.bind(controller));
+authRouter.post("/login",loginLimiter, controller.login.bind(controller));
+authRouter.post(`/logout`,controller.logout.bind(controller))
 authRouter.post(
   "/otp/resend",
   authMiddleware,

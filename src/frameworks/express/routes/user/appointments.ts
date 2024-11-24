@@ -1,7 +1,7 @@
 import express from "express";
 import UserAppointmentControllers from "../../../../interface_adapters/controllers/user/appointments";
 import UserRepository from "../../../../interface_adapters/repositories/userRepository";
-import authMiddleware from "../../middlewares/jwt-verify";
+import authMiddleware from "../../middlewares/authentication";
 import { getUser } from "../../middlewares/user";
 import verifyRole from "../../middlewares/role-Authenticate";
 import UserAppointmentsInteractor from "../../../../use_cases/user/appointments";

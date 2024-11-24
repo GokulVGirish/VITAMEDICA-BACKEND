@@ -1,7 +1,7 @@
 import express from "express";
 import AdminDashboardControllers from "../../../../interface_adapters/controllers/admin/dash";
 import AdminRepository from "../../../../interface_adapters/repositories/adminRepository";
-import authMiddleware from "../../middlewares/jwt-verify";
+import authMiddleware from "../../middlewares/authentication";
 import verifyRole from "../../middlewares/role-Authenticate";
 import AdminDashboardInteractor from "../../../../use_cases/admin/dashboard";
 

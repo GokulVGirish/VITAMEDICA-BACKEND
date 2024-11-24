@@ -1,7 +1,7 @@
 import express from "express";
 import DoctorSearchBookingControllers from "../../../../interface_adapters/controllers/user/doctorBooking";
 import UserRepository from "../../../../interface_adapters/repositories/userRepository";
-import authMiddleware from "../../middlewares/jwt-verify";
+import authMiddleware from "../../middlewares/authentication";
 import { getUser } from "../../middlewares/user";
 import verifyRole from "../../middlewares/role-Authenticate";
 import DoctorBookingInteractor from "../../../../use_cases/user/doctorBooking";

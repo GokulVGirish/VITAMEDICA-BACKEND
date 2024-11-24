@@ -56,8 +56,16 @@ class DoctorExtraControllers {
             const id = req.doctorData._id;
             const response = await this.interactor.getTodaysRevenue(id);
             if (response.status)
-                return res.status(200).json({ success: true, message: response.message, data: response.data });
-            return res.status(404).json({ success: false, message: response.message });
+                return res
+                    .status(200)
+                    .json({
+                    success: true,
+                    message: response.message,
+                    data: response.data,
+                });
+            return res
+                .status(204)
+                .json({ success: false, message: response.message });
         }
         catch (error) {
             console.log(error);
@@ -69,15 +77,13 @@ class DoctorExtraControllers {
             const id = req.doctorData._id;
             const response = await this.interactor.getWeeklyReport(id);
             if (response.success)
-                return res
-                    .status(200)
-                    .json({
+                return res.status(200).json({
                     success: true,
                     message: response.message,
                     data: response.data,
                 });
             return res
-                .status(404)
+                .status(204)
                 .json({ success: false, message: response.message });
         }
         catch (error) {
@@ -95,7 +101,9 @@ class DoctorExtraControllers {
                     message: response.message,
                     data: response.data,
                 });
-            return res.status(404).json({ success: false, message: response.message });
+            return res
+                .status(204)
+                .json({ success: false, message: response.message });
         }
         catch (error) {
             console.log(error);
@@ -107,10 +115,15 @@ class DoctorExtraControllers {
             const id = req.doctorData._id;
             const response = await this.interactor.getYearlyReport(id);
             if (response.success)
-                return res.status(200).json({ success: true, message: response.message, data: response.data,
+                return res
+                    .status(200)
+                    .json({
+                    success: true,
+                    message: response.message,
+                    data: response.data,
                 });
             return res
-                .status(404)
+                .status(204)
                 .json({ success: false, message: response.message });
         }
         catch (error) {

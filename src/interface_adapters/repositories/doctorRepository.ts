@@ -769,7 +769,7 @@ class DoctorRepository implements IDoctorRepository {
         },
       ]);
 
-      return result[0];
+      return result.length>0?result[0]:{revenue:0,count:{appointmentsCount:0,cancellationsCount:0}};
     } catch (error) {
       throw error;
     }

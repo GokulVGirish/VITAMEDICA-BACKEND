@@ -97,7 +97,7 @@ class DoctorUtilityInteractor implements IDoctorUtilityInteractor {
     try {
       const result = await this.Repository.getTodaysRevenue(id);
       if (result) return { status: true, message: "Success", data: result };
-      return { status: false, message: "No data found" };
+      return { status: false, message: "No data found",data:result };
     } catch (error) {
       throw error;
     }

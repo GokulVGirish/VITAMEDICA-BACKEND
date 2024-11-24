@@ -2,7 +2,7 @@ import express from "express";
 import DoctorProfileControllers from "../../../../interface_adapters/controllers/doctor/profile";
 import DoctorRepository from "../../../../interface_adapters/repositories/doctorRepository";
 import Mailer from "../../../services/mailer";
-import authMiddleware from "../../middlewares/jwt-verify";
+import authMiddleware from "../../middlewares/authentication";
 import verifyRole from "../../middlewares/role-Authenticate";
 import { getDoctor } from "../../middlewares/doctor";
 import upload from "../../../services/multer";

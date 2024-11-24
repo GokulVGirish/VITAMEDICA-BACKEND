@@ -48,14 +48,26 @@ class DoctorAuthControllers {
       const { otp } = req.body;
       const response = await this.interactor.verifyOtpSignup(otp);
       if (response.status) {
+        res.cookie("accessToken", response.accessToken, {
+          httpOnly: true,
+          maxAge: 3600*1000,
+          domain: process.env.cors_origin,
+          path: "/",
+          sameSite: "strict",
+        });
+        res.cookie("refreshToken", response.refreshToken, {
+          httpOnly: true,
+          maxAge: 604800*1000,
+          domain: process.env.cors_origin,
+          path: "/",
+          sameSite: "strict",
+        });
         res.status(200).json({
           success: true,
           message: response.message,
-          accessToken: response.accessToken,
-          refreshToken: response.refreshToken,
           doctor: response.doctor,
           status: response.docstatus,
-          docId:response.docId
+          docId: response.docId,
         });
       } else {
         res.status(400).json({ success: false, message: response.message });
@@ -67,14 +79,27 @@ class DoctorAuthControllers {
   }
   async login(req: Request, res: Response, next: NextFunction) {
     try {
+  
       const { email, password } = req.body;
       const response = await this.interactor.login(email, password);
       if (response.status) {
+        res.cookie("accessToken", response.accessToken, {
+          httpOnly: true,
+          maxAge: 3600 * 1000,
+
+          path: "/",
+          sameSite: "strict",
+        });
+        res.cookie("refreshToken",response.refreshToken, {
+          httpOnly: true,
+          maxAge: 604800*1000,
+          path: "/",
+          sameSite: "strict",
+        });
+        console.log("response cookie",res.get("Set-Cookie"))
         res.status(200).json({
           success: true,
           message: response.message,
-          accessToken: response.accessToken,
-          refreshToken: response.refreshToken,
           doctor: response.doctor,
           status: response.doctorStatus,
           docId: response.doctorId,
@@ -114,6 +139,16 @@ class DoctorAuthControllers {
       }
     } catch (error) {
       console.log(error);
+      next(error);
+    }
+  }
+  async logout(req: Request, res: Response, next: NextFunction) {
+    try {
+      console.log("logout cilich keri")
+      res.clearCookie("accessToken");
+      res.clearCookie("refreshToken");
+      res.status(200).json({ success: "LoggedOut Sucessfully" });
+    } catch (error) {
       next(error);
     }
   }

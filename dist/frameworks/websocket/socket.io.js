@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.initializeSocket = void 0;
 const socket_io_1 = require("socket.io");
-const jwt_verify_1 = require("../express/middlewares/jwt-verify");
+const authentication_1 = require("../express/middlewares/authentication");
 const ChatSchema_1 = __importDefault(require("../mongoose/models/ChatSchema"));
 const NotificationSchema_1 = __importDefault(require("../mongoose/models/NotificationSchema"));
 const onlineUsers = {};
@@ -21,7 +21,7 @@ const initializeSocket = (server) => {
         console.log(`A new user has connected: ${socket.id}`);
         const token = socket.handshake.auth.token;
         if (token) {
-            const decodedToken = (0, jwt_verify_1.verifyAccessToken)(token);
+            const decodedToken = (0, authentication_1.verifyToken)(token, "access");
             const userId = decodedToken?.userId;
             if (userId) {
                 onlineUsers[userId.toString()] = socket.id;
@@ -64,14 +64,12 @@ const initializeSocket = (server) => {
             socket.to(data.to).emit("prescription");
         });
         socket.on("check-online-status", (data) => {
-            console.log("here", data);
             const isOnline = onlineUsers[data.user];
             const doctorSocket = onlineUsers[data.from];
             io.to(doctorSocket).emit("check-online-status", { status: isOnline });
         });
         socket.on("join_appointment", ({ appointmentId }) => {
             socket.join(appointmentId);
-            console.log(`User joined appointment room///////: ${appointmentId}`);
         });
         socket.on("send_message", async ({ appointmentId, sender, message, type }) => {
             if (type === "txt") {
@@ -84,7 +82,7 @@ const initializeSocket = (server) => {
             let notificationContent = {
                 content,
                 receiverId,
-                type
+                type,
             };
             if (type === "message" || type === "appointment") {
                 notificationContent.appointmentId = appointmentId;
@@ -93,10 +91,13 @@ const initializeSocket = (server) => {
             console.log("socket connection id", onlineUsers[receiverId]);
             io.to(onlineUsers[receiverId]).emit("receive_notification", {
                 content: content,
-                type: type
+                type: type,
             });
             io.to(onlineUsers[receiverId]).emit("realtime-notification", {
-                receiverId, content, type, createdAt: new Date()
+                receiverId,
+                content,
+                type,
+                createdAt: new Date(),
             });
         });
         socket.on("logout", () => {

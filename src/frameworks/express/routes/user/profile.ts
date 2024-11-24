@@ -2,7 +2,7 @@ import express from "express"
 import UserProfileControllers from "../../../../interface_adapters/controllers/user/profile";
 import UserRepository from "../../../../interface_adapters/repositories/userRepository";
 import Mailer from "../../../services/mailer";
-import authMiddleware from "../../middlewares/jwt-verify";
+import authMiddleware from "../../middlewares/authentication";
 import { getUser } from "../../middlewares/user";
 import upload from "../../../services/multer";
 import verifyRole from "../../middlewares/role-Authenticate";

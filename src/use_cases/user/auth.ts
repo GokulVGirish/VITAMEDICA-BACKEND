@@ -5,8 +5,7 @@ import { User } from "../../entities/rules/user";
 import { IJwtService } from "../../entities/services/jwtServices";
 import { IMailer } from "../../entities/services/mailer";
 import bcrypt from "bcryptjs";
-
-
+import AppError from "../../frameworks/express/functions/customError";
 
 class UserAuthInteractor implements IuserAuthInteractor {
   constructor(
@@ -19,70 +18,76 @@ class UserAuthInteractor implements IuserAuthInteractor {
   ): Promise<{ status: true | false; message?: string; token?: string }> {
     try {
       const exist = await this.Repository.userExist(user.email);
-      if (!exist) {
-        const mailResponse = await this.Mailer.sendMail(user.email);
-        if (mailResponse.success) {
-          user.otp = mailResponse.otp;
-          user.password = await bcrypt.hash(user.password, 10);
-          const response = await this.Repository.tempOtpUser(user);
-          const tempToken = this.JWTServices.generateToken(
-            {
-              emailId: user.email,
-              userId: response.userId,
-              role: "user",
-              verified: false,
-            },
-            { expiresIn: "10m" }
-          );
-          return {
-            status: true,
-            message: "otp sucessfully sent",
-            token: tempToken,
-          };
-        } else {
-          return { status: false, message: "error sending email" };
-        }
-      } else {
-        return { status: false, message: "user already exist" };
-      }
+      if (exist) throw new AppError("User Already Exist", 409);
+      const mailResponse = await this.Mailer.sendMail(user.email);
+      if (!mailResponse.success) throw new AppError("Error Sending Mail", 500);
+      user.otp = mailResponse.otp;
+      user.password = await bcrypt.hash(user.password, 10);
+      const response = await this.Repository.tempOtpUser(user);
+      const tempToken = this.JWTServices.generateToken(
+        {
+          emailId: user.email,
+          userId: response.userId,
+          role: "user",
+          verified: false,
+        },
+        { expiresIn: "10m" }
+      );
+      return {
+        status: true,
+        message: "otp sucessfully sent",
+        token: tempToken,
+      };
     } catch (error) {
-      console.log(error);
-      throw error;
+      if (error && error instanceof Error) {
+        throw new AppError(error.message || "Internal Server Error", 500);
+      } else {
+        throw new AppError("Internal Server Error", 500);
+      }
     }
   }
-  async verifyOtpSignup(
-    otp: string
-  ): Promise<{ status: boolean; accessToken?: string; refreshToken?: string;userId?:any;name?:string }> {
+  async verifyOtpSignup(otp: string): Promise<{
+    status: boolean;
+    accessToken?: string;
+    refreshToken?: string;
+    userId?: any;
+    name?: string;
+  }> {
     try {
       const response = await this.Repository.createUserOtp(otp);
-      if (response.status) {
-        const accessToken = this.JWTServices.generateToken(
-          {
-            emailId: response.user.email,
-            userId: response.user._id,
-            role: "user",
-            verified: true,
-          },
-          { expiresIn: "1h" }
-        );
-        const refreshToken = this.JWTServices.generateRefreshToken(
-          {
-            emailId: response.user.email,
-            role: "user",
-            userId: response.user._id,
-            verified: true,
-          },
-          { expiresIn: "1d" }
-        );
+      if (!response.status) throw new AppError("Invalid Otp", 400);
+      const accessToken = this.JWTServices.generateToken(
+        {
+          emailId: response.user.email,
+          userId: response.user._id,
+          role: "user",
+          verified: true,
+        },
+        { expiresIn: "1h" }
+      );
+      const refreshToken = this.JWTServices.generateRefreshToken(
+        {
+          emailId: response.user.email,
+          role: "user",
+          userId: response.user._id,
+          verified: true,
+        },
+        { expiresIn: "1d" }
+      );
 
-        return { status: true, accessToken, refreshToken,userId:response.user._id,name:response.user.name };
-      } else {
-        return { status: false };
-      }
+      return {
+        status: true,
+        accessToken,
+        refreshToken,
+        userId: response.user._id,
+        name: response.user.name,
+      };
     } catch (error) {
-      console.log(error);
-
-      throw error;
+      if (error && error instanceof Error) {
+        throw new AppError(error.message || "Internal Server Error", 500);
+      } else {
+        throw new AppError("Internal Server Error", 500);
+      }
     }
   }
   async login(
@@ -98,59 +103,65 @@ class UserAuthInteractor implements IuserAuthInteractor {
   }> {
     try {
       const userExist = await this.Repository.getUser(email);
-      if (userExist?.register === "Google") {
-        return {
-          status: false,
-          message: "Use Google Login",
-        };
-      }
-      if (userExist) {
-        const hashedPassword = userExist.password;
-        const match = await await bcrypt.compare(password, hashedPassword);
-        if (match) {
-          if (userExist.isBlocked)
-            return { status: false, message: "Sorry User Blocked" };
-          const accessToken = this.JWTServices.generateToken(
-            {
-              emailId: userExist.email,
-              userId: userExist._id,
-              role: "user",
-              verified: true,
-            },
-            { expiresIn: "1h" }
-          );
-          const refreshToken = this.JWTServices.generateRefreshToken(
-            {
-              emailId: userExist.email,
-              userId: userExist._id,
-              role: "user",
-              verified: true,
-            },
-            { expiresIn: "1d" }
-          );
 
-          return {
-            status: true,
-            accessToken,
-            refreshToken,
-            message: "logged in sucessfullly",
-            userId: userExist._id as string,
-            name: userExist.name,
-          };
-        } else {
-          return { status: false, message: "wrong password" };
-        }
-      } else {
-        return { status: false, message: "person not found" };
+      if (userExist?.register === "Google") {
+        throw new AppError("Use Google Login", 400);
       }
+
+      if (!userExist) {
+        throw new AppError("Person not found", 404);
+      }
+
+      const hashedPassword = userExist.password;
+      const match = await bcrypt.compare(password, hashedPassword);
+
+      if (!match) {
+        throw new AppError("Wrong password", 401);
+      }
+
+      if (userExist.isBlocked) {
+        throw new AppError("Sorry, User Blocked", 403);
+      }
+
+      const accessToken = this.JWTServices.generateToken(
+        {
+          emailId: userExist.email,
+          userId: userExist._id,
+          role: "user",
+          verified: true,
+        },
+        { expiresIn: "1h" }
+      );
+
+      const refreshToken = this.JWTServices.generateRefreshToken(
+        {
+          emailId: userExist.email,
+          userId: userExist._id,
+          role: "user",
+          verified: true,
+        },
+        { expiresIn: "1d" }
+      );
+
+      return {
+        status: true,
+        accessToken,
+        refreshToken,
+        message: "Logged in successfully",
+        userId: userExist._id as string,
+        name: userExist.name,
+      };
     } catch (error) {
-      console.log(error);
-      throw error;
+      if (error && error instanceof Error) {
+        throw new AppError(error.message || "Internal Server Error", 500);
+      } else {
+        throw new AppError("Internal Server Error", 500);
+      }
     }
   }
 
   async googleLogin(
-    name:string,
+    name: string,
     email: string,
     password: string
   ): Promise<{
@@ -160,69 +171,68 @@ class UserAuthInteractor implements IuserAuthInteractor {
     message?: string;
     errorCode?: string;
     name?: string;
-    userId?:Types.ObjectId
+    userId?: Types.ObjectId;
   }> {
     try {
-      console.log("mail", email, password, "password");
       const userExist = await this.Repository.getUser(email);
       if (!userExist) {
-
         password = await bcrypt.hash(password, 10);
 
-       const response = await this.Repository.googleSignup(
-        email,
-        name,
-        password
-      );
-      if(response){ 
+        const response = await this.Repository.googleSignup(
+          email,
+          name,
+          password
+        );
 
-          const accessToken = this.JWTServices.generateToken(
-            { emailId: email, role: "user",userId:response._id, verified: true },
-            { expiresIn: "1h" }
-          );
-          const refreshToken = this.JWTServices.generateRefreshToken(
-            { emailId: email, role: "user",userId:response._id, verified: true },
-            { expiresIn: "1d" }
-          );
+        const accessToken = this.JWTServices.generateToken(
+          {
+            emailId: email,
+            role: "user",
+            userId: response._id,
+            verified: true,
+          },
+          { expiresIn: "1h" }
+        );
+        const refreshToken = this.JWTServices.generateRefreshToken(
+          {
+            emailId: email,
+            role: "user",
+            userId: response._id,
+            verified: true,
+          },
+          { expiresIn: "1d" }
+        );
 
-          return {
-            status: true,
-            accessToken,
-            refreshToken,
-            message: "Signed Up Sucessfully",
-            name: response.name,
-            userId:response._id as Types.ObjectId
-            
-          };
-       
-      }else return {
-        status :false,
-        message:"Something went wrong",
-        errorCode:"Server_Error"
-      }
-      
+        return {
+          status: true,
+          accessToken,
+          refreshToken,
+          message: "Signed Up Sucessfully",
+          name: response.name,
+          userId: response._id as Types.ObjectId,
+        };
       }
       const hashedPassword = userExist?.password;
       const match = await bcrypt.compare(password, hashedPassword as string);
-      if (!match) {
-        return {
-          status: false,
-          message: "Incorrect password",
-          errorCode: "INCORRECT_PASSWORD",
-        };
-      }
-      if (userExist?.isBlocked)
-        return {
-          status: false,
-          message: "Sorry User Blocked",
-          errorCode: "BLOCKED",
-        };
+      if (!match) throw new AppError("Invalid Credentials", 400);
+      if (userExist?.isBlocked) throw new AppError("Sorry, User Blocked", 403);
+
       const accessToken = this.JWTServices.generateToken(
-        { emailId: userExist?.email,userId:userExist?._id, role: "user", verified: true },
+        {
+          emailId: userExist?.email,
+          userId: userExist?._id,
+          role: "user",
+          verified: true,
+        },
         { expiresIn: "1h" }
       );
       const refreshToken = this.JWTServices.generateRefreshToken(
-        { emailId: userExist?.email,userId:userExist?._id, role: "user", verified: true },
+        {
+          emailId: userExist?.email,
+          userId: userExist?._id,
+          role: "user",
+          verified: true,
+        },
         { expiresIn: "1d" }
       );
 
@@ -232,11 +242,14 @@ class UserAuthInteractor implements IuserAuthInteractor {
         refreshToken,
         message: "logged in Sucessfully",
         name: userExist?.name,
-        userId:userExist?._id as Types.ObjectId
+        userId: userExist?._id as Types.ObjectId,
       };
     } catch (error) {
-      console.log(error);
-      throw error;
+      if (error && error instanceof Error) {
+        throw new AppError(error.message || "Internal Server Error", 500);
+      } else {
+        throw new AppError("Internal Server Error", 500);
+      }
     }
   }
   async resendOtp(
@@ -244,20 +257,15 @@ class UserAuthInteractor implements IuserAuthInteractor {
   ): Promise<{ status: boolean; message?: string; errorCode?: string }> {
     try {
       const mailResponse = await this.Mailer.sendMail(email);
-      if (!mailResponse.success) {
-        return { status: false, message: "error sending email" };
-      }
+      if (!mailResponse.success) throw new AppError("Error Sending Mail", 500);
       const otp = mailResponse.otp;
       const response = await this.Repository.resendOtp(otp, email);
-      if (response) {
-        return { status: true, message: "otp sucessfully sent" };
-      } else {
-        return { status: false, message: "retry signup" };
-      }
+      if (!response) throw new AppError("Retry Signup", 400);
+      return { status: true, message: "otp sucessfully sent" };
     } catch (error) {
       console.log(error);
       throw error;
     }
   }
 }
-export default UserAuthInteractor
+export default UserAuthInteractor;

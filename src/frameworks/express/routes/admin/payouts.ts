@@ -2,7 +2,7 @@ import express from "express"
 import PayoutControllers from "../../../../interface_adapters/controllers/admin/payouts"
 import AdminPayoutsInteractor from "../../../../use_cases/admin/payouts"
 import AdminRepository from "../../../../interface_adapters/repositories/adminRepository"
-import authMiddleware from "../../middlewares/jwt-verify"
+import authMiddleware from "../../middlewares/authentication"
 import verifyRole from "../../middlewares/role-Authenticate"
 import AwsS3 from "../../../services/awsS3"
 

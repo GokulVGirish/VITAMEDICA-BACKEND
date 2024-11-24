@@ -1,7 +1,8 @@
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import IDoctorSlotInteractor from "../../entities/iuse_cases/doctor/iSlot";
 import { DoctorSlots, RangeDoctorSlots } from "../../entities/rules/slotsType";
 import { IDoctorRepository } from "../../entities/irepositories/idoctorRepository";
+import { cancelJob } from "../../frameworks/background/agenda";
 
 
 
@@ -111,6 +112,7 @@ class DoctorSlotsInteractor implements IDoctorSlotInteractor {
       const deleteSlot = await this.Repository.deleteSlots(id, date, startTime);
       if (!deleteSlot)
         return { status: false, message: "Something Went Wrong" };
+        await cancelJob(new mongoose.Types.ObjectId(result.id));
 
       return { status: true, message: "sucessfully done" };
     } catch (error) {

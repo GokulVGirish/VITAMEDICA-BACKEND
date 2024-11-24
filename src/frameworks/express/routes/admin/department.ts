@@ -1,7 +1,7 @@
 import express from "express";
 import AdminDepartmentControllers from "../../../../interface_adapters/controllers/admin/department";
 import AdminRepository from "../../../../interface_adapters/repositories/adminRepository";
-import authMiddleware from "../../middlewares/jwt-verify";
+import authMiddleware from "../../middlewares/authentication";
 import verifyRole from "../../middlewares/role-Authenticate";
 import AdminDepartmentInteractor from "../../../../use_cases/admin/department";
 

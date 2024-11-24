@@ -1,7 +1,7 @@
 import Agenda from "agenda"
 import appointmentModel from "../mongoose/models/AppointmentSchema";
 import sendMail from "../services/sendEmail";
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 import {appointmentRemainder} from "../services/emailContent";
 import moment from "moment";
 
@@ -101,6 +101,11 @@ agenda.define("send appointment notification", async (job:any) => {
    "notification"
  );
 });
+export async function cancelJob(appointmentId:Types.ObjectId) {
+  await agenda.cancel({ "data.appointmentId": appointmentId });
+  console.log(`Job with appointmentId ${appointmentId} has been cancelled.`);
+}
+
 
 export default agenda;
 

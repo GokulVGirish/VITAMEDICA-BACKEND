@@ -1,5 +1,10 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
+const mongoose_1 = __importDefault(require("mongoose"));
+const agenda_1 = require("../../frameworks/background/agenda");
 class DoctorSlotsInteractor {
     constructor(Repository) {
         this.Repository = Repository;
@@ -71,6 +76,7 @@ class DoctorSlotsInteractor {
             const deleteSlot = await this.Repository.deleteSlots(id, date, startTime);
             if (!deleteSlot)
                 return { status: false, message: "Something Went Wrong" };
+            await (0, agenda_1.cancelJob)(new mongoose_1.default.Types.ObjectId(result.id));
             return { status: true, message: "sucessfully done" };
         }
         catch (error) {

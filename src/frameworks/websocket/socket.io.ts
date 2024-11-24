@@ -1,9 +1,8 @@
 import { Server } from "socket.io";
 import { Server as HttpServer } from "http";
-import { verifyAccessToken } from "../express/middlewares/jwt-verify";
-import { CustomJwtPayload } from "../express/middlewares/jwt-verify";
+import { verifyToken } from "../express/middlewares/authentication";
+import { CustomJwtPayload } from "../express/middlewares/authentication";
 import chatSchemaModel from "../mongoose/models/ChatSchema";
-import { Socket } from "dgram";
 import NotificationModel from "../mongoose/models/NotificationSchema";
 
 const onlineUsers: any = {};
@@ -20,7 +19,7 @@ export const initializeSocket = (server: HttpServer) => {
     console.log(`A new user has connected: ${socket.id}`);
     const token = socket.handshake.auth.token;
     if (token) {
-      const decodedToken = verifyAccessToken(token);
+      const decodedToken = verifyToken(token, "access");
       const userId = (decodedToken as CustomJwtPayload)?.userId;
       if (userId) {
         onlineUsers[userId.toString()] = socket.id;
@@ -33,11 +32,9 @@ export const initializeSocket = (server: HttpServer) => {
       socket.join(id);
     });
     socket.on("join", (room) => {
-    
       socket.join(room);
     });
     socket.on("calling", (message) => {
-   
       const { room, data } = message;
       socket.to(room).emit("calling", data);
     });
@@ -56,7 +53,7 @@ export const initializeSocket = (server: HttpServer) => {
       io.to(data.from).emit("cut-call");
     });
     socket.on("chat-message", (data) => {
-      console.log("message",data)
+      console.log("message", data);
       const { message, from, to } = data;
       io.to(to).emit("chat-message", data);
     });
@@ -69,7 +66,6 @@ export const initializeSocket = (server: HttpServer) => {
     });
 
     socket.on("check-online-status", (data) => {
-      console.log("here", data);
       const isOnline = onlineUsers[data.user];
       const doctorSocket: string = onlineUsers[data.from];
       io.to(doctorSocket).emit("check-online-status", { status: isOnline });
@@ -77,7 +73,6 @@ export const initializeSocket = (server: HttpServer) => {
 
     socket.on("join_appointment", ({ appointmentId }) => {
       socket.join(appointmentId);
-      console.log(`User joined appointment room///////: ${appointmentId}`);
     });
 
     socket.on(
@@ -97,30 +92,41 @@ export const initializeSocket = (server: HttpServer) => {
 
     socket.on(
       "send_notification",
-      async({ receiverId, content, appointmentId, type }) => {
-        console.log("sendNotification received",receiverId,content,appointmentId,type)
+      async ({ receiverId, content, appointmentId, type }) => {
+        console.log(
+          "sendNotification received",
+          receiverId,
+          content,
+          appointmentId,
+          type
+        );
 
-        let notificationContent:any={
+        let notificationContent: any = {
           content,
           receiverId,
-          type
+          type,
+        };
+        if (type === "message" || type === "appointment") {
+          notificationContent.appointmentId = appointmentId;
         }
-        if(type==="message"||type==="appointment"){
-          notificationContent.appointmentId=appointmentId
-        }
-        
-        const response=await NotificationModel.updateOne({receiverId:receiverId},{$push:{notifications:notificationContent}},{upsert:true,new:true})
+
+        const response = await NotificationModel.updateOne(
+          { receiverId: receiverId },
+          { $push: { notifications: notificationContent } },
+          { upsert: true, new: true }
+        );
         console.log("socket connection id", onlineUsers[receiverId]);
-     
-        io.to(onlineUsers[receiverId]).emit("receive_notification",{
-          content:content,
-          type:type
-        })
-        io.to(onlineUsers[receiverId]).emit("realtime-notification",{
-          receiverId,content,type,createdAt:new Date()
 
-        })
-
+        io.to(onlineUsers[receiverId]).emit("receive_notification", {
+          content: content,
+          type: type,
+        });
+        io.to(onlineUsers[receiverId]).emit("realtime-notification", {
+          receiverId,
+          content,
+          type,
+          createdAt: new Date(),
+        });
       }
     );
 

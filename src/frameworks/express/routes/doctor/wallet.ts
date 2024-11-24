@@ -1,7 +1,7 @@
 import express from "express";
 import DoctorWalletControllers from "../../../../interface_adapters/controllers/doctor/wallet";
 import DoctorRepository from "../../../../interface_adapters/repositories/doctorRepository";
-import authMiddleware from "../../middlewares/jwt-verify";
+import authMiddleware from "../../middlewares/authentication";
 import verifyRole from "../../middlewares/role-Authenticate";
 import { getDoctor } from "../../middlewares/doctor";
 import DoctorWalletInteractor from "../../../../use_cases/doctor/wallet";

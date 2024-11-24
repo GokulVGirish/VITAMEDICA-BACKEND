@@ -8,14 +8,24 @@ class AdminAuthControllers {
       const { email, password } = req.body;
       const response = await this.interactor.adminLogin(email, password);
       if (response.status) {
-        res
-          .status(200)
-          .json({
-            success: true,
-            adminAccessToken: response.adminAccessToken,
-            adminRefreshToken: response.adminRefreshToken,
-            message: "logged in sucessfully",
-          });
+        res.cookie("accessToken", response.adminAccessToken, {
+          httpOnly: true,
+          maxAge: 3600*1000,
+   
+          path: "/",
+          sameSite: "strict",
+        });
+        res.cookie("refreshToken", response.adminRefreshToken, {
+          httpOnly: true,
+          maxAge: 604800*1000,
+         
+          path: "/",
+          sameSite: "strict",
+        });
+        res.status(200).json({
+          success: true,
+          message: "logged in sucessfully",
+        });
       } else {
         res.status(400).json({ success: false, message: response.message });
       }
@@ -32,5 +42,14 @@ class AdminAuthControllers {
       next(error);
     }
   }
+  async logout(req: Request, res: Response, next: NextFunction) {
+    try {
+      res.clearCookie("accessToken");
+      res.clearCookie("refreshToken");
+      res.status(200).json({ success: "LoggedOut Sucessfully" });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
-export default AdminAuthControllers
+export default AdminAuthControllers;

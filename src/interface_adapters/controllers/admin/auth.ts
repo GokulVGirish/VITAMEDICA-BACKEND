@@ -10,15 +10,15 @@ class AdminAuthControllers {
       if (response.status) {
         res.cookie("accessToken", response.adminAccessToken, {
           httpOnly: true,
-          maxAge: 3600*1000,
-   
+          maxAge: 3600 * 1000,
+          secure: process.env.NODE_ENV === "production",
           path: "/",
           sameSite: "strict",
         });
         res.cookie("refreshToken", response.adminRefreshToken, {
           httpOnly: true,
-          maxAge: 604800*1000,
-         
+          maxAge: 604800 * 1000,
+          secure: process.env.NODE_ENV === "production",
           path: "/",
           sameSite: "strict",
         });

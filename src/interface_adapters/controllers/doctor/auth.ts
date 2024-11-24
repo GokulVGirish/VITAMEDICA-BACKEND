@@ -50,15 +50,17 @@ class DoctorAuthControllers {
       if (response.status) {
         res.cookie("accessToken", response.accessToken, {
           httpOnly: true,
-          maxAge: 3600*1000,
+          maxAge: 3600 * 1000,
           domain: process.env.cors_origin,
+          secure: process.env.NODE_ENV === "production",
           path: "/",
           sameSite: "strict",
         });
         res.cookie("refreshToken", response.refreshToken, {
           httpOnly: true,
-          maxAge: 604800*1000,
+          maxAge: 604800 * 1000,
           domain: process.env.cors_origin,
+          secure: process.env.NODE_ENV === "production",
           path: "/",
           sameSite: "strict",
         });
@@ -86,17 +88,18 @@ class DoctorAuthControllers {
         res.cookie("accessToken", response.accessToken, {
           httpOnly: true,
           maxAge: 3600 * 1000,
-
+          secure: process.env.NODE_ENV === "production",
           path: "/",
           sameSite: "strict",
         });
-        res.cookie("refreshToken",response.refreshToken, {
+        res.cookie("refreshToken", response.refreshToken, {
           httpOnly: true,
-          maxAge: 604800*1000,
+          maxAge: 604800 * 1000,
+          secure: process.env.NODE_ENV === "production",
           path: "/",
           sameSite: "strict",
         });
-        console.log("response cookie",res.get("Set-Cookie"))
+      
         res.status(200).json({
           success: true,
           message: response.message,

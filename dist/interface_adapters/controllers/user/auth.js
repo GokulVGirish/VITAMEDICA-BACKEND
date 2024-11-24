@@ -36,6 +36,7 @@ class UserAuthControllers {
                 httpOnly: true,
                 maxAge: 3600 * 1000,
                 domain: process.env.cors_origin,
+                secure: process.env.NODE_ENV === "production",
                 path: "/",
                 sameSite: "strict",
             });
@@ -43,6 +44,7 @@ class UserAuthControllers {
                 httpOnly: true,
                 maxAge: 604800 * 1000,
                 domain: process.env.cors_origin,
+                secure: process.env.NODE_ENV === "production",
                 path: "/",
                 sameSite: "strict",
             });
@@ -70,12 +72,14 @@ class UserAuthControllers {
             res.cookie("accessToken", response.accessToken, {
                 httpOnly: true,
                 maxAge: 3600 * 1000,
+                secure: process.env.NODE_ENV === "production",
                 path: "/",
                 sameSite: "strict",
             });
             res.cookie("refreshToken", response.refreshToken, {
                 httpOnly: true,
                 maxAge: 604800 * 1000,
+                secure: process.env.NODE_ENV === "production",
                 path: "/",
                 sameSite: "strict",
             });
@@ -112,12 +116,14 @@ class UserAuthControllers {
             res.cookie("accessToken", response.accessToken, {
                 httpOnly: true,
                 maxAge: 3600 * 1000,
+                secure: process.env.NODE_ENV === "production",
                 path: "/",
                 sameSite: "strict",
             });
             res.cookie("refreshToken", response.refreshToken, {
                 httpOnly: true,
                 maxAge: 604800 * 1000,
+                secure: process.env.NODE_ENV === "production",
                 path: "/",
                 sameSite: "strict",
             });

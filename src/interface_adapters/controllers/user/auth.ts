@@ -112,13 +112,15 @@ class UserAuthControllers {
       const { email, sub, name } = req.body;
 
       const response = await this.interactor.googleLogin(name, email, sub);
+      console.log("status", process.env.NODE_ENV);
+      console.log("status", process.env.NODE_ENV === "production");
 
       res.cookie("accessToken", response.accessToken, {
         httpOnly: true,
         maxAge: 3600 * 1000,
         secure: process.env.NODE_ENV === "production",
         path: "/",
-        sameSite: "strict",
+        sameSite: "none",
       });
 
       res.cookie("refreshToken", response.refreshToken, {
@@ -126,7 +128,7 @@ class UserAuthControllers {
         maxAge: 604800 * 1000,
         secure: process.env.NODE_ENV === "production",
         path: "/",
-        sameSite: "strict",
+        sameSite: "none",
       });
 
       res.status(200).json({

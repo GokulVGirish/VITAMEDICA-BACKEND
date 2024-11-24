@@ -113,6 +113,8 @@ class UserAuthControllers {
         try {
             const { email, sub, name } = req.body;
             const response = await this.interactor.googleLogin(name, email, sub);
+            console.log("status", process.env.NODE_ENV);
+            console.log("status", process.env.NODE_ENV === "production");
             res.cookie("accessToken", response.accessToken, {
                 httpOnly: true,
                 maxAge: 3600 * 1000,

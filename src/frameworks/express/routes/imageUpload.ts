@@ -1,7 +1,7 @@
 
 import express from "express"
 import upload from "../../services/multer"
-import authMiddleware from "../middlewares/jwt-verify"
+import authMiddleware from "../middlewares/authentication"
 import ImageUploadController from "../../../interface_adapters/controllers/imageUpload"
 import ImageUploadInteractor from "../../../use_cases/imageUpload"
 import ImageUploadRepository from "../../../interface_adapters/repositories/imageUploadRepository"
